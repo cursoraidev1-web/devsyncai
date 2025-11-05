@@ -303,27 +303,43 @@ CodexFlow is **building its own comprehensive project management platform** from
 ### 1. Intelligent Workflow Orchestration & Automation
 **Status**: Building (MVP Phase) - **FLAGSHIP FEATURE**
 
-This is CodexFlow's most revolutionary feature: **AI that acts as an intelligent project coordinator**, automatically managing workflow handoffs between team members based on task completion, dependencies, and blockers.
+This is CodexFlow's most revolutionary feature: **AI that acts as an intelligent project coordinator across the ENTIRE product development lifecycle**, automatically managing workflow handoffs between team members based on task completion, dependencies, blockers, and **PRD/project goals**.
 
 #### How It Works
 
-**The AI continuously monitors**:
-- ✅ Task completion status
-- 🔗 Task dependencies and relationships
-- 🚧 Blockers and impediments
-- 👥 Team member roles and responsibilities
-- 📊 Project workflow stages
+**The AI continuously monitors THE ENTIRE PRODUCT LIFECYCLE**:
+- 📝 **Requirements Phase**: PRD creation, stakeholder approvals, requirement changes
+- 🎨 **Design Phase**: Mockups, design reviews, design system updates
+- 🏗️ **Infrastructure Phase**: Cloud resources, databases, APIs, CI/CD pipelines
+- 💻 **Development Phase**: Code commits, feature branches, pull requests
+- 🧪 **Testing Phase**: Unit tests, integration tests, E2E tests, QA feedback
+- 👀 **Review Phase**: Code reviews, design reviews, security audits
+- 📚 **Documentation Phase**: API docs, user guides, technical specs
+- 🚀 **Deployment Phase**: Staging deploys, production releases, rollbacks
+- 📊 **Monitoring Phase**: Performance metrics, error rates, user feedback
+- 🐛 **Maintenance Phase**: Bug fixes, hotfixes, patch releases
+
+**The AI understands your project by**:
+- 📋 Reading your PRD and extracting goals
+- 🎯 Mapping requirements to tasks
+- 🔗 Understanding dependencies between all stages
+- 👥 Knowing team roles and responsibilities
+- 📊 Tracking progress against milestones
 
 **Then automatically**:
-- 🔔 Notifies the right people at the right time
-- 📋 Updates task statuses
-- 🔄 Triggers dependent tasks
-- 🎯 Assigns next steps
-- 📈 Updates project progress
+- 🔔 Notifies the right people at the right time (across ALL stages)
+- 📋 Updates task statuses based on actual work (not manual updates)
+- 🔄 Triggers dependent tasks across the entire workflow
+- 🎯 Assigns next steps based on what's completed
+- 📈 Updates project progress toward PRD goals
+- 🚨 Detects blockers at ANY stage of development
+- 💡 Suggests actions based on best practices
 
-#### Real-World Example: Infrastructure → Backend → Frontend Flow
+#### Real-World Example: Complete Feature Development (PRD to Production)
 
-**Scenario**: Building a new API endpoint
+**Scenario**: Building a user authentication feature (tracking the ENTIRE lifecycle)
+
+**Note**: Infrastructure (Lambda) is just ONE step in this workflow. The AI tracks ALL stages.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
