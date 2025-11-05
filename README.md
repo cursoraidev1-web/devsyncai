@@ -218,10 +218,13 @@ We're building features inspired by the best, while adding unique capabilities:
 
 **Adding What's Missing**:
 - 🤖 **AI-Powered PRD Generation**: Automatically create requirements documents
+- 🤖 **Intelligent Workflow Orchestration**: AI coordinates team handoffs automatically
 - 📊 **Predictive Risk Analysis**: Identify project bottlenecks before they happen
 - 🎯 **Smart Resource Allocation**: AI recommends optimal task assignments
+- 🔔 **Context-Aware Notifications**: AI notifies right person at right time with context
 - 🚀 **Automated CI/CD Integration**: Seamless deployment tracking
 - 💡 **Intelligent Insights**: Proactive suggestions for improving team performance
+- 🚦 **Automatic Blocker Detection**: AI identifies and escalates blockers
 
 ## 🤝 Contributing
 

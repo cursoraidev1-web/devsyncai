@@ -253,7 +253,231 @@ Each task has a dedicated page with:
 
 ## AI-Powered Features
 
-### 1. AI PRD Generator
+### 1. Intelligent Workflow Automation ⭐ FLAGSHIP FEATURE
+
+**The AI acts as your intelligent project coordinator**, automatically managing workflow handoffs and keeping your team synchronized.
+
+#### How You'll Experience It
+
+**Scenario**: You're a backend developer, and your infrastructure is finally ready.
+
+**Traditional Workflow** ❌:
+1. Cloud engineer completes Lambda setup
+2. Cloud engineer remembers to notify you (maybe via Slack?)
+3. You check Slack, find the message
+4. You ask for Lambda ARN, API Gateway URL, permissions
+5. Cloud engineer responds with details
+6. You start working (finally!)
+
+**With CodexFlow AI** ✅:
+1. Cloud engineer marks task as "Done"
+2. **AI instantly detects** completion
+3. **AI automatically notifies you** with ALL the context you need:
+   - Lambda ARN
+   - API Gateway URL
+   - IAM permissions configured
+   - Documentation links
+   - Suggested next steps
+4. You start working immediately!
+
+#### Real-World Example
+
+**You'll receive notifications like this**:
+
+```
+🔔 Hey John! Your infrastructure is ready.
+
+The Lambda function for the User API has been provisioned by Mike 
+(Cloud Engineer) and is ready for your code.
+
+📋 Your Task: "Implement user CRUD endpoints"
+🎯 Status: Ready to start (was waiting on infrastructure)
+
+ℹ️  Everything you need:
+• Lambda Function: user-api-prod
+• ARN: arn:aws:lambda:us-east-1:123456:function:user-api-prod
+• API Gateway: https://api.codexflow.io/v1/users
+• Runtime: Node.js 18.x
+• Memory: 1024 MB
+• Database: Connected to prod DocumentDB
+• Permissions: Read/Write access configured
+
+📚 Quick Links:
+• [Deployment Guide]
+• [Database Schema]
+• [API Specifications]
+
+🤖 AI Tip: Start with the GET /users endpoint first, then move 
+to POST, PUT, and DELETE in that order.
+
+[View Full Task] [Mark as Started] [Ask Questions]
+```
+
+#### When AI Notifies You
+
+**1. Dependency Resolved** 🟢
+- A task you're waiting on is completed
+- You get notified with all relevant details
+- Your blocked task automatically becomes "Ready"
+
+**2. You're Next in Workflow** 🎯
+- Previous stage completed (e.g., Backend done)
+- AI identifies you're the next person
+- You get context-aware notification with exactly what you need
+
+**3. Blocker Detected** 🚨
+- Something is blocking your work
+- AI identifies the issue and who can fix it
+- Relevant person gets notified automatically
+- You get notified when it's resolved
+
+**4. Someone Needs Your Input** 💬
+- A teammate is blocked waiting for you
+- AI detects the dependency
+- You get a clear request with context
+
+**5. Milestone Reached** 🎉
+- Your work enabled a milestone
+- Team gets notified of progress
+- Project status automatically updated
+
+#### AI Monitors Everything
+
+**For DevOps/Cloud Engineers**:
+```
+AI watches:
+✓ Lambda functions deployed
+✓ Infrastructure provisioned
+✓ Databases configured
+✓ CI/CD pipelines running
+
+Then notifies:
+→ Backend developers when infrastructure ready
+→ Team when deployments succeed/fail
+→ Managers when infrastructure issues detected
+```
+
+**For Backend Developers**:
+```
+AI watches:
+✓ Code commits
+✓ Unit tests passing
+✓ API endpoints responding
+✓ Integration tests complete
+
+Then notifies:
+→ Frontend team when APIs ready
+→ DevOps if deployment issues
+→ QA team when ready for testing
+```
+
+**For Frontend Developers**:
+```
+AI watches:
+✓ Component tests
+✓ E2E tests
+✓ API integration status
+✓ Build success/failure
+
+Then notifies:
+→ QA team when ready for review
+→ Backend if API issues detected
+→ Designers if UI implementation complete
+```
+
+**For QA Engineers**:
+```
+AI watches:
+✓ Feature completion
+✓ Test environment status
+✓ Bug reports
+
+Then notifies:
+→ Developers about bugs found
+→ Product managers about quality metrics
+→ Team when testing complete
+```
+
+#### Smart Blocker Management
+
+**AI Detects Blockers**:
+```
+⚠️ Frontend integration failing
+   ↓
+🔍 AI analyzes error logs
+   ↓
+💡 Root cause: Missing API credentials
+   ↓
+👤 AI notifies DevOps engineer
+   ↓
+✅ DevOps fixes issue
+   ↓
+🔔 AI notifies Frontend: "Blocker resolved!"
+```
+
+**Example Blocker Notification**:
+```
+🚨 BLOCKER DETECTED
+
+Your task is blocked: "Integrate payment processing"
+
+Issue: Payment API returning 401 errors
+Root Cause: Missing Stripe API key in Lambda environment
+
+AI Analysis:
+- Error started 15 minutes ago
+- Blocking your integration work
+- Similar issue resolved before by adding credentials
+
+Who Can Help:
+@mike (DevOps) has been notified and is working on it
+
+Estimated Resolution: ~30 minutes
+You'll be automatically notified when fixed
+
+Meanwhile, consider:
+• Work on user profile integration (not blocked)
+• Review Sarah's PR #234
+• Update test documentation
+
+[View Error Logs] [Contact @mike] [Work on Something Else]
+```
+
+#### Notification Preferences
+
+**You Control Everything**:
+
+1. **Channels**: Choose where you want notifications
+   - ☑️ In-app notifications
+   - ☑️ Email
+   - ☑️ Slack
+   - ☐ SMS (critical only)
+
+2. **Frequency**:
+   - Real-time (immediate)
+   - Digest (hourly, daily)
+   - Critical only
+
+3. **Types**:
+   - ☑️ Tasks unblocked
+   - ☑️ Blockers detected
+   - ☑️ Team needs my input
+   - ☑️ Milestones reached
+   - ☐ All task updates (can be noisy)
+
+4. **Quiet Hours**:
+   - Set hours when you don't want notifications
+   - Override for critical issues
+   - Timezone-aware
+
+**Smart Batching**:
+- AI groups related notifications
+- "3 tasks are now unblocked" instead of 3 separate alerts
+- Summary notifications for less urgent items
+
+---
+
+### 2. AI PRD Generator
 
 Transform rough ideas into professional Product Requirement Documents:
 

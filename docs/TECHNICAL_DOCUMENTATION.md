@@ -694,7 +694,376 @@ UsagePlan:
 
 ## AI/ML Components
 
-### 1. PRD Generator
+### 1. Intelligent Workflow Orchestration Engine
+
+**Architecture**: Event-driven AI coordination system
+
+#### Overview
+
+The Workflow Orchestration Engine is CodexFlow's flagship AI feature that automatically manages task dependencies, team handoffs, and notifications based on real-time project state.
+
+#### System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Event Sources                                │
+├─────────────────────────────────────────────────────────────────┤
+│ • Task Status Changes (DynamoDB Streams)                        │
+│ • Code Commits (GitHub Webhooks)                                │
+│ • Test Results (CI/CD Pipeline)                                 │
+│ • Deployments (AWS CodePipeline)                                │
+│ • API Calls (CloudWatch Logs)                                   │
+│ • Errors (CloudWatch Alarms)                                    │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Amazon EventBridge                             │
+│              (Central Event Bus)                                 │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              AI Orchestration Lambda                             │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  1. Event Analysis                                        │  │
+│  │     • Parse event data                                    │  │
+│  │     • Identify affected tasks                             │  │
+│  │     • Determine event significance                        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                          ↓                                       │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  2. Dependency Analysis                                   │  │
+│  │     • Query task relationships (DynamoDB)                 │  │
+│  │     • Check blocked tasks                                 │  │
+│  │     • Identify next tasks in workflow                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                          ↓                                       │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  3. Context Gathering                                     │  │
+│  │     • Fetch task details                                  │  │
+│  │     • Get team member info                                │  │
+│  │     • Collect relevant resources                          │  │
+│  │     • Retrieve documentation links                        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                          ↓                                       │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  4. AI Decision Making (via Bedrock)                      │  │
+│  │     • Who should be notified?                             │  │
+│  │     • What information do they need?                      │  │
+│  │     • What actions should be suggested?                   │  │
+│  │     • Is this a blocker? How critical?                    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                          ↓                                       │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  5. Action Execution                                      │  │
+│  │     • Update task statuses                                │  │
+│  │     • Trigger workflows                                   │  │
+│  │     • Generate notifications                              │  │
+│  │     • Log activities                                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│     SNS      │  │  DynamoDB    │  │   Slack      │
+│ (Email/SMS)  │  │ (Update DB)  │  │ Notification │
+└──────────────┘  └──────────────┘  └──────────────┘
+```
+
+#### Event Processing Flow
+
+**Example: Infrastructure Task Completed**
+
+```typescript
+// 1. DynamoDB Stream Event (Task status changed)
+{
+  eventName: 'MODIFY',
+  dynamodb: {
+    NewImage: {
+      taskId: 'task-123',
+      status: 'done',
+      title: 'Provision Lambda function',
+      assignee: 'user-mike',
+      completedAt: '2025-11-05T12:00:00Z'
+    },
+    OldImage: {
+      status: 'in-progress'
+    }
+  }
+}
+
+// 2. EventBridge Rule Matches
+Rule: "task.completed" → Invoke AI Orchestration Lambda
+
+// 3. Lambda Processes Event
+const orchestrator = new WorkflowOrchestrator();
+await orchestrator.handleTaskCompletion({
+  taskId: 'task-123',
+  completedBy: 'user-mike',
+  taskType: 'infrastructure'
+});
+
+// 4. AI Analyzes Dependencies
+const dependencies = await taskRepository.findDependencies('task-123');
+// Returns: [
+//   { taskId: 'task-456', title: 'Implement API', assignee: 'user-john', 
+//     status: 'blocked', blockedBy: 'task-123' }
+// ]
+
+// 5. AI Generates Notification Context
+const context = await contextGatherer.gather({
+  completedTask: 'task-123',
+  nextTask: 'task-456',
+  resources: ['lambda-arn', 'api-gateway-url', 'docs']
+});
+
+// 6. AI via Bedrock Generates Message
+const notification = await bedrock.invoke({
+  model: 'anthropic.claude-v2',
+  prompt: `
+    A Lambda function has been provisioned by a Cloud Engineer.
+    Generate a notification for the Backend Developer who needs to 
+    implement the API logic now that infrastructure is ready.
+    
+    Context: ${JSON.stringify(context)}
+    
+    The notification should:
+    - Be friendly and concise
+    - Include all technical details needed
+    - Suggest next steps
+    - Provide relevant links
+  `
+});
+
+// 7. Update Database
+await taskRepository.update('task-456', {
+  status: 'ready',
+  unblockedAt: new Date(),
+  notifiedAt: new Date()
+});
+
+// 8. Send Notifications
+await notificationService.send({
+  userId: 'user-john',
+  channels: ['slack', 'email', 'in-app'],
+  message: notification,
+  priority: 'high',
+  actions: [
+    { label: 'View Task', url: '/tasks/task-456' },
+    { label: 'Mark as Started', action: 'start_task' }
+  ]
+});
+```
+
+#### AI Models Used
+
+**Primary Model**: Claude 3 (via Amazon Bedrock)
+- **Purpose**: Generate context-aware notifications
+- **Input**: Task context, user roles, project state
+- **Output**: Personalized notification messages
+
+**Supporting Models**:
+- **Notification Classifier**: Determines urgency and priority
+- **Dependency Analyzer**: Identifies task relationships
+- **Blocker Detector**: Recognizes impediments from logs and errors
+- **Resource Extractor**: Pulls relevant info from completed tasks
+
+#### Lambda Function Architecture
+
+```typescript
+// services/ai-orchestration/functions/workflow-coordinator/index.ts
+
+export const handler = async (event: EventBridgeEvent) => {
+  const { eventType, payload } = parseEvent(event);
+  
+  switch (eventType) {
+    case 'task.completed':
+      return handleTaskCompletion(payload);
+    case 'task.blocked':
+      return handleTaskBlocked(payload);
+    case 'deployment.success':
+      return handleDeploymentSuccess(payload);
+    case 'test.failed':
+      return handleTestFailure(payload);
+    case 'blocker.detected':
+      return handleBlockerDetected(payload);
+  }
+};
+
+async function handleTaskCompletion(payload: TaskCompletedPayload) {
+  // 1. Get task details
+  const task = await taskService.get(payload.taskId);
+  
+  // 2. Find dependent tasks
+  const dependentTasks = await taskService.findDependents(task.id);
+  
+  // 3. For each dependent task
+  for (const dependentTask of dependentTasks) {
+    // Check if all blockers are now resolved
+    const isUnblocked = await taskService.checkBlockers(dependentTask.id);
+    
+    if (isUnblocked) {
+      // 4. Gather context
+      const context = await gatherNotificationContext({
+        completedTask: task,
+        nextTask: dependentTask
+      });
+      
+      // 5. Generate AI notification
+      const notification = await generateSmartNotification(context);
+      
+      // 6. Update task status
+      await taskService.update(dependentTask.id, {
+        status: 'ready',
+        unblockedAt: new Date()
+      });
+      
+      // 7. Send notification
+      await sendNotification({
+        userId: dependentTask.assignee,
+        notification,
+        context
+      });
+      
+      // 8. Log event
+      await auditLog.log({
+        type: 'task.unblocked',
+        taskId: dependentTask.id,
+        unblockedBy: task.id,
+        notifiedUser: dependentTask.assignee
+      });
+    }
+  }
+}
+
+async function gatherNotificationContext(params: {
+  completedTask: Task;
+  nextTask: Task;
+}) {
+  const { completedTask, nextTask } = params;
+  
+  // Get user info
+  const assignee = await userService.get(nextTask.assignee);
+  const completer = await userService.get(completedTask.assignee);
+  
+  // Get project info
+  const project = await projectService.get(nextTask.projectId);
+  
+  // Extract resources from completed task
+  const resources = await extractResources(completedTask);
+  
+  // Get relevant documentation
+  const docs = await documentService.findRelevant(nextTask);
+  
+  // Get integration details
+  const integrations = await getIntegrationDetails(completedTask);
+  
+  return {
+    assignee,
+    completer,
+    project,
+    completedTask,
+    nextTask,
+    resources,
+    docs,
+    integrations,
+    timestamp: new Date()
+  };
+}
+
+async function generateSmartNotification(context: NotificationContext) {
+  const prompt = buildPrompt(context);
+  
+  const response = await bedrockClient.send(new InvokeModelCommand({
+    modelId: 'anthropic.claude-v2',
+    body: JSON.stringify({
+      prompt,
+      max_tokens: 500,
+      temperature: 0.7
+    })
+  }));
+  
+  const notification = parseBedrockResponse(response);
+  
+  return {
+    title: notification.title,
+    message: notification.message,
+    actions: notification.suggestedActions,
+    resources: notification.relevantResources,
+    priority: notification.priority
+  };
+}
+```
+
+#### EventBridge Rules
+
+```yaml
+# Infrastructure completion triggers backend notification
+InfrastructureCompletedRule:
+  Type: AWS::Events::Rule
+  Properties:
+    EventBusName: codexflow-events
+    EventPattern:
+      source: [codexflow.tasks]
+      detail-type: [TaskCompleted]
+      detail:
+        taskType: [infrastructure]
+        status: [done]
+    Targets:
+      - Arn: !GetAtt WorkflowCoordinatorFunction.Arn
+        Id: workflow-coordinator
+
+# Test failures trigger notifications
+TestFailureRule:
+  Type: AWS::Events::Rule
+  Properties:
+    EventPattern:
+      source: [aws.codebuild]
+      detail-type: [CodeBuild Build State Change]
+      detail:
+        build-status: [FAILED]
+    Targets:
+      - Arn: !GetAtt WorkflowCoordinatorFunction.Arn
+        Id: test-failure-handler
+
+# Deployment success triggers frontend notification
+DeploymentSuccessRule:
+  Type: AWS::Events::Rule
+  Properties:
+    EventPattern:
+      source: [aws.codepipeline]
+      detail-type: [CodePipeline Pipeline Execution State Change]
+      detail:
+        state: [SUCCEEDED]
+        pipeline: [backend-api-pipeline]
+    Targets:
+      - Arn: !GetAtt WorkflowCoordinatorFunction.Arn
+        Id: deployment-success-handler
+```
+
+#### Performance Optimization
+
+**Caching**:
+- User preferences cached in Redis (15 min TTL)
+- Task relationships cached (5 min TTL)
+- Project metadata cached (1 hour TTL)
+
+**Async Processing**:
+- Non-critical notifications queued in SQS
+- Batch processing for multiple dependent tasks
+- Parallel notification sending
+
+**Cost Optimization**:
+- Bedrock invocations only for complex notifications
+- Template-based messages for routine updates
+- Smart batching reduces Lambda invocations
+
+---
+
+### 2. PRD Generator
 
 **Model**: Fine-tuned GPT-4 / Claude via Amazon Bedrock
 
