@@ -126,6 +126,8 @@ terraform apply
 ## 📖 Documentation
 
 - **[Features & Roadmap](docs/FEATURES.md)**: Complete feature list and what we're building
+- **[AWS Architecture Diagrams](docs/AWS_ARCHITECTURE_DIAGRAMS.md)**: ⭐ Complete visual diagrams & workflows
+- **[AI Workflow Examples](docs/AI_WORKFLOW_EXAMPLES.md)**: Real-world AI orchestration examples
 - **[User Guide](docs/USER_GUIDE.md)**: For end-users and team members
 - **[Technical Documentation](docs/TECHNICAL_DOCUMENTATION.md)**: For developers and architects
 - **[Architecture](docs/ARCHITECTURE.md)**: System design and AWS infrastructure

@@ -20,6 +20,8 @@ Start here if you're new to CodexFlow:
 #### Technical Documentation
 - **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)** - System overview, tech stack, and components
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed AWS serverless architecture
+- **[AWS_ARCHITECTURE_DIAGRAMS.md](AWS_ARCHITECTURE_DIAGRAMS.md)** - ⭐ Complete visual diagrams & workflows
+- **[AI_WORKFLOW_EXAMPLES.md](AI_WORKFLOW_EXAMPLES.md)** - Real-world AI orchestration examples
 - **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Complete REST API reference
 
 ### For DevOps/Operations
@@ -87,6 +89,8 @@ Start here if you're new to CodexFlow:
 | Document | Description |
 |----------|-------------|
 | [Architecture Overview](ARCHITECTURE.md#architecture-overview) | High-level system architecture |
+| [AWS Architecture Diagrams](AWS_ARCHITECTURE_DIAGRAMS.md) | ⭐ Visual diagrams for all components |
+| [AI Workflow Examples](AI_WORKFLOW_EXAMPLES.md) | Real-world AI orchestration scenarios |
 | [AWS Services](ARCHITECTURE.md#aws-serverless-infrastructure) | AWS services used and configuration |
 | [Frontend Architecture](ARCHITECTURE.md#frontend-architecture) | Next.js application structure |
 | [Backend Architecture](ARCHITECTURE.md#backend-architecture) | Microservices and Lambda functions |
@@ -284,6 +288,8 @@ npm run deploy
 | USER_GUIDE.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
 | TECHNICAL_DOCUMENTATION.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
 | ARCHITECTURE.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
+| AWS_ARCHITECTURE_DIAGRAMS.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
+| AI_WORKFLOW_EXAMPLES.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
 | API_DOCUMENTATION.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
 | DEPLOYMENT_GUIDE.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
 | DEVELOPMENT_GUIDE.md | ✅ Complete | 2025-11-05 | 2025-12-05 |
