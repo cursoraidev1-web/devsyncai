@@ -8,7 +8,8 @@ Welcome to the complete documentation for CodexFlow - the AI-powered project man
 Start here if you're new to CodexFlow:
 
 1. **[README.md](../README.md)** - Project overview, quick start, and key features
-2. **[USER_GUIDE.md](USER_GUIDE.md)** - Complete guide for end-users
+2. **[FEATURES.md](FEATURES.md)** - Complete feature list and what we're building
+3. **[USER_GUIDE.md](USER_GUIDE.md)** - Complete guide for end-users
 
 ### For Developers
 
@@ -32,6 +33,9 @@ Start here if you're new to CodexFlow:
 
 ### For Product Managers
 - [Product Overview](../README.md#overview)
+- [What We're Building](FEATURES.md)
+- [Feature Implementation Status](FEATURES.md#feature-implementation-status)
+- [Competitive Analysis](FEATURES.md#features-inspired-by-competitors)
 - [Key Features](../README.md#key-features)
 - [Success Metrics](../README.md#success-metrics)
 - [Roadmap](../README.md#roadmap)
