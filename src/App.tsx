@@ -1,13 +1,17 @@
 /**
  * Main App Component
- * Entry point with routing configuration
+ * Entry point with routing and authentication
  */
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import MFAVerification from './pages/MFAVerification';
 import Dashboard from './pages/Dashboard';
 import PRDDesigner from './pages/PRDDesigner';
 import Documentation from './pages/Documentation';
@@ -22,7 +26,7 @@ import Team from './pages/Team';
 import { setComplianceData } from './redux/complianceSlice';
 import type { ComplianceData } from './types/compliance';
 
-function App() {
+function AppRoutes() {
   const dispatch = useDispatch();
 
   // Load mock compliance data on app start
@@ -52,26 +56,43 @@ function App() {
   }, [dispatch]);
 
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/mfa-verify" element={<MFAVerification />} />
 
-        {/* Protected Routes with Layout */}
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/prd-designer" element={<PRDDesigner />} />
-          <Route path="/documentation" element={<Documentation />} />
-          <Route path="/cicd-pipeline" element={<CICDPipeline />} />
-          <Route path="/development-insights" element={<DevelopmentInsights />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/security" element={<Security />} />
-          <Route path="/integrations" element={<Integrations />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/team" element={<Team />} />
-        </Route>
-      </Routes>
+      {/* Protected Routes with Layout */}
+      <Route element={
+        <ProtectedRoute>
+          <MainLayout />
+        </ProtectedRoute>
+      }>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/prd-designer" element={<PRDDesigner />} />
+        <Route path="/documentation" element={<Documentation />} />
+        <Route path="/cicd-pipeline" element={<CICDPipeline />} />
+        <Route path="/development-insights" element={<DevelopmentInsights />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/security" element={<Security />} />
+        <Route path="/integrations" element={<Integrations />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/team" element={<Team />} />
+      </Route>
+
+      {/* Catch all - redirect to dashboard */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </Router>
   );
 }

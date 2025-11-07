@@ -1,20 +1,50 @@
 /**
  * Login Page
- * Authentication page for user login
+ * Authentication page with real login logic
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const successMessage = (location.state as any)?.message;
+  const from = (location.state as any)?.from?.pathname || '/';
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, validate credentials here
-    navigate('/');
+    setError('');
+    setIsLoading(true);
+
+    const result = await login(email, password);
+
+    setIsLoading(false);
+
+    if (result.success) {
+      if (result.requiresMFA) {
+        // Redirect to MFA verification
+        navigate('/mfa-verify', { state: { from: location.state?.from } });
+      } else {
+        // Login successful, redirect to original destination
+        navigate(from, { replace: true });
+      }
+    } else {
+      setError(result.error || 'Login failed. Please try again.');
+    }
+  };
+
+  // Quick login helpers for demo
+  const quickLogin = (demoEmail: string, demoPassword: string) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
   };
 
   return (
@@ -42,6 +72,20 @@ const Login: React.FC = () => {
             Sign in to your account
           </p>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="alert alert-success" style={{ marginBottom: 'var(--spacing-lg)' }}>
+            {successMessage}
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <div className="alert alert-error" style={{ marginBottom: 'var(--spacing-lg)' }}>
+            {error}
+          </div>
+        )}
 
         {/* Login Form */}
         <form onSubmit={handleLogin}>
@@ -81,8 +125,13 @@ const Login: React.FC = () => {
             </label>
           </div>
 
-          <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-            Sign In
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg"
+            style={{ width: '100%' }}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
@@ -120,16 +169,44 @@ const Login: React.FC = () => {
         {/* Sign Up Link */}
         <p style={{ textAlign: 'center', marginTop: 'var(--spacing-xl)', fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
           Don't have an account?{' '}
-          <a href="#" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+          <Link to="/signup" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
             Sign up for free
-          </a>
+          </Link>
         </p>
 
         {/* Demo Credentials */}
         <div className="alert alert-info" style={{ marginTop: 'var(--spacing-lg)' }}>
-          <strong>Demo Credentials:</strong><br />
-          Email: demo@devsync.ai<br />
-          Password: demo123
+          <strong>Quick Login (Demo):</strong><br />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-xs)', marginTop: 'var(--spacing-sm)' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() => quickLogin('admin@devsync.ai', 'admin123')}
+            >
+              Admin
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() => quickLogin('po@devsync.ai', 'po123')}
+            >
+              Product Owner
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() => quickLogin('pm@devsync.ai', 'pm123')}
+            >
+              PM
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() => quickLogin('frontend@devsync.ai', 'dev123')}
+            >
+              Developer
+            </button>
+          </div>
         </div>
       </div>
     </div>

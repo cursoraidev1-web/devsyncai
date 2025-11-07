@@ -4,19 +4,19 @@
  */
 
 import React, { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MainLayout: React.FC = () => {
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
   };
 
   const handleLogout = () => {
-    // In a real app, clear auth tokens here
-    navigate('/login');
+    logout();
   };
 
   return (
@@ -162,11 +162,11 @@ const MainLayout: React.FC = () => {
               <span className="notification-badge">5</span>
             </button>
 
-            <div className="user-profile" onClick={handleLogout}>
-              <div className="user-avatar">JD</div>
+            <div className="user-profile" onClick={handleLogout} title="Click to logout">
+              <div className="user-avatar">{user?.avatar || 'U'}</div>
               <div className="user-info">
-                <div className="user-name">John Doe</div>
-                <div className="user-role">Product Owner</div>
+                <div className="user-name">{user?.name || 'User'}</div>
+                <div className="user-role">{user?.role?.replace('-', ' ') || 'Member'}</div>
               </div>
             </div>
           </div>
