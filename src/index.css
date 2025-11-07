@@ -1,0 +1,8 @@
+/**
+ * Global Styles Entry Point
+ * Imports master.css with all custom styling
+ */
+
+@import './master.css';
+
+/* Additional global styles can be added here */
