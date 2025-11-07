@@ -23,38 +23,27 @@ const ProductOwnerDashboard: React.FC = () => {
   const isLoading = useSelector(selectComplianceLoading);
 
   /**
-   * Determine score color based on compliance level
+   * Determine score level for styling
    */
-  const getScoreColor = (score: number | null): string => {
-    if (score === null) return 'text-gray-500';
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    if (score >= 40) return 'text-orange-600';
-    return 'text-red-600';
+  const getScoreLevel = (score: number | null): string => {
+    if (score === null) return '';
+    if (score >= 80) return 'high';
+    if (score >= 60) return 'medium';
+    return 'low';
   };
 
-  /**
-   * Determine background color for score badge
-   */
-  const getScoreBgColor = (score: number | null): string => {
-    if (score === null) return 'bg-gray-100';
-    if (score >= 80) return 'bg-green-100';
-    if (score >= 60) return 'bg-yellow-100';
-    if (score >= 40) return 'bg-orange-100';
-    return 'bg-red-100';
-  };
+  const scoreLevel = getScoreLevel(score);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Product Owner Dashboard
-          </h1>
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-1/4 mx-auto mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+      <div className="page">
+        <div className="container">
+          <div className="page-header">
+            <h1 className="page-title">Product Owner Dashboard</h1>
+          </div>
+          <div className="card">
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
             </div>
           </div>
         </div>
@@ -63,26 +52,22 @@ const ProductOwnerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="page">
+      <div className="container">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Product Owner Dashboard
-          </h1>
-          <p className="text-gray-600">
+        <div className="page-header">
+          <h1 className="page-title">Product Owner Dashboard</h1>
+          <p className="page-subtitle">
             Monitor PRD compliance and track development alignment
           </p>
         </div>
 
         {/* Main Compliance Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800">
-              AI PRD Compliance Status
-            </h2>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">AI PRD Compliance Status</h2>
             {complianceData?.lastChecked && (
-              <span className="text-sm text-gray-500">
+              <span className="card-subtitle">
                 Last checked: {new Date(complianceData.lastChecked).toLocaleString()}
               </span>
             )}
@@ -91,35 +76,27 @@ const ProductOwnerDashboard: React.FC = () => {
           {complianceData ? (
             <>
               {/* Compliance Score Display */}
-              <div className="flex items-center justify-center mb-8">
-                <div
-                  className={`${getScoreBgColor(
-                    score
-                  )} rounded-full w-40 h-40 flex flex-col items-center justify-center`}
-                >
-                  <span
-                    className={`text-5xl font-bold ${getScoreColor(score)}`}
-                  >
+              <div className="score-container">
+                <div className={`score-badge score-${scoreLevel}`}>
+                  <span className={`score-value score-${scoreLevel}`}>
                     {score}
                   </span>
-                  <span className="text-sm font-medium text-gray-600 mt-2">
-                    Compliance Score
-                  </span>
+                  <span className="score-label">Compliance Score</span>
                 </div>
               </div>
 
               {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm text-gray-600">Latest Commit</p>
-                  <p className="font-mono text-sm font-medium text-gray-900">
+              <div className="metadata-grid">
+                <div className="metadata-item">
+                  <p className="metadata-label">Latest Commit</p>
+                  <p className="metadata-value mono">
                     {complianceData.latestCommitId}
                   </p>
                 </div>
                 {complianceData.prdVersion && (
-                  <div>
-                    <p className="text-sm text-gray-600">PRD Version</p>
-                    <p className="font-medium text-gray-900">
+                  <div className="metadata-item">
+                    <p className="metadata-label">PRD Version</p>
+                    <p className="metadata-value">
                       {complianceData.prdVersion}
                     </p>
                   </div>
@@ -127,16 +104,14 @@ const ProductOwnerDashboard: React.FC = () => {
               </div>
 
               {/* Recommendations Section */}
-              <div className="border-t pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-800">
+              <div className="recommendations-section">
+                <div className="recommendations-header">
+                  <h3 className="recommendations-title">
                     Pending Recommendations
                   </h3>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      recommendations.length === 0
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                    className={`badge ${
+                      recommendations.length === 0 ? 'badge-success' : 'badge-error'
                     }`}
                   >
                     {recommendations.length} issue{recommendations.length !== 1 ? 's' : ''}
@@ -144,32 +119,25 @@ const ProductOwnerDashboard: React.FC = () => {
                 </div>
 
                 {recommendations.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="recommendations-list">
                     {recommendations.map((rec, index) => (
-                      <div
-                        key={index}
-                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
-                            <span className="text-yellow-700 font-semibold text-sm">
-                              {index + 1}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 mb-1">
-                              {rec.section}
-                            </h4>
-                            <p className="text-gray-700 text-sm">{rec.fix}</p>
-                          </div>
+                      <div key={index} className="recommendation-card">
+                        <div className="recommendation-number">
+                          {index + 1}
+                        </div>
+                        <div className="recommendation-content">
+                          <h4 className="recommendation-section">
+                            {rec.section}
+                          </h4>
+                          <p className="recommendation-fix">{rec.fix}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
+                  <div className="empty-state empty-state-success">
                     <svg
-                      className="mx-auto h-12 w-12 text-green-500 mb-4"
+                      className="icon-success"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -181,7 +149,7 @@ const ProductOwnerDashboard: React.FC = () => {
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    <p className="text-gray-600 font-medium">
+                    <p className="empty-state-title">
                       All clear! Development is fully aligned with PRD.
                     </p>
                   </div>
@@ -189,9 +157,9 @@ const ProductOwnerDashboard: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="text-center py-12">
+            <div className="empty-state">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400 mb-4"
+                className="icon-document"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -203,35 +171,29 @@ const ProductOwnerDashboard: React.FC = () => {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <p className="text-gray-600 font-medium mb-2">
+              <p className="empty-state-title">
                 No compliance data available
               </p>
-              <p className="text-gray-500 text-sm">
+              <p className="empty-state-subtitle">
                 Run an AI compliance check to see results
               </p>
             </div>
           )}
         </div>
 
-        {/* Additional PO Metrics (Placeholder) */}
-        <div className="grid grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-600 mb-2">
-              PRD Completion
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">78%</p>
+        {/* Additional PO Metrics */}
+        <div className="metrics-grid">
+          <div className="metric-card">
+            <h3 className="metric-label">PRD Completion</h3>
+            <p className="metric-value">78%</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-600 mb-2">
-              Backlog Health
-            </h3>
-            <p className="text-3xl font-bold text-green-600">Good</p>
+          <div className="metric-card">
+            <h3 className="metric-label">Backlog Health</h3>
+            <p className="metric-value success">Good</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-600 mb-2">
-              Sprint Velocity
-            </h3>
-            <p className="text-3xl font-bold text-gray-900">42</p>
+          <div className="metric-card">
+            <h3 className="metric-label">Sprint Velocity</h3>
+            <p className="metric-value">42</p>
           </div>
         </div>
       </div>

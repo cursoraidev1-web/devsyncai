@@ -21,13 +21,13 @@ const Dashboard: React.FC = () => {
         return <DeveloperDashboard />;
       default:
         return (
-          <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                Dashboard
-              </h1>
-              <div className="bg-white rounded-lg shadow-lg p-8">
-                <p className="text-gray-600">
+          <div className="page">
+            <div className="container">
+              <div className="page-header">
+                <h1 className="page-title">Dashboard</h1>
+              </div>
+              <div className="card">
+                <p className="empty-state-title">
                   Dashboard for {activeRole} role coming soon...
                 </p>
               </div>
@@ -39,20 +39,16 @@ const Dashboard: React.FC = () => {
 
   return (
     <div>
-      {/* Role Switcher (for demo purposes) */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-4">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-gray-700">Role:</span>
+      {/* Role Switcher */}
+      <div className="top-bar">
+        <div className="top-bar-content">
+          <span className="top-bar-label">Role:</span>
+          <div className="role-buttons">
             {(['po', 'developer', 'pm', 'designer'] as UserRole[]).map((role) => (
               <button
                 key={role}
                 onClick={() => setActiveRole(role)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeRole === role
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`role-button ${activeRole === role ? 'active' : ''}`}
               >
                 {role.toUpperCase()}
               </button>

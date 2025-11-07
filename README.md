@@ -7,27 +7,33 @@ Enterprise Development Coordination Platform with AI-powered PRD compliance moni
 This application follows the **MVVM/Flux** pattern using:
 - **React + TypeScript** for the View layer
 - **Redux Toolkit** for Model/Controller state management
-- **Tailwind CSS** for styling
+- **Custom CSS** for styling (master.css)
 
 ## 📁 Project Structure
 
 ```
-/src
-├── components/
-│   └── dashboards/
-│       ├── ProductOwnerDashboard.tsx  # PO role dashboard with compliance view
-│       └── DeveloperDashboard.tsx     # Developer dashboard (placeholder)
-├── pages/
-│   └── Dashboard.tsx                  # Main dashboard with role routing
-├── redux/
-│   ├── store.ts                       # Redux store configuration
-│   ├── complianceSlice.ts            # AI PRD Compliance state management
-│   └── alertsSlice.ts                # Role-based alerts (placeholder)
-├── types/
-│   └── compliance.d.ts               # TypeScript definitions for compliance
-├── App.tsx                           # Root component
-├── main.tsx                          # Application entry point
-└── index.css                         # Global styles with Tailwind
+/workspace
+├── index.html                          # React app entry point
+├── package.json                        # Dependencies & scripts
+├── vite.config.ts                      # Vite configuration
+├── tsconfig.json                       # TypeScript config
+└── src/
+    ├── main.tsx                        # Application entry point
+    ├── App.tsx                         # Root component with demo data
+    ├── index.css                       # Global styles entry
+    ├── master.css                      # ⭐ Custom CSS stylesheet
+    ├── types/
+    │   └── compliance.d.ts             # ComplianceData interface
+    ├── redux/
+    │   ├── store.ts                    # Redux store configuration
+    │   ├── complianceSlice.ts          # Compliance state management
+    │   └── alertsSlice.ts              # Alerts slice (placeholder)
+    ├── components/
+    │   └── dashboards/
+    │       ├── ProductOwnerDashboard.tsx  # PO Dashboard
+    │       └── DeveloperDashboard.tsx     # Developer Dashboard (placeholder)
+    └── pages/
+        └── Dashboard.tsx               # Main dashboard with role routing
 ```
 
 ## 🚀 Getting Started
@@ -71,6 +77,38 @@ npm run preview
 - Developer dashboard (placeholder)
 - Role switcher for demo purposes
 
+## 🎨 Custom CSS Design System
+
+The application uses a completely custom CSS design system in `master.css` with:
+
+### CSS Variables
+```css
+/* Colors */
+--color-primary: #2563eb
+--color-success: #10b981
+--color-warning: #f59e0b
+--color-error: #ef4444
+
+/* Spacing */
+--spacing-xs through --spacing-2xl
+
+/* Shadows */
+--shadow-sm through --shadow-xl
+
+/* Transitions */
+--transition-fast, --transition-base
+```
+
+### Key CSS Classes
+- **Layout**: `.page`, `.container`, `.card`
+- **Typography**: `.page-title`, `.card-title`, `.metadata-label`
+- **Components**: `.score-badge`, `.recommendation-card`, `.metric-card`
+- **Status**: `.badge-success`, `.badge-error`, `.badge-warning`
+- **Utilities**: `.flex`, `.text-center`, `.mb-*`, `.mt-*`
+
+### Responsive Design
+Fully responsive with mobile breakpoints at 768px
+
 ## 🔧 Technology Stack
 
 | Category | Technology |
@@ -78,7 +116,7 @@ npm run preview
 | Framework | React 18 |
 | Language | TypeScript |
 | State Management | Redux Toolkit |
-| Styling | Tailwind CSS |
+| Styling | **Custom CSS** (master.css) |
 | Build Tool | Vite |
 | Package Manager | npm |
 
@@ -87,9 +125,10 @@ npm run preview
 ### ProductOwnerDashboard
 Displays AI PRD compliance metrics with:
 - Circular compliance score badge
-- Color-coded status (red < 40, orange < 60, yellow < 80, green ≥ 80)
+- Color-coded status (red < 60, yellow < 80, green ≥ 80)
 - Expandable recommendations list
 - Metadata (commit ID, PRD version, last check time)
+- Additional metrics (PRD completion, backlog health, sprint velocity)
 
 ### complianceSlice
 Redux slice managing:
@@ -97,13 +136,15 @@ Redux slice managing:
 - Actions: `setComplianceData`, `setComplianceLoading`, `setComplianceError`, `clearComplianceData`
 - Selectors: `selectComplianceData`, `selectComplianceScore`, `selectComplianceRecommendations`
 
-## 🎨 Design System
+## 🎨 Styling Approach
 
-Using Tailwind CSS utility classes:
-- **Colors**: Gray scale + green/yellow/orange/red for status
-- **Typography**: Modern sans-serif with clear hierarchy
-- **Components**: Cards, badges, buttons with consistent styling
-- **Responsive**: Mobile-first approach
+**No frameworks** (Bootstrap, Tailwind, Material-UI) are used. All styling is custom CSS:
+
+- **CSS Variables** for consistent theming
+- **BEM-inspired** class naming for clarity
+- **Reusable component classes** for scalability
+- **Smooth animations** and transitions
+- **Mobile-first responsive** design
 
 ## 🔮 Future Enhancements
 

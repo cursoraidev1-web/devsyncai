@@ -7,16 +7,16 @@ import React from 'react';
 
 const DeveloperDashboard: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Developer Dashboard
-        </h1>
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <p className="text-gray-600">
+    <div className="page">
+      <div className="container">
+        <div className="page-header">
+          <h1 className="page-title">Developer Dashboard</h1>
+        </div>
+        <div className="card">
+          <p className="empty-state-title">
             Developer dashboard coming soon...
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="empty-state-subtitle">
             Will include: commit summaries, PR insights, AI-detected blockers
           </p>
         </div>
