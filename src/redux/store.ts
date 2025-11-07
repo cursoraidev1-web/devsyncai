@@ -6,6 +6,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import complianceReducer from './complianceSlice';
 import alertsReducer from './alertsSlice';
+import notificationsReducer from './notificationsSlice';
 
 /**
  * Configure and create the Redux store
@@ -14,6 +15,7 @@ export const store = configureStore({
   reducer: {
     compliance: complianceReducer,
     alerts: alertsReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

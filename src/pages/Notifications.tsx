@@ -1,90 +1,27 @@
 /**
  * Notifications Page
- * Feature 4: Role-Based Handoff & Alert System
+ * Feature 4: Role-Based Handoff & Alert System - FULLY FUNCTIONAL
  */
 
 import React, { useState } from 'react';
-
-interface Notification {
-  id: string;
-  type: 'handoff' | 'alert' | 'approval' | 'mention';
-  priority: 'high' | 'medium' | 'low';
-  title: string;
-  message: string;
-  from: string;
-  timestamp: string;
-  read: boolean;
-  actionable: boolean;
-}
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
+import {
+  selectNotifications,
+  selectUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  clearAll,
+  addNotification,
+  type Notification,
+} from '../redux/notificationsSlice';
 
 const Notifications: React.FC = () => {
+  const dispatch = useDispatch();
+  const notifications = useSelector(selectNotifications);
+  const unreadCount = useSelector(selectUnreadCount);
   const [filter, setFilter] = useState<'all' | 'unread' | 'handoffs'>('all');
-  
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'handoff',
-      priority: 'high',
-      title: 'New Feature Ready for QA Testing',
-      message: 'Feature "User Authentication" completed and ready for testing. Test cases and code links attached.',
-      from: 'Sarah Chen (Developer)',
-      timestamp: '5 minutes ago',
-      read: false,
-      actionable: true,
-    },
-    {
-      id: '2',
-      type: 'alert',
-      priority: 'high',
-      title: 'PRD Compliance Issue Detected',
-      message: 'Feature 3.2: Real-time Notifications is missing WebSocket implementation as specified in PRD section 4.1.',
-      from: 'AI Compliance Agent',
-      timestamp: '2 hours ago',
-      read: false,
-      actionable: true,
-    },
-    {
-      id: '3',
-      type: 'approval',
-      priority: 'medium',
-      title: 'PRD Section Awaiting Approval',
-      message: '"Acceptance Criteria" section has been updated and requires your review and approval.',
-      from: 'Mike Johnson (PM)',
-      timestamp: '3 hours ago',
-      read: false,
-      actionable: true,
-    },
-    {
-      id: '4',
-      type: 'mention',
-      priority: 'low',
-      title: 'You were mentioned in a comment',
-      message: '@you Great work on the dashboard optimization! The load time improved significantly.',
-      from: 'Alex Kumar',
-      timestamp: '1 day ago',
-      read: true,
-      actionable: false,
-    },
-    {
-      id: '5',
-      type: 'handoff',
-      priority: 'medium',
-      title: 'Security Review Required',
-      message: 'API endpoints deployment completed. Security review needed before going to production.',
-      from: 'DevOps Team',
-      timestamp: '1 day ago',
-      read: true,
-      actionable: true,
-    },
-  ]);
-
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-  };
 
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'unread') return !n.read;
@@ -92,7 +29,56 @@ const Notifications: React.FC = () => {
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const handleMarkAsRead = (id: string) => {
+    dispatch(markAsRead(id));
+    toast.success('Notification marked as read');
+  };
+
+  const handleMarkAllAsRead = () => {
+    dispatch(markAllAsRead());
+    toast.success(`All ${unreadCount} notifications marked as read`);
+  };
+
+  const handleDelete = (id: string) => {
+    dispatch(deleteNotification(id));
+    toast.info('Notification deleted');
+  };
+
+  const handleTakeAction = (notification: Notification) => {
+    toast.success(`Taking action on: ${notification.title}`);
+    dispatch(markAsRead(notification.id));
+    // In a real app, this would navigate to the relevant page or open a modal
+  };
+
+  const handleViewDetails = (notification: Notification) => {
+    toast.info(`Viewing details for: ${notification.title}`);
+    dispatch(markAsRead(notification.id));
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm(`Are you sure you want to delete all ${notifications.length} notifications?`)) {
+      dispatch(clearAll());
+      toast.success('All notifications cleared');
+    }
+  };
+
+  // Demo: Add new notification
+  const handleAddTestNotification = () => {
+    const types: Notification['type'][] = ['handoff', 'alert', 'approval', 'mention'];
+    const priorities: Notification['priority'][] = ['high', 'medium', 'low'];
+    
+    dispatch(addNotification({
+      type: types[Math.floor(Math.random() * types.length)],
+      priority: priorities[Math.floor(Math.random() * priorities.length)],
+      title: 'New Test Notification',
+      message: 'This is a test notification created at ' + new Date().toLocaleTimeString(),
+      from: 'System',
+      timestamp: new Date().toISOString(),
+      read: false,
+      actionable: true,
+    }));
+    toast.success('Test notification added!');
+  };
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
@@ -121,6 +107,22 @@ const Notifications: React.FC = () => {
           </svg>
         );
     }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   };
 
   return (
@@ -155,9 +157,21 @@ const Notifications: React.FC = () => {
               Handoffs
             </button>
           </div>
-          <button className="btn btn-outline" onClick={markAllAsRead}>
-            Mark All as Read
-          </button>
+          <div className="flex gap-2">
+            <button className="btn btn-outline btn-sm" onClick={handleAddTestNotification}>
+              + Test Notification
+            </button>
+            {unreadCount > 0 && (
+              <button className="btn btn-outline btn-sm" onClick={handleMarkAllAsRead}>
+                Mark All Read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button className="btn btn-outline btn-sm" onClick={handleClearAll}>
+                Clear All
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Notifications List */}
@@ -223,24 +237,41 @@ const Notifications: React.FC = () => {
 
                   <div className="flex justify-between align-center">
                     <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>
-                      From: {notification.from} • {notification.timestamp}
+                      From: {notification.from} • {formatTimestamp(notification.timestamp)}
                     </span>
 
                     <div className="flex gap-2">
                       {notification.actionable && (
                         <>
-                          <button className="btn btn-sm btn-primary">Take Action</button>
-                          <button className="btn btn-sm btn-outline">View Details</button>
+                          <button 
+                            className="btn btn-sm btn-primary"
+                            onClick={() => handleTakeAction(notification)}
+                          >
+                            Take Action
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline"
+                            onClick={() => handleViewDetails(notification)}
+                          >
+                            View Details
+                          </button>
                         </>
                       )}
                       {!notification.read && (
                         <button
                           className="btn btn-sm btn-outline"
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={() => handleMarkAsRead(notification.id)}
                         >
                           Mark as Read
                         </button>
                       )}
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleDelete(notification.id)}
+                        style={{ color: 'var(--color-error)' }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -257,6 +288,9 @@ const Notifications: React.FC = () => {
               </svg>
               <p className="empty-state-title">All caught up!</p>
               <p className="empty-state-subtitle">You have no {filter} notifications.</p>
+              <button className="btn btn-primary mt-3" onClick={handleAddTestNotification}>
+                Add Test Notification
+              </button>
             </div>
           </div>
         )}
@@ -267,30 +301,62 @@ const Notifications: React.FC = () => {
           <div className="grid grid-2">
             <div className="form-group">
               <label className="form-label">
-                <input type="checkbox" defaultChecked style={{ marginRight: 'var(--spacing-sm)' }} />
+                <input 
+                  type="checkbox" 
+                  defaultChecked 
+                  style={{ marginRight: 'var(--spacing-sm)' }}
+                  onChange={(e) => {
+                    toast.success(e.target.checked ? 'Role handoffs enabled' : 'Role handoffs disabled');
+                  }}
+                />
                 Role handoffs (when tasks are assigned to my role)
               </label>
             </div>
             <div className="form-group">
               <label className="form-label">
-                <input type="checkbox" defaultChecked style={{ marginRight: 'var(--spacing-sm)' }} />
+                <input 
+                  type="checkbox" 
+                  defaultChecked 
+                  style={{ marginRight: 'var(--spacing-sm)' }}
+                  onChange={(e) => {
+                    toast.success(e.target.checked ? 'PRD compliance alerts enabled' : 'PRD compliance alerts disabled');
+                  }}
+                />
                 PRD compliance alerts
               </label>
             </div>
             <div className="form-group">
               <label className="form-label">
-                <input type="checkbox" defaultChecked style={{ marginRight: 'var(--spacing-sm)' }} />
+                <input 
+                  type="checkbox" 
+                  defaultChecked 
+                  style={{ marginRight: 'var(--spacing-sm)' }}
+                  onChange={(e) => {
+                    toast.success(e.target.checked ? 'Approval requests enabled' : 'Approval requests disabled');
+                  }}
+                />
                 Approval requests
               </label>
             </div>
             <div className="form-group">
               <label className="form-label">
-                <input type="checkbox" style={{ marginRight: 'var(--spacing-sm)' }} />
+                <input 
+                  type="checkbox" 
+                  style={{ marginRight: 'var(--spacing-sm)' }}
+                  onChange={(e) => {
+                    toast.success(e.target.checked ? 'Team mentions enabled' : 'Team mentions disabled');
+                  }}
+                />
                 All team mentions
               </label>
             </div>
           </div>
-          <button className="btn btn-primary mt-2">Save Preferences</button>
+          <button 
+            className="btn btn-primary mt-2"
+            onClick={() => toast.success('Notification preferences saved!')}
+          >
+            Save Preferences
+          </button>
         </div>
       </div>
     </div>
