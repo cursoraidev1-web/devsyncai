@@ -1,64 +1,210 @@
 /**
  * Main Dashboard Page
- * Routes users to role-specific dashboards
+ * Overview dashboard showing key metrics and insights
  */
 
-import React, { useState } from 'react';
-import ProductOwnerDashboard from '../components/dashboards/ProductOwnerDashboard';
-import DeveloperDashboard from '../components/dashboards/DeveloperDashboard';
-
-type UserRole = 'po' | 'developer' | 'pm' | 'designer';
+import React from 'react';
+import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+import {
+  selectComplianceScore,
+  selectComplianceRecommendations,
+} from '../redux/complianceSlice';
 
 const Dashboard: React.FC = () => {
-  // In a real app, this would come from auth/user context
-  const [activeRole, setActiveRole] = useState<UserRole>('po');
+  const complianceScore = useSelector(selectComplianceScore);
+  const recommendations = useSelector(selectComplianceRecommendations);
 
-  const renderDashboard = () => {
-    switch (activeRole) {
-      case 'po':
-        return <ProductOwnerDashboard />;
-      case 'developer':
-        return <DeveloperDashboard />;
-      default:
-        return (
-          <div className="page">
-            <div className="container">
-              <div className="page-header">
-                <h1 className="page-title">Dashboard</h1>
-              </div>
-              <div className="card">
-                <p className="empty-state-title">
-                  Dashboard for {activeRole} role coming soon...
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-    }
+  const getScoreLevel = (score: number | null): string => {
+    if (score === null) return '';
+    if (score >= 80) return 'high';
+    if (score >= 60) return 'medium';
+    return 'low';
   };
 
+  const scoreLevel = getScoreLevel(complianceScore);
+
   return (
-    <div>
-      {/* Role Switcher */}
-      <div className="top-bar">
-        <div className="top-bar-content">
-          <span className="top-bar-label">Role:</span>
-          <div className="role-buttons">
-            {(['po', 'developer', 'pm', 'designer'] as UserRole[]).map((role) => (
-              <button
-                key={role}
-                onClick={() => setActiveRole(role)}
-                className={`role-button ${activeRole === role ? 'active' : ''}`}
-              >
-                {role.toUpperCase()}
-              </button>
-            ))}
+    <div className="page">
+      <div className="container">
+        <div className="page-header">
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">
+            Welcome back! Here's what's happening with your projects today.
+          </p>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid grid-4 mb-4">
+          <div className="metric-card">
+            <h3 className="metric-label">PRD Compliance</h3>
+            <p className={`metric-value ${scoreLevel === 'high' ? 'success' : ''}`}>
+              {complianceScore ?? '--'}%
+            </p>
+            <div className="progress-bar mt-2">
+              <div
+                className={`progress-fill ${scoreLevel === 'high' ? 'success' : scoreLevel === 'medium' ? 'warning' : 'error'}`}
+                style={{ width: `${complianceScore}%` }}
+              ></div>
+            </div>
+          </div>
+          <div className="metric-card">
+            <h3 className="metric-label">Open Tasks</h3>
+            <p className="metric-value">24</p>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-gray-500)' }}>8 due this week</span>
+          </div>
+          <div className="metric-card">
+            <h3 className="metric-label">Active Builds</h3>
+            <p className="metric-value">2</p>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>All passing</span>
+          </div>
+          <div className="metric-card">
+            <h3 className="metric-label">Team Velocity</h3>
+            <p className="metric-value">42 pts</p>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>↑ 12% vs last sprint</span>
           </div>
         </div>
-      </div>
 
-      {/* Active Dashboard */}
-      {renderDashboard()}
+        {/* Alerts */}
+        {recommendations.length > 0 && (
+          <div className="alert alert-warning mb-4">
+            <strong>⚠ Attention:</strong> {recommendations.length} PRD compliance issues require your attention.{' '}
+            <Link to="/" style={{ color: 'inherit', textDecoration: 'underline' }}>View details</Link>
+          </div>
+        )}
+
+        <div className="grid grid-2 mb-4">
+          {/* Recent Activity */}
+          <div className="card">
+            <h3 className="card-title mb-3">Recent Activity</h3>
+            <div className="timeline">
+              <div className="timeline-item">
+                <div className="timeline-marker"></div>
+                <div className="timeline-content">
+                  <div className="timeline-date">2 hours ago</div>
+                  <div className="timeline-title">Build #1247 deployed to production</div>
+                  <div className="timeline-description">
+                    Successfully deployed by Sarah Chen
+                  </div>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-marker" style={{ backgroundColor: 'var(--color-warning)' }}></div>
+                <div className="timeline-content">
+                  <div className="timeline-date">4 hours ago</div>
+                  <div className="timeline-title">PRD Section updated</div>
+                  <div className="timeline-description">
+                    "Acceptance Criteria" awaiting approval
+                  </div>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-marker"></div>
+                <div className="timeline-content">
+                  <div className="timeline-date">1 day ago</div>
+                  <div className="timeline-title">New team member joined</div>
+                  <div className="timeline-description">
+                    Lisa Wang joined as QA Engineer
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Link to="/notifications" className="btn btn-outline btn-sm mt-3">
+              View All Activity
+            </Link>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="card">
+            <h3 className="card-title mb-3">Quick Actions</h3>
+            <div className="flex flex-column gap-2">
+              <Link to="/prd-designer" className="btn btn-outline" style={{ justifyContent: 'flex-start', textDecoration: 'none' }}>
+                <svg className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Create PRD Section
+              </Link>
+              <Link to="/documentation" className="btn btn-outline" style={{ justifyContent: 'flex-start', textDecoration: 'none' }}>
+                <svg className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Upload Document
+              </Link>
+              <Link to="/cicd-pipeline" className="btn btn-outline" style={{ justifyContent: 'flex-start', textDecoration: 'none' }}>
+                <svg className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Trigger Build
+              </Link>
+              <Link to="/team" className="btn btn-outline" style={{ justifyContent: 'flex-start', textDecoration: 'none' }}>
+                <svg className="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Invite Team Member
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Overview */}
+        <div className="card mb-4">
+          <h3 className="card-title mb-3">Project Overview</h3>
+          <div className="grid grid-3">
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)', marginBottom: 'var(--spacing-sm)' }}>
+                Sprint Progress
+              </p>
+              <div className="progress-bar mb-2">
+                <div className="progress-fill success" style={{ width: '68%' }}></div>
+              </div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>68% Complete</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)', marginBottom: 'var(--spacing-sm)' }}>
+                Test Coverage
+              </p>
+              <div className="progress-bar mb-2">
+                <div className="progress-fill success" style={{ width: '85%' }}></div>
+              </div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>85%</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)', marginBottom: 'var(--spacing-sm)' }}>
+                Security Score
+              </p>
+              <div className="progress-bar mb-2">
+                <div className="progress-fill warning" style={{ width: '78%' }}></div>
+              </div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>B+ (78/100)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="grid grid-3">
+          <Link to="/prd-designer" className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--spacing-md)' }}>📝</div>
+            <h3 style={{ fontWeight: 600, marginBottom: 'var(--spacing-sm)' }}>PRD Designer</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
+              Collaborative PRD workspace with AI assistance
+            </p>
+          </Link>
+          <Link to="/development-insights" className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--spacing-md)' }}>📊</div>
+            <h3 style={{ fontWeight: 600, marginBottom: 'var(--spacing-sm)' }}>Dev Insights</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
+              AI-powered analysis of commits and blockers
+            </p>
+          </Link>
+          <Link to="/cicd-pipeline" className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 'var(--spacing-md)' }}>⚙️</div>
+            <h3 style={{ fontWeight: 600, marginBottom: 'var(--spacing-sm)' }}>CI/CD Pipeline</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
+              Automated builds and deployments
+            </p>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
