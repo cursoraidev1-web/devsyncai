@@ -28,11 +28,23 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .menu-button:hover {
   background-color: var(--color-surface-alt);
   color: var(--color-text-primary);
+}
+
+/* Ensure menu button is visible on mobile */
+@media (max-width: 768px) {
+  .menu-button {
+    display: flex;
+  }
+  
+  .page-title {
+    display: none;
+  }
 }
 
 .page-title {
