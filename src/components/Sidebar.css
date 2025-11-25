@@ -1,0 +1,135 @@
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* Mobile: Show sidebar above overlay */
+@media (max-width: 768px) {
+  .sidebar {
+    z-index: 101;
+  }
+}
+
+.sidebar-header {
+  padding: var(--spacing-lg) var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-tagline {
+  font-size: 11px;
+  color: var(--color-sidebar-text);
+  margin: 4px 0 0 0;
+  opacity: 0.7;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: var(--spacing-md) 0;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px var(--spacing-lg);
+  margin: 2px var(--spacing-sm);
+  color: var(--color-sidebar-text);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-base);
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.nav-item.active {
+  background-color: var(--color-sidebar-active);
+  color: white;
+}
+
+.nav-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-base);
+  transition: background-color 0.2s ease;
+}
+
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
+.user-role {
+  font-size: 11px;
+  color: var(--color-sidebar-text);
+  text-transform: capitalize;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    max-width: var(--sidebar-width);
+  }
+}

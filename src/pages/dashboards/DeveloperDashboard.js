@@ -1,0 +1,216 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
+import { 
+  Code, 
+  GitBranch, 
+  CheckCircle, 
+  Clock,
+  AlertCircle,
+  TrendingUp,
+  ArrowRight
+} from 'lucide-react';
+import './Dashboard.css';
+
+const DeveloperDashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { tasks } = useApp();
+
+  const myTasks = tasks.filter(t => t.assignee === 'developer');
+  const completedTasks = myTasks.filter(t => t.status === 'completed').length;
+  const inProgressTasks = myTasks.filter(t => t.status === 'in-progress').length;
+  const todoTasks = myTasks.filter(t => t.status === 'todo').length;
+
+  const stats = [
+    {
+      label: 'In Progress',
+      value: inProgressTasks,
+      icon: Code,
+      color: '#4f46e5',
+      trend: '+2 this week'
+    },
+    {
+      label: 'To Do',
+      value: todoTasks,
+      icon: Clock,
+      color: '#f59e0b',
+      trend: '3 due soon'
+    },
+    {
+      label: 'Completed',
+      value: completedTasks,
+      icon: CheckCircle,
+      color: '#10b981',
+      trend: '+5 this week'
+    },
+    {
+      label: 'Pull Requests',
+      value: 4,
+      icon: GitBranch,
+      color: '#8b5cf6',
+      trend: '2 pending review'
+    }
+  ];
+
+  const recentCommits = [
+    { id: 1, message: 'Add user authentication API', branch: 'feature/auth', time: '2 hours ago' },
+    { id: 2, message: 'Fix login validation bug', branch: 'bugfix/login', time: '5 hours ago' },
+    { id: 3, message: 'Update dashboard UI', branch: 'feature/dashboard', time: '1 day ago' }
+  ];
+
+  return (
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <div>
+          <h1>Developer Dashboard</h1>
+          <p className="dashboard-subtitle">Your tasks and code activity</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/tasks')}>
+          <Code size={18} />
+          View All Tasks
+        </button>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        {stats.map((stat, index) => (
+          <div key={index} className="stat-card">
+            <div className="stat-icon" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
+              <stat.icon size={24} />
+            </div>
+            <div className="stat-content">
+              <div className="stat-label">{stat.label}</div>
+              <div className="stat-value">{stat.value}</div>
+              <div className="stat-trend">
+                <TrendingUp size={14} />
+                {stat.trend}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-grid">
+        {/* My Tasks */}
+        <div className="dashboard-section">
+          <div className="section-header">
+            <h2>My Tasks</h2>
+            <button className="btn btn-outline" onClick={() => navigate('/tasks')}>
+              View All
+            </button>
+          </div>
+          <div className="tasks-list">
+            {myTasks.map(task => (
+              <div key={task.id} className="task-card">
+                <div className="task-header">
+                  <h3>{task.title}</h3>
+                  <span className={`badge ${
+                    task.status === 'completed' ? 'badge-success' : 
+                    task.status === 'in-progress' ? 'badge-primary' : 
+                    'badge-secondary'
+                  }`}>
+                    {task.status}
+                  </span>
+                </div>
+                <p className="task-description">{task.description}</p>
+                <div className="task-footer">
+                  <div className="task-tags">
+                    {task.tags.map((tag, idx) => (
+                      <span key={idx} className="badge badge-secondary">{tag}</span>
+                    ))}
+                  </div>
+                  <div className="task-meta">
+                    <span className={`badge badge-${task.priority === 'high' ? 'danger' : 'warning'}`}>
+                      {task.priority}
+                    </span>
+                    <span className="task-date">
+                      <Clock size={14} />
+                      {task.dueDate}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {myTasks.length === 0 && (
+              <div className="empty-state">
+                <CheckCircle size={48} />
+                <p>No tasks assigned yet</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Commits */}
+        <div className="dashboard-section">
+          <div className="section-header">
+            <h2>Recent Commits</h2>
+            <button className="btn btn-outline" onClick={() => navigate('/ci-cd')}>
+              View CI/CD
+            </button>
+          </div>
+          <div className="activity-list">
+            {recentCommits.map(commit => (
+              <div key={commit.id} className="activity-item">
+                <div className="activity-icon">
+                  <GitBranch size={18} className="text-primary" />
+                </div>
+                <div className="activity-content">
+                  <div className="activity-title">{commit.message}</div>
+                  <div className="activity-meta">
+                    <span className="badge badge-secondary">{commit.branch}</span>
+                    <span className="activity-date">{commit.time}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="dashboard-section full-width">
+          <div className="section-header">
+            <h2>Quick Actions</h2>
+          </div>
+          <div className="quick-actions">
+            <button className="action-card" onClick={() => navigate('/prd-designer')}>
+              <div className="action-icon" style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}>
+                <Code size={24} />
+              </div>
+              <div className="action-content">
+                <h3>View PRDs</h3>
+                <p>Check product requirements</p>
+              </div>
+              <ArrowRight size={20} />
+            </button>
+            
+            <button className="action-card" onClick={() => navigate('/documents')}>
+              <div className="action-icon" style={{ backgroundColor: '#d1fae5', color: '#10b981' }}>
+                <CheckCircle size={24} />
+              </div>
+              <div className="action-content">
+                <h3>Documentation</h3>
+                <p>Access technical docs</p>
+              </div>
+              <ArrowRight size={20} />
+            </button>
+            
+            <button className="action-card" onClick={() => navigate('/ci-cd')}>
+              <div className="action-icon" style={{ backgroundColor: '#fef3c7', color: '#f59e0b' }}>
+                <GitBranch size={24} />
+              </div>
+              <div className="action-content">
+                <h3>CI/CD Pipeline</h3>
+                <p>Monitor builds & deploys</p>
+              </div>
+              <ArrowRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DeveloperDashboard;
