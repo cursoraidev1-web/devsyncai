@@ -9,12 +9,32 @@ import {
   Code,
   RefreshCw,
   Play,
-  Settings
+  Settings,
+  AlertCircle
 } from 'lucide-react';
 import './CICDIntegration.css';
 
 const CICDIntegration = () => {
   const [activeTab, setActiveTab] = useState('pipelines');
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const handleViewLogs = (deployment) => {
+    setSelectedItem(deployment);
+    setShowLogsModal(true);
+  };
+
+  const handleRollback = (deployment) => {
+    if (window.confirm(`Are you sure you want to rollback ${deployment.env} to previous version?`)) {
+      alert(`Rolling back ${deployment.env} environment...`);
+    }
+  };
+
+  const handleViewCode = (commit) => {
+    setSelectedItem(commit);
+    setShowCodeModal(true);
+  };
 
   const pipelines = [
     {
@@ -265,8 +285,18 @@ const CICDIntegration = () => {
                   </div>
                 </div>
                 <div className="deployment-actions">
-                  <button className="btn btn-outline btn-sm">View Logs</button>
-                  <button className="btn btn-outline btn-sm">Rollback</button>
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    onClick={() => handleViewLogs(deploy)}
+                  >
+                    View Logs
+                  </button>
+                  <button 
+                    className="btn btn-outline btn-sm"
+                    onClick={() => handleRollback(deploy)}
+                  >
+                    Rollback
+                  </button>
                 </div>
               </div>
             ))}
@@ -292,12 +322,171 @@ const CICDIntegration = () => {
                     <span className="commit-time">{commit.time}</span>
                   </div>
                 </div>
-                <button className="btn btn-outline btn-sm">
+                <button 
+                  className="btn btn-outline btn-sm"
+                  onClick={() => handleViewCode(commit)}
+                >
                   <Code size={14} />
                   View Code
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Logs Modal */}
+      {showLogsModal && selectedItem && (
+        <div className="modal-overlay" onClick={() => setShowLogsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Deployment Logs - {selectedItem.env}</h3>
+              <button className="modal-close" onClick={() => setShowLogsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="logs-container">
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-info">INFO</span>
+                  <span>Starting deployment to {selectedItem.env}...</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-info">INFO</span>
+                  <span>Pulling image: myapp:{selectedItem.version}</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-success">SUCCESS</span>
+                  <span>Image pulled successfully</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-info">INFO</span>
+                  <span>Running database migrations...</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-success">SUCCESS</span>
+                  <span>Migrations completed: 3 applied</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-info">INFO</span>
+                  <span>Starting health checks...</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-success">SUCCESS</span>
+                  <span>Health check passed - Application is running</span>
+                </div>
+                <div className="log-entry">
+                  <span className="log-time">[{new Date().toLocaleTimeString()}]</span>
+                  <span className="log-success">SUCCESS</span>
+                  <span>Deployment completed successfully! Uptime: {selectedItem.uptime}</span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowLogsModal(false)}>
+                Close
+              </button>
+              <button className="btn btn-primary">
+                Download Logs
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Code Modal */}
+      {showCodeModal && selectedItem && (
+        <div className="modal-overlay" onClick={() => setShowCodeModal(false)}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Commit Details</h3>
+                <p className="modal-subtitle">#{selectedItem.hash} • {selectedItem.branch}</p>
+              </div>
+              <button className="modal-close" onClick={() => setShowCodeModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="commit-details">
+                <div className="detail-row">
+                  <span className="detail-label">Message:</span>
+                  <span className="detail-value">{selectedItem.message}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Author:</span>
+                  <span className="detail-value">{selectedItem.author}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Branch:</span>
+                  <span className="badge badge-secondary">{selectedItem.branch}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Time:</span>
+                  <span className="detail-value">{selectedItem.time}</span>
+                </div>
+              </div>
+              
+              <div className="code-diff">
+                <div className="diff-header">
+                  <Code size={16} />
+                  <span>src/components/Authentication.js</span>
+                  <span className="diff-stats">+45 -12</span>
+                </div>
+                <pre className="code-block">
+{`  1  | import React, { useState } from 'react';
+  2  | import { useAuth } from '../context/AuthContext';
+  3  | 
+  4  + // Added validation helper
+  5  + const validateEmail = (email) => {
+  6  +   return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+  7  + };
+  8  + 
+  9  | const Authentication = () => {
+ 10  |   const [email, setEmail] = useState('');
+ 11  |   const [password, setPassword] = useState('');
+ 12  +   const [error, setError] = useState('');
+ 13  |   const { login } = useAuth();
+ 14  | 
+ 15  +   const handleSubmit = (e) => {
+ 16  +     e.preventDefault();
+ 17  +     setError('');
+ 18  +     
+ 19  +     if (!validateEmail(email)) {
+ 20  +       setError('Please enter a valid email');
+ 21  +       return;
+ 22  +     }
+ 23  +     
+ 24  |     login(email, password);
+ 25  |   };
+ 26  | 
+ 27  |   return (
+ 28  -     <form>
+ 29  +     <form onSubmit={handleSubmit}>
+ 30  +       {error && <div className="error">{error}</div>}
+ 31  |       <input 
+ 32  |         type="email"
+ 33  |         value={email}
+ 34  |         onChange={(e) => setEmail(e.target.value)}
+ 35  |       />
+ 36  |       {/* ... */}
+ 37  |     </form>
+ 38  |   );
+ 39  | };`}
+                </pre>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowCodeModal(false)}>
+                Close
+              </button>
+              <button className="btn btn-primary">
+                View on GitHub
+              </button>
+            </div>
           </div>
         </div>
       )}

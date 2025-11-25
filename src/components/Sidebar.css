@@ -16,6 +16,13 @@
   transform: translateX(-100%);
 }
 
+/* Mobile: Show sidebar above overlay */
+@media (max-width: 768px) {
+  .sidebar {
+    z-index: 101;
+  }
+}
+
 .sidebar-header {
   padding: var(--spacing-lg) var(--spacing-lg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
