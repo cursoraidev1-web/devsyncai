@@ -1,0 +1,95 @@
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.ds-badge--sm {
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ds-badge--md {
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ds-badge--lg {
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Variants */
+.ds-badge--default {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-secondary);
+}
+
+.ds-badge--primary {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.ds-badge--success {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.ds-badge--warning {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.ds-badge--error {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.ds-badge--info {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+/* Dot Variant */
+.ds-badge--dot {
+  padding-left: 6px;
+}
+
+.ds-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ds-badge--default .ds-badge__dot {
+  background-color: var(--color-text-muted);
+}
+
+.ds-badge--primary .ds-badge__dot {
+  background-color: var(--color-primary);
+}
+
+.ds-badge--success .ds-badge__dot {
+  background-color: var(--color-success);
+}
+
+.ds-badge--warning .ds-badge__dot {
+  background-color: var(--color-warning);
+}
+
+.ds-badge--error .ds-badge__dot {
+  background-color: var(--color-error);
+}
+
+.ds-badge--info .ds-badge__dot {
+  background-color: var(--color-info);
+}

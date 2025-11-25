@@ -1,0 +1,102 @@
+.ds-select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ds-select-wrapper--full-width {
+  width: 100%;
+}
+
+.ds-select-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.ds-select-required {
+  color: var(--color-error);
+  margin-left: 2px;
+}
+
+.ds-select {
+  width: 100%;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23718096' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.ds-select:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.ds-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.ds-select:disabled {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.ds-select--sm {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.ds-select--md {
+  height: 40px;
+  padding: 0 12px;
+}
+
+.ds-select--lg {
+  height: 48px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+/* Error State */
+.ds-select--error {
+  border-color: var(--color-error);
+}
+
+.ds-select--error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.ds-select-error {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-error);
+}
+
+.ds-select-helper {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.ds-select--full-width {
+  width: 100%;
+}

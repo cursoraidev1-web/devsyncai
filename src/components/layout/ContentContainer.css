@@ -1,0 +1,11 @@
+.ds-content-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+@media (max-width: 768px) {
+  .ds-content-container {
+    padding: var(--spacing-md);
+  }
+}

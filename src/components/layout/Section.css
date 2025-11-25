@@ -1,0 +1,34 @@
+.ds-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Spacing Variants */
+.ds-section--spacing-sm {
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.ds-section--spacing-md {
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.ds-section--spacing-lg {
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.ds-section__title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.ds-section__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
