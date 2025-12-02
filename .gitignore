@@ -1,0 +1,59 @@
+# --------------------------------------------------
+# TERRAFORM
+# --------------------------------------------------
+
+.terraform/
+.terraform.lock.hcl
+
+# Local terraform state files (NEVER commit)
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform variables files
+*.tfvars
+*.tfvars.json
+terraform.tfvars
+
+# --------------------------------------------------
+# LAMBDA BUILD ARTIFACTS
+# --------------------------------------------------
+
+# Lambda zip bundles
+*.zip
+
+# Per-function build outputs
+functions/*/node_modules/
+functions/*/package-lock.json
+functions/*/.npm/
+functions/*/dist/
+functions/*/build/
+
+# --------------------------------------------------
+# NODE / NPM
+# --------------------------------------------------
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# --------------------------------------------------
+# OS / SYSTEM FILES
+# --------------------------------------------------
+
+.DS_Store
+Thumbs.db
+
+# --------------------------------------------------
+# IDE / EDITOR FILES
+# --------------------------------------------------
+
+.vscode/
+.idea/
+*.swp
