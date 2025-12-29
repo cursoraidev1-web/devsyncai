@@ -26,7 +26,6 @@ export const getGoogleOAuthUrl = () => {
   
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: redirectUri,
     response_type: responseType,
     scope: scope,
     state: state,
@@ -80,7 +79,7 @@ export const getGitHubOAuthUrl = () => {
   // Store state in sessionStorage for verification
   sessionStorage.setItem('github_oauth_state', state);
   
-  return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
+  return `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&state=${state}`;
 };
 
 /**
