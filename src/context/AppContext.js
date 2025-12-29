@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import { fetchNotifications, markNotificationRead as apiMarkNotificationRead, markAllNotificationsRead as apiMarkAllNotificationsRead } from '../api/notifications';
 import { fetchProjects as apiFetchProjects, createProject as apiCreateProject } from '../api/projects';
 import { fetchTasks, fetchTasksByProject, updateTask as apiUpdateTask, createTask as apiCreateTask, deleteTask as apiDeleteTask } from '../api/tasks';
-import { inviteToProject } from '../api/teams';
+import { inviteToProject, fetchTeams as apiFetchTeams, createTeam as apiCreateTeam, updateTeam as apiUpdateTeam, deleteTeam as apiDeleteTeam, getTeamMembers as apiGetTeamMembers, addTeamMember as apiAddTeamMember, removeTeamMember as apiRemoveTeamMember } from '../api/teams';
 import { fetchDocuments as apiFetchDocuments, createDocument as apiCreateDocument } from '../api/documents';
 import { getAnalytics as apiGetAnalytics } from '../api/analytics';
 import { setUpgradeHandler } from '../api/client';
@@ -30,6 +30,10 @@ export const AppProvider = ({ children }) => {
   const [tasksByProject, setTasksByProject] = useState(new Map()); // Cached by project ID
   const [tasksLoading, setTasksLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamMembersLoading, setTeamMembersLoading] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
 
@@ -329,6 +333,89 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const loadTeams = useCallback(async () => {
+    if (!token) return;
+    setTeamsLoading(true);
+    try {
+      const response = await apiFetchTeams();
+      const teamsData = response?.data || (Array.isArray(response) ? response : []);
+      setTeams(Array.isArray(teamsData) ? teamsData : []);
+    } catch (error) {
+      console.error('Failed to fetch teams', error);
+      setTeams([]);
+    } finally {
+      setTeamsLoading(false);
+    }
+  }, [token]);
+
+  const createTeam = async (payload) => {
+    try {
+      const data = await apiCreateTeam(payload);
+      setTeams((prev) => [...prev, data]);
+      return data;
+    } catch (error) {
+      console.error('Failed to create team', error);
+      throw error;
+    }
+  };
+
+  const updateTeam = async (teamId, payload) => {
+    try {
+      const data = await apiUpdateTeam(teamId, payload);
+      setTeams((prev) => prev.map(t => t.id === teamId ? data : t));
+      return data;
+    } catch (error) {
+      console.error('Failed to update team', error);
+      throw error;
+    }
+  };
+
+  const deleteTeam = async (teamId) => {
+    try {
+      await apiDeleteTeam(teamId);
+      setTeams((prev) => prev.filter(t => t.id !== teamId));
+    } catch (error) {
+      console.error('Failed to delete team', error);
+      throw error;
+    }
+  };
+
+  const loadTeamMembers = useCallback(async (teamId) => {
+    if (!token || !teamId) return;
+    setTeamMembersLoading(true);
+    try {
+      const response = await apiGetTeamMembers(teamId);
+      const membersData = response?.data || (Array.isArray(response) ? response : []);
+      setTeamMembers(Array.isArray(membersData) ? membersData : []);
+    } catch (error) {
+      console.error('Failed to fetch team members', error);
+      setTeamMembers([]);
+    } finally {
+      setTeamMembersLoading(false);
+    }
+  }, [token]);
+
+  const addTeamMember = async (teamId, memberData) => {
+    try {
+      const data = await apiAddTeamMember(teamId, memberData);
+      setTeamMembers((prev) => [...prev, data]);
+      return data;
+    } catch (error) {
+      console.error('Failed to add team member', error);
+      throw error;
+    }
+  };
+
+  const removeTeamMember = async (teamId, memberId) => {
+    try {
+      await apiRemoveTeamMember(teamId, memberId);
+      setTeamMembers((prev) => prev.filter(m => m.id !== memberId));
+    } catch (error) {
+      console.error('Failed to remove team member', error);
+      throw error;
+    }
+  };
+
   const loadAnalytics = useCallback(async (projectId) => {
     if (!token || !projectId) return null;
     try {
@@ -379,6 +466,17 @@ export const AppProvider = ({ children }) => {
     documents,
     loadDocuments,
     createDocument,
+    teams,
+    teamsLoading,
+    loadTeams,
+    createTeam,
+    updateTeam,
+    deleteTeam,
+    teamMembers,
+    teamMembersLoading,
+    loadTeamMembers,
+    addTeamMember,
+    removeTeamMember,
     loadAnalytics,
     addDocument: (document) =>
       setDocuments((prev) => [...prev, { ...document, id: Date.now() }]),

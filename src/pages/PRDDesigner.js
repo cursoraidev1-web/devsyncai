@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Plus, 
@@ -10,15 +10,33 @@ import {
   Clock,
   MessageSquare
 } from 'lucide-react';
+import { fetchPRDs, createPRD as apiCreatePRD, updatePRD as apiUpdatePRD, deletePRD as apiDeletePRD, approvePRD as apiApprovePRD } from '../api/prds';
+import { toast } from 'react-toastify';
+import PulsingLoader from '../components/PulsingLoader';
 import './PRDDesigner.css';
 
 const PRDDesigner = () => {
-  // TODO: Load PRDs from API when available
   const [prds, setPrds] = useState([]);
-
+  const [loading, setLoading] = useState(true);
   const [selectedPrd, setSelectedPrd] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showNewPrdModal, setShowNewPrdModal] = useState(false);
+
+  useEffect(() => {
+    const loadPRDs = async () => {
+      try {
+        const data = await fetchPRDs();
+        setPrds(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Failed to load PRDs:', error);
+        toast.error('Failed to load PRDs');
+        setPrds([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPRDs();
+  }, []);
 
   const [newPrd, setNewPrd] = useState({
     title: '',
@@ -26,49 +44,93 @@ const PRDDesigner = () => {
     sections: []
   });
 
-  const handleCreatePrd = () => {
-    if (newPrd.title) {
-      const prd = {
-        id: Date.now(),
+  const handleCreatePrd = async () => {
+    if (!newPrd.title) {
+      toast.error('Please enter a title');
+      return;
+    }
+    
+    try {
+      const prdData = {
         ...newPrd,
         status: 'draft',
-        author: 'Current User',
-        lastUpdated: new Date().toISOString().split('T')[0],
-        assignees: [],
         sections: [
-          { id: 1, title: 'Overview', content: '' },
-          { id: 2, title: 'Goals & Objectives', content: '' },
-          { id: 3, title: 'Features & Requirements', content: '' },
-          { id: 4, title: 'Technical Specifications', content: '' },
-          { id: 5, title: 'Success Metrics', content: '' }
+          { title: 'Overview', content: '' },
+          { title: 'Goals & Objectives', content: '' },
+          { title: 'Features & Requirements', content: '' },
+          { title: 'Technical Specifications', content: '' },
+          { title: 'Success Metrics', content: '' }
         ]
       };
+      
+      const prd = await apiCreatePRD(prdData);
       setPrds([...prds, prd]);
       setSelectedPrd(prd);
       setShowNewPrdModal(false);
       setNewPrd({ title: '', version: '1.0', sections: [] });
       setIsEditing(true);
+      toast.success('PRD created successfully');
+    } catch (error) {
+      console.error('Failed to create PRD:', error);
+      toast.error('Failed to create PRD');
     }
   };
 
-  const handleUpdatePrd = () => {
-    setPrds(prds.map(prd => prd.id === selectedPrd.id ? selectedPrd : prd));
-    setIsEditing(false);
-  };
-
-  const handleDeletePrd = (id) => {
-    setPrds(prds.filter(prd => prd.id !== id));
-    if (selectedPrd?.id === id) {
-      setSelectedPrd(null);
+  const handleUpdatePrd = async () => {
+    if (!selectedPrd) return;
+    
+    try {
+      const updated = await apiUpdatePRD(selectedPrd.id, selectedPrd);
+      setPrds(prds.map(prd => prd.id === selectedPrd.id ? updated : prd));
+      setIsEditing(false);
+      toast.success('PRD updated successfully');
+    } catch (error) {
+      console.error('Failed to update PRD:', error);
+      toast.error('Failed to update PRD');
     }
   };
 
-  const handleApprove = (id) => {
-    setPrds(prds.map(prd => prd.id === id ? { ...prd, status: 'approved' } : prd));
-    if (selectedPrd?.id === id) {
-      setSelectedPrd({ ...selectedPrd, status: 'approved' });
+  const handleDeletePrd = async (id) => {
+    try {
+      await apiDeletePRD(id);
+      setPrds(prds.filter(prd => prd.id !== id));
+      if (selectedPrd?.id === id) {
+        setSelectedPrd(null);
+      }
+      toast.success('PRD deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete PRD:', error);
+      toast.error('Failed to delete PRD');
     }
   };
+
+  const handleApprove = async (id) => {
+    try {
+      await apiApprovePRD(id);
+      setPrds(prds.map(prd => prd.id === id ? { ...prd, status: 'approved' } : prd));
+      if (selectedPrd?.id === id) {
+        setSelectedPrd({ ...selectedPrd, status: 'approved' });
+      }
+      toast.success('PRD approved successfully');
+    } catch (error) {
+      console.error('Failed to approve PRD:', error);
+      toast.error('Failed to approve PRD');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="prd-designer">
+        <div className="prd-header">
+          <div>
+            <h1>PRD Designer</h1>
+            <p className="page-subtitle">Collaborative workspace for product requirements</p>
+          </div>
+        </div>
+        <PulsingLoader message="Loading PRDs..." />
+      </div>
+    );
+  }
 
   return (
     <div className="prd-designer">

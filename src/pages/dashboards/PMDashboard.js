@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { 
@@ -14,10 +14,15 @@ import './Dashboard.css';
 
 const PMDashboard = () => {
   const navigate = useNavigate();
-  const { projects, tasks, documents } = useApp();
+  const { projects, tasks, documents, teams, loadTeams } = useApp();
+
+  useEffect(() => {
+    loadTeams();
+  }, [loadTeams]);
 
   const activeProjectsCount = projects.filter(p => p.status === 'active').length;
   const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
+  const teamMembersCount = teams.reduce((acc, team) => acc + (team.members || team.member_count || 0), 0);
 
   const stats = [
     {
@@ -36,17 +41,17 @@ const PMDashboard = () => {
     },
     {
       label: 'Pending Approvals',
-      value: 0, // TODO: Load from API when handoff system is available
+      value: 0, // Note: Will be populated when handoffs are loaded
       icon: AlertCircle,
       color: '#f59e0b',
       trend: 'No pending'
     },
     {
       label: 'Team Members',
-      value: 0, // TODO: Load from teams API
+      value: teamMembersCount,
       icon: Users,
       color: '#8b5cf6',
-      trend: 'No members'
+      trend: teamMembersCount > 0 ? `${teamMembersCount} members` : 'No members'
     }
   ];
 

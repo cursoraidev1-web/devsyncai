@@ -82,9 +82,11 @@ export const removePRDAssignee = (id, userId) => {
   return api.delete(`/prds/${id}/assignees/${userId}`);
 };
 
-
-
-
+export const approvePRD = (id) => {
+  return api.post(`/prds/${id}/approve`).then(response => {
+    return response?.data || response;
+  });
+};
 
 
 

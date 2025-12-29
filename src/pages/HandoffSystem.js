@@ -1,15 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus, ArrowRightLeft, Clock, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { fetchHandoffs, createHandoff as apiCreateHandoff } from '../api/handoffs';
+import { toast } from 'react-toastify';
+import PulsingLoader from '../components/PulsingLoader';
 import './HandoffSystem.css';
 
 const HandoffSystem = () => {
   const navigate = useNavigate();
+  const [handoffs, setHandoffs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
 
-  // TODO: Load handoffs from API when available
-  const handoffs = [];
+  useEffect(() => {
+    const loadHandoffs = async () => {
+      try {
+        const data = await fetchHandoffs();
+        setHandoffs(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Failed to load handoffs:', error);
+        toast.error('Failed to load handoffs');
+        setHandoffs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHandoffs();
+  }, []);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -100,7 +118,9 @@ const HandoffSystem = () => {
         </div>
       </div>
 
-      {handoffs.length > 0 ? (
+      {loading ? (
+        <PulsingLoader message="Loading handoffs..." />
+      ) : handoffs.length > 0 ? (
         <div className="handoff-list">
           {filteredHandoffs.map(handoff => (
             <div

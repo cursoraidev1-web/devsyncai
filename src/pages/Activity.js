@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
   MessageSquare, 
@@ -7,12 +7,34 @@ import {
   Search,
   Clock
 } from 'lucide-react';
+import { fetchActivity } from '../api/activity';
+import { toast } from 'react-toastify';
+import PulsingLoader from '../components/PulsingLoader';
 import './Activity.css';
 
 const Activity = () => {
   const [activeTab, setActiveTab] = useState('activity');
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const activities = [
+  useEffect(() => {
+    const loadActivity = async () => {
+      try {
+        const data = await fetchActivity();
+        setActivities(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Failed to load activity:', error);
+        toast.error('Failed to load activity');
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadActivity();
+  }, []);
+
+  // Default activities if API returns empty
+  const defaultActivities = [
     {
       id: 1,
       type: 'status-change',
@@ -90,7 +112,22 @@ const Activity = () => {
     return groups;
   };
 
-  const groupedActivities = groupActivitiesByDate(activities);
+  // Use fetched activities or fallback to default activities
+  const displayActivities = activities.length > 0 ? activities : defaultActivities;
+  const groupedActivities = groupActivitiesByDate(displayActivities);
+
+  if (loading) {
+    return (
+      <div className="activity-page">
+        <div className="activity-header">
+          <div className="activity-breadcrumbs">
+            Projects &gt; &quot;QuantumLeap&quot; Platform &gt; Activity
+          </div>
+        </div>
+        <PulsingLoader message="Loading activity..." />
+      </div>
+    );
+  }
 
   return (
     <div className="activity-page">
