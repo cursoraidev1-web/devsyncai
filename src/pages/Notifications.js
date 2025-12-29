@@ -15,7 +15,7 @@ import {
 import './Notifications.css';
 
 const Notifications = () => {
-  const { notifications, markNotificationRead } = useApp();
+  const { notifications, notificationsLoading, markNotificationRead, markAllNotificationsRead } = useApp();
   const [filter, setFilter] = useState('all');
 
   const notificationIcons = {
@@ -36,80 +36,18 @@ const Notifications = () => {
     'user': '#06b6d4'
   };
 
-  const allNotifications = [
-    {
-      id: 1,
-      type: 'task',
-      title: 'New task assigned',
-      message: 'You have been assigned to "User Authentication API"',
-      timestamp: new Date(),
-      read: false
-    },
-    {
-      id: 2,
-      type: 'deployment',
-      title: 'Deployment successful',
-      message: 'Production build #234 deployed successfully',
-      timestamp: new Date(Date.now() - 3600000),
-      read: false
-    },
-    {
-      id: 3,
-      type: 'mention',
-      title: 'You were mentioned',
-      message: 'Sarah Wilson mentioned you in "Dashboard Redesign"',
-      timestamp: new Date(Date.now() - 7200000),
-      read: true
-    },
-    {
-      id: 4,
-      type: 'prd',
-      title: 'PRD needs approval',
-      message: 'Mobile App Authentication v1.0 is ready for review',
-      timestamp: new Date(Date.now() - 10800000),
-      read: false
-    },
-    {
-      id: 5,
-      type: 'deployment',
-      title: 'Build failed',
-      message: 'Feature branch build failed with 3 errors',
-      timestamp: new Date(Date.now() - 14400000),
-      read: true
-    },
-    {
-      id: 6,
-      type: 'task',
-      title: 'Task completed',
-      message: 'Mike Johnson completed "Setup CI/CD Pipeline"',
-      timestamp: new Date(Date.now() - 21600000),
-      read: true
-    },
-    {
-      id: 7,
-      type: 'user',
-      title: 'New team member',
-      message: 'Tom Brown joined the E-Commerce Platform project',
-      timestamp: new Date(Date.now() - 43200000),
-      read: true
-    },
-    {
-      id: 8,
-      type: 'alert',
-      title: 'System maintenance',
-      message: 'Scheduled maintenance on Saturday at 2:00 AM',
-      timestamp: new Date(Date.now() - 86400000),
-      read: true
-    }
-  ];
-
-  const filteredNotifications = allNotifications.filter(notif => {
-    if (filter === 'unread') return !notif.read;
-    if (filter === 'read') return notif.read;
+  const filteredNotifications = (notifications || []).filter(notif => {
+    if (filter === 'all') return true;
+    if (filter === 'mentions') return notif.type === 'mention';
+    if (filter === 'tasks') return notif.type === 'task';
+    if (filter === 'projects') return notif.type === 'project';
+    if (filter === 'cicd') return notif.type === 'deployment';
+    if (filter === 'prds') return notif.type === 'prd';
+    if (filter === 'system') return notif.type === 'alert' || notif.type === 'user';
     return true;
   });
 
-  const unreadCount = allNotifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
 
   const formatTimestamp = (timestamp) => {
     const now = new Date();
@@ -118,65 +56,50 @@ const Notifications = () => {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+    const isToday = days === 0;
+    const isYesterday = days === 1;
+
+    if (isToday && minutes < 60) {
+      return `Today at ${new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    }
+    if (isToday) {
+      return `Today at ${new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    }
+    if (isYesterday) {
+      return `Yesterday at ${new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    }
+    if (days < 7) {
+      return `${days} days ago`;
+    }
+    return new Date(timestamp).toLocaleDateString();
   };
 
-  const handleMarkAllRead = () => {
-    allNotifications.forEach(notif => {
-      if (!notif.read) {
-        markNotificationRead(notif.id);
-      }
-    });
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
   };
 
   return (
     <div className="notifications-page">
       <div className="notifications-header">
-        <div>
-          <h1>Notifications</h1>
-          <p className="page-subtitle">Stay updated with your team's activity</p>
-        </div>
-        {unreadCount > 0 && (
-          <button className="btn btn-outline" onClick={handleMarkAllRead}>
-            <CheckCheck size={18} />
-            Mark All as Read
-          </button>
-        )}
+        <h1>Notifications</h1>
+        <button className="btn btn-outline" onClick={handleMarkAllRead}>
+          Mark All as Read
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="notifications-stats">
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}>
-            <Bell size={24} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{allNotifications.length}</div>
-            <div className="stat-label">Total Notifications</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
-            <AlertCircle size={24} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{unreadCount}</div>
-            <div className="stat-label">Unread</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#d1fae5', color: '#10b981' }}>
-            <CheckCircle size={24} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{allNotifications.length - unreadCount}</div>
-            <div className="stat-label">Read</div>
-          </div>
+      {/* Search Bar */}
+      <div className="notifications-search-bar">
+        <div className="notifications-search-input">
+          <Filter size={18} />
+          <input
+            type="text"
+            placeholder="Search notifications..."
+            className="search-input"
+          />
         </div>
       </div>
 
@@ -188,21 +111,42 @@ const Notifications = () => {
             onClick={() => setFilter('all')}
           >
             All
-            <span className="tab-count">{allNotifications.length}</span>
           </button>
           <button
-            className={`filter-tab ${filter === 'unread' ? 'active' : ''}`}
-            onClick={() => setFilter('unread')}
+            className={`filter-tab ${filter === 'mentions' ? 'active' : ''}`}
+            onClick={() => setFilter('mentions')}
           >
-            Unread
-            {unreadCount > 0 && <span className="tab-count unread">{unreadCount}</span>}
+            Mentions
           </button>
           <button
-            className={`filter-tab ${filter === 'read' ? 'active' : ''}`}
-            onClick={() => setFilter('read')}
+            className={`filter-tab ${filter === 'tasks' ? 'active' : ''}`}
+            onClick={() => setFilter('tasks')}
           >
-            Read
-            <span className="tab-count">{allNotifications.length - unreadCount}</span>
+            Tasks
+          </button>
+          <button
+            className={`filter-tab ${filter === 'projects' ? 'active' : ''}`}
+            onClick={() => setFilter('projects')}
+          >
+            Projects
+          </button>
+          <button
+            className={`filter-tab ${filter === 'cicd' ? 'active' : ''}`}
+            onClick={() => setFilter('cicd')}
+          >
+            CI/CD
+          </button>
+          <button
+            className={`filter-tab ${filter === 'prds' ? 'active' : ''}`}
+            onClick={() => setFilter('prds')}
+          >
+            PRDs
+          </button>
+          <button
+            className={`filter-tab ${filter === 'system' ? 'active' : ''}`}
+            onClick={() => setFilter('system')}
+          >
+            System
           </button>
         </div>
       </div>
@@ -211,7 +155,13 @@ const Notifications = () => {
       <div className="notifications-container">
         {filteredNotifications.length > 0 ? (
           <div className="notifications-list">
-            {filteredNotifications.map(notif => {
+      {notificationsLoading && (
+        <div className="notifications-loading">Loading notifications...</div>
+      )}
+      {!notificationsLoading && filteredNotifications.length === 0 && (
+        <div className="notifications-empty">No notifications yet.</div>
+      )}
+      {!notificationsLoading && filteredNotifications.map(notif => {
               const Icon = notificationIcons[notif.type] || Bell;
               const color = notificationColors[notif.type] || '#6b7280';
 
@@ -230,21 +180,17 @@ const Notifications = () => {
                   <div className="notification-content">
                     <div className="notification-header">
                       <h3>{notif.title}</h3>
-                      {!notif.read && <div className="unread-dot" />}
                     </div>
                     <p>{notif.message}</p>
                     <div className="notification-footer">
-                      <span className="notification-time">
-                        {formatTimestamp(notif.timestamp)}
+                      <span className="notification-source">
+                        {notif.source || 'System'} • {formatTimestamp(notif.timestamp)}
                       </span>
-                      <span className={`notification-type badge badge-${
-                        notif.type === 'alert' ? 'danger' : 
-                        notif.type === 'task' ? 'success' : 
-                        notif.type === 'deployment' ? 'primary' : 
-                        'secondary'
-                      }`}>
-                        {notif.type}
-                      </span>
+                      {notif.action && (
+                        <button className="notification-action-btn">
+                          {notif.action}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <button

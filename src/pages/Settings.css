@@ -403,3 +403,216 @@ input:checked + .toggle-slider:before {
     width: 100%;
   }
 }
+
+/* Billing & Subscription Styles */
+.billing-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.billing-plan {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.plan-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+.plan-badge.trial {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.plan-badge.cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.plan-price {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.plan-price span {
+  font-size: 18px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.trial-info,
+.trial-expired,
+.cancellation-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.trial-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.trial-expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.cancellation-info {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.plan-usage {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.plan-usage h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.usage-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.usage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.usage-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.usage-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.billing-info {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.info-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Upgrade Modal Recommendation Styles */
+.upgrade-modal__recommendation {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.recommendation-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.recommendation-header svg {
+  color: #667eea;
+}
+
+.recommendation-header h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.recommendation-price {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.recommendation-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendation-benefits li {
+  font-size: 14px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

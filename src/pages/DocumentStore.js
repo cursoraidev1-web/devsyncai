@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   FileText, 
@@ -12,22 +12,37 @@ import {
   FolderOpen,
   File,
   Image,
-  FileCode
+  FileCode,
+  Plus,
+  Edit
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import PulsingLoader from '../components/PulsingLoader';
+import { CardSkeleton } from '../components/SkeletonLoader';
 import './DocumentStore.css';
 
 const DocumentStore = () => {
-  const { documents, addDocument, setDocuments } = useApp();
+  const { documents, loadDocuments, createDocument, projects } = useApp();
+  const navigate = useNavigate();
   const [view, setView] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [newDocument, setNewDocument] = useState({
-    name: '',
-    type: 'documentation',
-    tags: '',
-    project: 1
+    title: '',
+    file_type: 'application/pdf',
+    file_url: '',
+    file_size: 0,
+    project_id: projects?.[0]?.id || ''
   });
+
+  useEffect(() => {
+    const projectId = projects?.[0]?.id;
+    if (projectId) {
+      loadDocuments(projectId).catch(console.error);
+    }
+  }, [projects, loadDocuments]);
 
   const documentTypes = [
     { id: 'prd', label: 'PRD', icon: FileText, color: '#4f46e5' },
@@ -37,28 +52,43 @@ const DocumentStore = () => {
   ];
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || doc.type === filterType;
+    const docName = doc.name || doc.title || '';
+    const docType = doc.type || doc.file_type || '';
+    const matchesSearch = docName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === 'all' || docType === filterType;
     return matchesSearch && matchesType;
   });
 
-  const handleUpload = () => {
-    if (newDocument.name) {
-      const doc = {
-        ...newDocument,
-        tags: newDocument.tags.split(',').map(t => t.trim()).filter(Boolean),
-        uploadedBy: 'Current User',
-        uploadedAt: new Date().toISOString().split('T')[0],
-        size: `${Math.floor(Math.random() * 5) + 1}.${Math.floor(Math.random() * 9)}MB`
-      };
-      addDocument(doc);
+  const handleUpload = async () => {
+    if (!newDocument.title || !newDocument.project_id) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      await createDocument(newDocument);
       setShowUploadModal(false);
-      setNewDocument({ name: '', type: 'documentation', tags: '', project: 1 });
+      setNewDocument({
+        title: '',
+        file_type: 'application/pdf',
+        file_url: '',
+        file_size: 0,
+        project_id: projects?.[0]?.id || ''
+      });
+    } catch (error) {
+      console.error('Failed to create document:', error);
+      alert('Failed to upload document. Please try again.');
     }
   };
 
-  const handleDelete = (id) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
+  const handleDelete = async (id) => {
+    // Note: Delete endpoint may not be available in the API
+    // For now, this is a placeholder - implement when delete endpoint is available
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      // Optimistic update - remove from local state
+      // In production, call API delete endpoint here
+      console.warn('Document delete not yet implemented in API');
+    }
   };
 
   const getDocumentIcon = (type) => {
@@ -73,10 +103,16 @@ const DocumentStore = () => {
           <h1>Documentation Store</h1>
           <p className="page-subtitle">Centralized repository for all project files</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowUploadModal(true)}>
-          <Upload size={18} />
-          Upload Document
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn btn-primary" onClick={() => navigate('/documents/editor')}>
+            <Plus size={18} />
+            New Documentation
+          </button>
+          <button className="btn btn-secondary" onClick={() => setShowUploadModal(true)}>
+            <Upload size={18} />
+            Upload Document
+          </button>
+        </div>
       </div>
 
       {/* Controls */}

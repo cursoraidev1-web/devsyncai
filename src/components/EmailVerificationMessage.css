@@ -1,0 +1,128 @@
+.email-verification-message {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 40px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.verification-icon {
+  margin: 0 auto 24px;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.verification-title {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.verification-description {
+  margin: 0 0 24px 0;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.verification-description strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.verification-actions {
+  margin-bottom: 24px;
+}
+
+.btn-resend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-resend:hover:not(:disabled) {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.btn-resend:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.verification-help {
+  margin: 24px 0;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.help-text {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.help-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.verification-footer {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-go-to-login {
+  display: inline-block;
+  padding: 12px 32px;
+  background: #f3f4f6;
+  color: #374151;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-go-to-login:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+

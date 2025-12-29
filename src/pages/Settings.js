@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePlan } from '../context/PlanContext';
+import { cancelSubscription } from '../api/subscription';
+import { toast } from 'react-toastify';
 import { 
   User, 
   Bell, 
@@ -10,15 +14,59 @@ import {
   Save,
   Shield,
   Globe,
-  Camera
+  Camera,
+  Building2,
+  CreditCard,
+  Code,
+  Puzzle,
+  Settings as SettingsIcon,
+  Plus,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import './Settings.css';
 
 const Settings = () => {
-  const { user, updateUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
+  const navigate = useNavigate();
+  const { user, updateUser, updateProfile, setup2FA, enable2FA } = useAuth();
+  const { 
+    subscription, 
+    limits, 
+    usage, 
+    isTrial, 
+    isTrialExpired, 
+    getTrialDaysRemaining,
+    isActive,
+    getPlanType 
+  } = usePlan();
+  const [activeTab, setActiveTab] = useState('general');
+  const [cancelling, setCancelling] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [twoFactorData, setTwoFactorData] = useState(null);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(user?.twoFactorEnabled || false);
+
+  const handleCancelSubscription = async () => {
+    if (!window.confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your billing period.')) {
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      await cancelSubscription(false); // Cancel at period end
+      toast.success('Subscription will be cancelled at the end of your billing period.');
+      // Reload subscription data
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+      toast.error(error.message || 'Failed to cancel subscription');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: user?.name || user?.fullName || '',
     email: user?.email || '',
     role: user?.role || '',
     bio: '',
@@ -26,6 +74,13 @@ const Settings = () => {
     timezone: 'UTC-5',
     language: 'en'
   });
+
+  // Initialize twoFactorEnabled from user object (no need to fetch again)
+  React.useEffect(() => {
+    if (user?.twoFactorEnabled !== undefined) {
+      setTwoFactorEnabled(user.twoFactorEnabled);
+    }
+  }, [user?.twoFactorEnabled]);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -44,8 +99,17 @@ const Settings = () => {
     showAvatars: true
   });
 
-  const handleSaveProfile = () => {
-    updateUser(formData);
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile({
+        fullName: formData.name,
+        avatarUrl: formData.avatarUrl
+      });
+      updateUser(formData); // Also update local state
+      alert('Profile updated successfully!');
+    } catch (error) {
+      alert('Failed to update profile: ' + (error.message || 'Unknown error'));
+    }
     alert('Profile updated successfully!');
   };
 
@@ -60,10 +124,12 @@ const Settings = () => {
   };
 
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'preferences', label: 'Preferences', icon: Palette },
-    { id: 'security', label: 'Security', icon: Lock }
+    { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'workspace', label: 'Workspace', icon: Building2 },
+    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'developer', label: 'Developer/API', icon: Code },
+    { id: 'integrations', label: 'Integrations', icon: Puzzle }
   ];
 
   return (
@@ -90,11 +156,11 @@ const Settings = () => {
 
         {/* Content */}
         <div className="settings-content">
-          {/* Profile Tab */}
-          {activeTab === 'profile' && (
+          {/* General Tab */}
+          {activeTab === 'general' && (
             <div className="settings-section">
-              <h2>Profile Information</h2>
-              <p className="section-description">Update your personal information and profile details</p>
+              <h2>General Settings</h2>
+              <p className="section-description">Manage your profile and preferences</p>
 
               <div className="profile-avatar-section">
                 <div className="avatar-preview">
@@ -206,23 +272,8 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className="settings-actions">
-                <button className="btn btn-primary" onClick={handleSaveProfile}>
-                  <Save size={18} />
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Notifications Tab */}
-          {activeTab === 'notifications' && (
-            <div className="settings-section">
-              <h2>Notification Preferences</h2>
-              <p className="section-description">Choose how you want to be notified</p>
-
-              <div className="notification-channels">
-                <h3>Notification Channels</h3>
+              <div className="notification-types">
+                <h3>Notification Preferences</h3>
                 <div className="toggle-group">
                   <div className="toggle-item">
                     <div className="toggle-info">
@@ -266,101 +317,6 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className="notification-types">
-                <h3>Notification Types</h3>
-                <div className="toggle-group">
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Task Assigned</div>
-                      <div className="toggle-description">When a task is assigned to you</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={notifications.taskAssigned}
-                        onChange={(e) => setNotifications({ ...notifications, taskAssigned: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Task Completed</div>
-                      <div className="toggle-description">When your task is marked as complete</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={notifications.taskCompleted}
-                        onChange={(e) => setNotifications({ ...notifications, taskCompleted: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Mentions</div>
-                      <div className="toggle-description">When someone mentions you</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={notifications.mentions}
-                        onChange={(e) => setNotifications({ ...notifications, mentions: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Deployments</div>
-                      <div className="toggle-description">Updates about deployments and builds</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={notifications.deployments}
-                        onChange={(e) => setNotifications({ ...notifications, deployments: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Weekly Report</div>
-                      <div className="toggle-description">Receive a weekly summary email</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={notifications.weeklyReport}
-                        onChange={(e) => setNotifications({ ...notifications, weeklyReport: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="settings-actions">
-                <button className="btn btn-primary" onClick={handleSaveNotifications}>
-                  <Save size={18} />
-                  Save Preferences
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Preferences Tab */}
-          {activeTab === 'preferences' && (
-            <div className="settings-section">
-              <h2>Application Preferences</h2>
-              <p className="section-description">Customize your application experience</p>
-
               <div className="preferences-group">
                 <h3>Appearance</h3>
                 <div className="toggle-group">
@@ -384,58 +340,13 @@ const Settings = () => {
                       <option value="auto">Auto</option>
                     </select>
                   </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Compact Mode</div>
-                      <div className="toggle-description">Reduce spacing for more content</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={preferences.compactMode}
-                        onChange={(e) => setPreferences({ ...preferences, compactMode: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Collapsed Sidebar</div>
-                      <div className="toggle-description">Start with sidebar collapsed</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={preferences.sidebarCollapsed}
-                        onChange={(e) => setPreferences({ ...preferences, sidebarCollapsed: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="toggle-item">
-                    <div className="toggle-info">
-                      <div className="toggle-label">Show Avatars</div>
-                      <div className="toggle-description">Display user avatars throughout the app</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={preferences.showAvatars}
-                        onChange={(e) => setPreferences({ ...preferences, showAvatars: e.target.checked })}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
                 </div>
               </div>
 
               <div className="settings-actions">
-                <button className="btn btn-primary" onClick={handleSavePreferences}>
+                <button className="btn btn-primary" onClick={handleSaveProfile}>
                   <Save size={18} />
-                  Save Preferences
+                  Save Changes
                 </button>
               </div>
             </div>
@@ -492,6 +403,215 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Workspace Tab */}
+          {activeTab === 'workspace' && (
+            <div className="settings-section">
+              <h2>Workspace Settings</h2>
+              <p className="section-description">Manage your workspace configuration</p>
+
+              <div className="form-grid">
+                <div className="input-group">
+                  <label htmlFor="workspace-name">Workspace Name</label>
+                  <input
+                    id="workspace-name"
+                    type="text"
+                    placeholder="My Workspace"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="workspace-url">Workspace URL</label>
+                  <div className="input-with-icon">
+                    <Globe size={18} className="input-icon" />
+                    <input
+                      id="workspace-url"
+                      type="text"
+                      placeholder="workspace-name"
+                      value=""
+                      readOnly
+                    />
+                    <span className="input-suffix">.zyndrx.com</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-actions">
+                <button className="btn btn-primary">
+                  <Save size={18} />
+                  Save Workspace Settings
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Billing Tab */}
+          {activeTab === 'billing' && (
+            <div className="settings-section">
+              <h2>Billing & Subscription</h2>
+              <p className="section-description">Manage your subscription and billing information</p>
+
+              <div className="billing-section">
+                <div className="billing-plan">
+                  <h3>Current Plan</h3>
+                  <div className="plan-card">
+                    <div className="plan-header">
+                      <div className="plan-name">
+                        {subscription?.name || 'Free Plan'}
+                        {isTrial() && (
+                          <span className="plan-badge trial">Trial</span>
+                        )}
+                        {subscription?.status === 'cancelled' && (
+                          <span className="plan-badge cancelled">Cancelled</span>
+                        )}
+                      </div>
+                      <div className="plan-price">
+                        {getPlanType() === 'free' ? (
+                          <span>Free</span>
+                        ) : getPlanType() === 'pro' ? (
+                          <>$29<span>/month</span></>
+                        ) : getPlanType() === 'enterprise' ? (
+                          <>$99<span>/month</span></>
+                        ) : (
+                          'Free'
+                        )}
+                      </div>
+                    </div>
+
+                    {isTrial() && !isTrialExpired() && (
+                      <div className="trial-info">
+                        <AlertCircle size={16} />
+                        <span>
+                          {getTrialDaysRemaining()} days remaining in your free trial
+                        </span>
+                      </div>
+                    )}
+
+                    {isTrialExpired() && (
+                      <div className="trial-expired">
+                        <AlertCircle size={16} />
+                        <span>Your trial has expired. Upgrade to continue using the platform.</span>
+                      </div>
+                    )}
+
+                    {subscription?.status === 'cancelled' && subscription?.cancelAtPeriodEnd && (
+                      <div className="cancellation-info">
+                        <AlertCircle size={16} />
+                        <span>
+                          Your subscription will end on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="plan-usage">
+                      <h4>Current Usage</h4>
+                      {limits && usage && (
+                        <div className="usage-stats">
+                          <div className="usage-item">
+                            <span className="usage-label">Projects:</span>
+                            <span className="usage-value">
+                              {usage.projectsCount} / {limits.maxProjects === -1 ? '∞' : limits.maxProjects}
+                            </span>
+                          </div>
+                          <div className="usage-item">
+                            <span className="usage-label">Team Members:</span>
+                            <span className="usage-value">
+                              {usage.teamMembersCount} / {limits.maxTeamMembers === -1 ? '∞' : limits.maxTeamMembers}
+                            </span>
+                          </div>
+                          <div className="usage-item">
+                            <span className="usage-label">Storage:</span>
+                            <span className="usage-value">
+                              {usage.storageUsedGB?.toFixed(1)} GB / {limits.maxStorageGB === -1 ? '∞' : limits.maxStorageGB} GB
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="plan-actions">
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => navigate('/pricing')}
+                      >
+                        {isTrialExpired() || !isActive() ? 'Upgrade Plan' : 'Change Plan'}
+                      </button>
+                      {isActive() && !isTrial() && subscription?.status !== 'cancelled' && (
+                        <button 
+                          className="btn btn-outline" 
+                          onClick={handleCancelSubscription}
+                          disabled={cancelling}
+                        >
+                          {cancelling ? 'Cancelling...' : 'Cancel Subscription'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {subscription?.currentPeriodEnd && !isTrial() && (
+                  <div className="billing-info">
+                    <div className="info-item">
+                      <span className="info-label">Next Billing Date:</span>
+                      <span className="info-value">
+                        {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Developer/API Tab */}
+          {activeTab === 'developer' && (
+            <div className="settings-section">
+              <h2>Developer & API</h2>
+              <p className="section-description">Manage API keys and developer settings</p>
+
+              <div className="api-section">
+                <h3>API Keys</h3>
+                <div className="api-key-item">
+                  <div className="api-key-info">
+                    <div className="api-key-label">Production API Key</div>
+                    <div className="api-key-value">sk_live_••••••••••••••••••••••••</div>
+                    <div className="api-key-description">Created on Sep 1, 2024</div>
+                  </div>
+                  <div className="api-key-actions">
+                    <button className="btn btn-outline">Copy</button>
+                    <button className="btn btn-outline danger">Revoke</button>
+                  </div>
+                </div>
+
+                <button className="btn btn-primary">
+                  <Plus size={18} />
+                  Generate New API Key
+                </button>
+              </div>
+
+              <div className="api-section">
+                <h3>Webhooks</h3>
+                <p className="section-description">Configure webhooks for real-time updates</p>
+                <button className="btn btn-outline">
+                  <Plus size={18} />
+                  Add Webhook
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Integrations Tab */}
+          {activeTab === 'integrations' && (
+            <div className="settings-section">
+              <h2>Integrations</h2>
+              <p className="section-description">Connect your favorite tools and services</p>
+              <p style={{ marginTop: '16px', color: '#718096' }}>
+                Manage integrations from the <a href="/integrations" style={{ color: '#6B46C1' }}>Integrations page</a>.
+              </p>
             </div>
           )}
         </div>

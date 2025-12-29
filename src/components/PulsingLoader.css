@@ -1,0 +1,82 @@
+.pulsing-loader-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulsing-loader-container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+}
+
+.pulsing-loader-container.inline {
+  padding: 2rem;
+}
+
+.pulsing-loader-content {
+  text-align: center;
+}
+
+.pulsing-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pulsing-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--dot-color, #6b46c1);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+.pulsing-loader-message {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  animation: pulse-text 1.5s ease-in-out infinite;
+  margin: 0;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes pulse-text {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pulsing-loader-container.fullscreen {
+    background-color: rgba(17, 24, 39, 0.95);
+  }
+
+  .pulsing-loader-message {
+    color: #9ca3af;
+  }
+}
+
+

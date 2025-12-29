@@ -18,7 +18,12 @@ const DeveloperDashboard = () => {
   const { user } = useAuth();
   const { tasks } = useApp();
 
-  const myTasks = tasks.filter(t => t.assignee === 'developer');
+  // Filter tasks assigned to current user (by user ID, not role)
+  const myTasks = tasks.filter(t => 
+    t.assigned_to === user?.id || 
+    t.assignee_id === user?.id ||
+    (user?.role === 'developer' && !t.assigned_to && !t.assignee_id) // Fallback: unassigned tasks for developers
+  );
   const completedTasks = myTasks.filter(t => t.status === 'completed').length;
   const inProgressTasks = myTasks.filter(t => t.status === 'in-progress').length;
   const todoTasks = myTasks.filter(t => t.status === 'todo').length;
@@ -29,36 +34,33 @@ const DeveloperDashboard = () => {
       value: inProgressTasks,
       icon: Code,
       color: '#4f46e5',
-      trend: '+2 this week'
+      trend: inProgressTasks > 0 ? `${inProgressTasks} active` : 'No tasks in progress'
     },
     {
       label: 'To Do',
       value: todoTasks,
       icon: Clock,
       color: '#f59e0b',
-      trend: '3 due soon'
+      trend: todoTasks > 0 ? `${todoTasks} pending` : 'No tasks to do'
     },
     {
       label: 'Completed',
       value: completedTasks,
       icon: CheckCircle,
       color: '#10b981',
-      trend: '+5 this week'
+      trend: completedTasks > 0 ? `${completedTasks} completed` : 'No completed tasks'
     },
     {
       label: 'Pull Requests',
-      value: 4,
+      value: 0, // TODO: Load from API when CI/CD integration is available
       icon: GitBranch,
       color: '#8b5cf6',
-      trend: '2 pending review'
+      trend: 'No active PRs'
     }
   ];
 
-  const recentCommits = [
-    { id: 1, message: 'Add user authentication API', branch: 'feature/auth', time: '2 hours ago' },
-    { id: 2, message: 'Fix login validation bug', branch: 'bugfix/login', time: '5 hours ago' },
-    { id: 3, message: 'Update dashboard UI', branch: 'feature/dashboard', time: '1 day ago' }
-  ];
+  // TODO: Load recent commits from API when CI/CD integration is available
+  const recentCommits = [];
 
   return (
     <div className="dashboard">
@@ -83,10 +85,16 @@ const DeveloperDashboard = () => {
             <div className="stat-content">
               <div className="stat-label">{stat.label}</div>
               <div className="stat-value">{stat.value}</div>
-              <div className="stat-trend">
-                <TrendingUp size={14} />
-                {stat.trend}
-              </div>
+              {stat.value > 0 && (
+                <div className="stat-trend">
+                  {stat.trend}
+                </div>
+              )}
+              {stat.value === 0 && (
+                <div className="stat-trend" style={{ color: '#718096' }}>
+                  {stat.trend}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -151,20 +159,28 @@ const DeveloperDashboard = () => {
             </button>
           </div>
           <div className="activity-list">
-            {recentCommits.map(commit => (
-              <div key={commit.id} className="activity-item">
-                <div className="activity-icon">
-                  <GitBranch size={18} className="text-primary" />
-                </div>
-                <div className="activity-content">
-                  <div className="activity-title">{commit.message}</div>
-                  <div className="activity-meta">
-                    <span className="badge badge-secondary">{commit.branch}</span>
-                    <span className="activity-date">{commit.time}</span>
+            {recentCommits.length > 0 ? (
+              recentCommits.map(commit => (
+                <div key={commit.id} className="activity-item">
+                  <div className="activity-icon">
+                    <GitBranch size={18} className="text-primary" />
+                  </div>
+                  <div className="activity-content">
+                    <div className="activity-title">{commit.message}</div>
+                    <div className="activity-meta">
+                      <span className="badge badge-secondary">{commit.branch}</span>
+                      <span className="activity-date">{commit.time}</span>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="empty-state">
+                <GitBranch size={48} />
+                <p>No recent commits</p>
+                <p style={{ fontSize: '14px', color: '#718096' }}>Connect your CI/CD to see commit activity</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 

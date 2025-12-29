@@ -1,0 +1,264 @@
+.dashboard-preview-container {
+  width: 100%;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #F3E5F5 0%, #FFFFFF 100%);
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(132, 9, 189, 0.15);
+  margin-top: 32px;
+}
+
+.dashboard-preview-inner {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-header-preview {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.logo-square-small {
+  width: 28px;
+  height: 28px;
+  background: var(--color-primary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-surface);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.logo-z-small {
+  color: var(--color-surface);
+}
+
+.dashboard-breadcrumb {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.dashboard-content-preview {
+  display: flex;
+  gap: 20px;
+}
+
+.dashboard-sidebar-preview {
+  width: 180px;
+  background: var(--color-sidebar-bg);
+  border-radius: 8px;
+  padding: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-item {
+  padding: 8px 10px;
+  color: var(--color-sidebar-text);
+  font-size: 13px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sidebar-item.active {
+  background: var(--color-sidebar-active);
+  color: var(--color-sidebar-textActive);
+}
+
+.sidebar-section {
+  padding: 10px 10px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-sidebar-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 12px;
+}
+
+.dashboard-main-preview {
+  flex: 1;
+}
+
+.dashboard-welcome {
+  margin-bottom: 20px;
+}
+
+.dashboard-welcome h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 6px 0;
+}
+
+.dashboard-welcome p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
+
+.metrics-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.metric-card {
+  background: var(--color-surface-alt);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.metric-change {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.metric-change.positive {
+  color: var(--color-success);
+}
+
+.metric-change.negative {
+  color: var(--color-error);
+}
+
+.dashboard-chart-section {
+  background: var(--color-surface-alt);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.chart-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.chart-header p {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.chart-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+  height: 100px;
+  padding: 0 6px;
+}
+
+.chart-bar {
+  flex: 1;
+  background: var(--color-border);
+  border-radius: 4px 4px 0 0;
+  min-height: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.chart-bar.active {
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.chart-label {
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.project-overview-header {
+  margin-top: 20px;
+}
+
+.project-overview-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .dashboard-content-preview {
+    flex-direction: column;
+  }
+  
+  .dashboard-sidebar-preview {
+    width: 100%;
+  }
+  
+  .metrics-preview {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

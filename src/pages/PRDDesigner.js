@@ -13,34 +13,8 @@ import {
 import './PRDDesigner.css';
 
 const PRDDesigner = () => {
-  const [prds, setPrds] = useState([
-    {
-      id: 1,
-      title: 'E-Commerce Platform v2.0',
-      status: 'approved',
-      version: '2.0',
-      author: 'Product Manager',
-      lastUpdated: '2025-11-20',
-      assignees: ['Dev Team', 'QA Team'],
-      sections: [
-        { id: 1, title: 'Overview', content: 'Complete redesign of the e-commerce platform...' },
-        { id: 2, title: 'Goals', content: 'Improve user experience, increase conversion rate...' },
-        { id: 3, title: 'Features', content: 'New checkout flow, product recommendations...' }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Mobile App Authentication',
-      status: 'in-review',
-      version: '1.0',
-      author: 'Product Owner',
-      lastUpdated: '2025-11-23',
-      assignees: ['Mobile Team'],
-      sections: [
-        { id: 1, title: 'Overview', content: 'Implement secure authentication for mobile app...' }
-      ]
-    }
-  ]);
+  // TODO: Load PRDs from API when available
+  const [prds, setPrds] = useState([]);
 
   const [selectedPrd, setSelectedPrd] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -116,35 +90,50 @@ const PRDDesigner = () => {
             <h2>All PRDs</h2>
             <span className="prd-count">{prds.length}</span>
           </div>
-          <div className="prd-list">
-            {prds.map(prd => (
-              <div
-                key={prd.id}
-                className={`prd-list-item ${selectedPrd?.id === prd.id ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedPrd(prd);
-                  setIsEditing(false);
-                }}
-              >
-                <div className="prd-list-icon">
-                  <FileText size={20} />
-                </div>
-                <div className="prd-list-content">
-                  <div className="prd-list-title">{prd.title}</div>
-                  <div className="prd-list-meta">
-                    <span className={`badge badge-${
-                      prd.status === 'approved' ? 'success' : 
-                      prd.status === 'in-review' ? 'warning' : 
-                      'secondary'
-                    }`}>
-                      {prd.status}
-                    </span>
-                    <span className="prd-list-date">v{prd.version}</span>
+          {prds.length > 0 ? (
+            <div className="prd-list">
+              {prds.map(prd => (
+                <div
+                  key={prd.id}
+                  className={`prd-list-item ${selectedPrd?.id === prd.id ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedPrd(prd);
+                    setIsEditing(false);
+                  }}
+                >
+                  <div className="prd-list-icon">
+                    <FileText size={20} />
+                  </div>
+                  <div className="prd-list-content">
+                    <div className="prd-list-title">{prd.title}</div>
+                    <div className="prd-list-meta">
+                      <span className={`badge badge-${
+                        prd.status === 'approved' ? 'success' : 
+                        prd.status === 'in-review' ? 'warning' : 
+                        'secondary'
+                      }`}>
+                        {prd.status}
+                      </span>
+                      <span className="prd-list-date">v{prd.version}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#718096' }}>
+              <FileText size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <p style={{ marginBottom: '16px' }}>No PRDs yet</p>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowNewPrdModal(true)}
+                style={{ fontSize: '14px', padding: '8px 16px' }}
+              >
+                <Plus size={16} />
+                Create Your First PRD
+              </button>
+            </div>
+          )}
         </div>
 
         {/* PRD Content */}

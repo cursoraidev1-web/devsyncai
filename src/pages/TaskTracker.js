@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Plus, 
@@ -11,14 +11,18 @@ import {
   Calendar,
   Tag
 } from 'lucide-react';
+import PulsingLoader from '../components/PulsingLoader';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './TaskTracker.css';
 
 const TaskTracker = () => {
-  const { tasks, addTask, updateTask, deleteTask } = useApp();
+  const { tasks, tasksLoading, addTask, updateTask, deleteTask, getTasksByProject, loadAllTasks, projects } = useApp();
   const [view, setView] = useState('board'); // 'board' or 'list'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
+  const [filterProject, setFilterProject] = useState('all'); // 'all' or project ID
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -29,6 +33,30 @@ const TaskTracker = () => {
     tags: []
   });
 
+  // Set default project when projects load
+  useEffect(() => {
+    if (projects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  // Refresh all tasks when component mounts or when needed
+  useEffect(() => {
+    loadAllTasks();
+  }, [loadAllTasks]);
+
+  // Get filtered tasks based on project filter
+  const getFilteredTasks = () => {
+    let filtered = tasks;
+    
+    // Filter by project if not 'all'
+    if (filterProject !== 'all') {
+      filtered = getTasksByProject(filterProject);
+    }
+    
+    return filtered;
+  };
+
   const columns = [
     { id: 'todo', title: 'To Do', color: '#6b7280' },
     { id: 'in-progress', title: 'In Progress', color: '#4f46e5' },
@@ -36,16 +64,33 @@ const TaskTracker = () => {
     { id: 'completed', title: 'Completed', color: '#10b981' }
   ];
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+  // Get base filtered tasks (by project)
+  const baseTasks = getFilteredTasks();
+  
+  // Apply search and priority filters
+  const filteredTasks = (baseTasks || []).filter(task => {
+    if (!task) return false;
+    const title = task.title || '';
+    const description = task.description || '';
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     return matchesSearch && matchesPriority;
   });
 
-  const handleCreateTask = () => {
-    if (newTask.title) {
-      addTask(newTask);
+  const handleCreateTask = async () => {
+    if (!newTask.title) return;
+    
+    if (!selectedProjectId) {
+      alert('Please select a project first');
+      return;
+    }
+
+    try {
+      await addTask({
+        ...newTask,
+        project_id: selectedProjectId
+      });
       setShowNewTaskModal(false);
       setNewTask({
         title: '',
@@ -56,6 +101,9 @@ const TaskTracker = () => {
         dueDate: '',
         tags: []
       });
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      alert('Failed to create task. Please try again.');
     }
   };
 
@@ -67,12 +115,17 @@ const TaskTracker = () => {
     e.preventDefault();
   };
 
-  const handleDrop = (e, newStatus) => {
+  const handleDrop = async (e, newStatus) => {
     e.preventDefault();
-    const taskId = parseInt(e.dataTransfer.getData('taskId'));
-    const task = tasks.find(t => t.id === taskId);
+    const taskId = e.dataTransfer.getData('taskId');
+    const task = tasks.find(t => t.id === taskId || t.id === parseInt(taskId));
     if (task) {
-      updateTask(taskId, { status: newStatus });
+      try {
+        await updateTask(task.id, { status: newStatus });
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        alert('Failed to update task. Please try again.');
+      }
     }
   };
 
@@ -115,6 +168,18 @@ const TaskTracker = () => {
         <div className="tracker-filters">
           <div className="filter-group">
             <Filter size={18} />
+            <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
+              <option value="all">All Projects</option>
+              {projects.map(project => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <Filter size={18} />
             <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
               <option value="all">All Priorities</option>
               <option value="high">High</option>
@@ -140,6 +205,11 @@ const TaskTracker = () => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {tasksLoading ? (
+        <PulsingLoader message="Loading tasks..." />
+      ) : (
+        <>
       {/* Kanban Board View */}
       {view === 'board' && (
         <div className="kanban-board">
@@ -175,7 +245,7 @@ const TaskTracker = () => {
                       </div>
                       <p className="task-card-description">{task.description}</p>
                       <div className="task-card-tags">
-                        {task.tags.map((tag, idx) => (
+                        {(task.tags || []).map((tag, idx) => (
                           <span key={idx} className="task-tag">
                             <Tag size={12} />
                             {tag}
@@ -219,7 +289,7 @@ const TaskTracker = () => {
                   <div className="task-list-title">{task.title}</div>
                   <div className="task-list-desc">{task.description}</div>
                   <div className="task-list-tags">
-                    {task.tags.map((tag, idx) => (
+                    {(task.tags || []).map((tag, idx) => (
                       <span key={idx} className="badge badge-secondary">{tag}</span>
                     ))}
                   </div>
@@ -285,6 +355,29 @@ const TaskTracker = () => {
                 onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                 rows={4}
               />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="task-project">Project *</label>
+              <select
+                id="task-project"
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                required
+              >
+                {projects.length === 0 ? (
+                  <option value="">No projects available</option>
+                ) : (
+                  <>
+                    <option value="">Select a project...</option>
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
             </div>
 
             <div className="form-grid">
@@ -353,6 +446,8 @@ const TaskTracker = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

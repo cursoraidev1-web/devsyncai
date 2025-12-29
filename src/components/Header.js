@@ -1,22 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { useCompany } from '../context/CompanyContext';
+import CompanySwitcher from './CompanySwitcher';
 import { Menu, Bell, LogOut, User } from 'lucide-react';
 import './Header.css';
 
 const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, logoutLoading } = useAuth();
   const { notifications } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Failed to logout. Please try again.');
+    }
   };
 
   return (
@@ -29,6 +37,11 @@ const Header = ({ toggleSidebar }) => {
       </div>
 
       <div className="header-right">
+        {/* Company Switcher */}
+        <div className="header-item">
+          <CompanySwitcher />
+        </div>
+
         {/* Notifications */}
         <div className="header-item">
           <button 
@@ -109,9 +122,22 @@ const Header = ({ toggleSidebar }) => {
                   <User size={16} />
                   <span>Settings</span>
                 </button>
-                <button className="user-menu-item logout" onClick={handleLogout}>
-                  <LogOut size={16} />
-                  <span>Logout</span>
+                <button 
+                  className="user-menu-item logout" 
+                  onClick={handleLogout}
+                  disabled={logoutLoading}
+                >
+                  {logoutLoading ? (
+                    <>
+                      <span className="spinner-small"></span>
+                      <span>Logging out...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

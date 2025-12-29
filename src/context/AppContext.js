@@ -1,4 +1,13 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { fetchNotifications, markNotificationRead as apiMarkNotificationRead, markAllNotificationsRead as apiMarkAllNotificationsRead } from '../api/notifications';
+import { fetchProjects as apiFetchProjects, createProject as apiCreateProject } from '../api/projects';
+import { fetchTasks, fetchTasksByProject, updateTask as apiUpdateTask, createTask as apiCreateTask, deleteTask as apiDeleteTask } from '../api/tasks';
+import { inviteToProject } from '../api/teams';
+import { fetchDocuments as apiFetchDocuments, createDocument as apiCreateDocument } from '../api/documents';
+import { getAnalytics as apiGetAnalytics } from '../api/analytics';
+import { setUpgradeHandler } from '../api/client';
+import { useAuth } from './AuthContext';
+import { useCompany } from './CompanyContext';
 
 const AppContext = createContext(null);
 
@@ -11,153 +20,374 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'task',
-      title: 'New task assigned',
-      message: 'You have been assigned to "User Authentication API"',
-      timestamp: new Date(),
-      read: false
-    },
-    {
-      id: 2,
-      type: 'deployment',
-      title: 'Deployment successful',
-      message: 'Production build #234 deployed successfully',
-      timestamp: new Date(Date.now() - 3600000),
-      read: false
+  const { token, user } = useAuth();
+  const { currentCompany } = useCompany();
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [tasks, setTasks] = useState([]); // All tasks cache
+  const [tasksByProject, setTasksByProject] = useState(new Map()); // Cached by project ID
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+
+  const openUpgradeModal = useCallback((message) => {
+    setUpgradeMessage(message || 'Upgrade your plan to continue.');
+    setUpgradeModalOpen(true);
+  }, []);
+
+  const closeUpgradeModal = useCallback(() => {
+    setUpgradeModalOpen(false);
+    setUpgradeMessage('');
+  }, []);
+
+  useEffect(() => {
+    setUpgradeHandler(openUpgradeModal);
+  }, [openUpgradeModal]);
+
+  const loadNotifications = useCallback(async () => {
+    if (!token) return;
+    setNotificationsLoading(true);
+    try {
+      const data = await fetchNotifications();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch notifications', error);
+    } finally {
+      setNotificationsLoading(false);
     }
-  ]);
+  }, [token]);
 
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: 'E-Commerce Platform',
-      status: 'active',
-      progress: 65,
-      team: ['PM', 'Dev', 'QA', 'DevOps'],
-      deadline: '2025-12-31'
-    },
-    {
-      id: 2,
-      name: 'Mobile App Redesign',
-      status: 'active',
-      progress: 40,
-      team: ['PM', 'Designer', 'Dev'],
-      deadline: '2025-11-30'
+  const markNotificationRead = async (id) => {
+    try {
+      await apiMarkNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
+      );
+    } catch (error) {
+      console.error('Failed to mark notification read', error);
+      throw error;
     }
-  ]);
+  };
 
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: 'User Authentication API',
-      description: 'Implement JWT-based authentication',
-      status: 'in-progress',
-      priority: 'high',
-      assignee: 'developer',
-      project: 1,
-      dueDate: '2025-11-28',
-      tags: ['backend', 'security']
-    },
-    {
-      id: 2,
-      title: 'Design Dashboard Mockups',
-      description: 'Create wireframes for admin dashboard',
-      status: 'todo',
-      priority: 'medium',
-      assignee: 'designer',
-      project: 1,
-      dueDate: '2025-11-26',
-      tags: ['design', 'ui']
-    },
-    {
-      id: 3,
-      title: 'Setup CI/CD Pipeline',
-      description: 'Configure GitHub Actions for automated deployment',
-      status: 'completed',
-      priority: 'high',
-      assignee: 'devops',
-      project: 1,
-      dueDate: '2025-11-20',
-      tags: ['devops', 'automation']
+  const markAllNotificationsRead = async () => {
+    try {
+      await apiMarkAllNotificationsRead();
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, read: true }))
+      );
+    } catch (error) {
+      console.error('Failed to mark all notifications read', error);
+      throw error;
     }
-  ]);
+  };
 
-  const [documents, setDocuments] = useState([
-    {
-      id: 1,
-      name: 'PRD - E-Commerce Platform v2.0',
-      type: 'prd',
-      tags: ['product', 'requirements'],
-      uploadedBy: 'pm',
-      uploadedAt: '2025-11-15',
-      size: '2.4 MB',
-      project: 1
-    },
-    {
-      id: 2,
-      name: 'API Documentation',
-      type: 'documentation',
-      tags: ['technical', 'api'],
-      uploadedBy: 'developer',
-      uploadedAt: '2025-11-20',
-      size: '1.8 MB',
-      project: 1
+  const loadProjects = useCallback(async () => {
+    if (!token) return;
+    setProjectsLoading(true);
+    try {
+      const response = await apiFetchProjects();
+      // Handle response structure: { success: true, data: [...], message: "..." }
+      const projectsData = response?.data || (Array.isArray(response) ? response : []);
+      
+      // Transform backend fields to frontend format
+      const transformedProjects = projectsData.map(project => ({
+        ...project,
+        // Map backend fields to frontend expected fields
+        dueDate: project.end_date || project.dueDate,
+        deadline: project.end_date || project.deadline,
+        team: project.team_name || project.team || 'Unassigned',
+        // Calculate or default missing fields
+        progress: project.progress || 0,
+        members: project.members || 0,
+        isMine: project.owner_id === user?.id || false
+      }));
+      
+      setProjects(transformedProjects);
+    } catch (error) {
+      console.error('Failed to fetch projects', error);
+      setProjects([]);
+    } finally {
+      setProjectsLoading(false);
     }
-  ]);
+  }, [token, user]);
 
-  const addNotification = (notification) => {
-    setNotifications(prev => [{
-      ...notification,
-      id: Date.now(),
-      timestamp: new Date(),
-      read: false
-    }, ...prev]);
+  const createProject = async (payload) => {
+    try {
+      const data = await apiCreateProject(payload);
+      setProjects((prev) => [...prev, data]);
+      return data;
+    } catch (error) {
+      console.error('Failed to create project', error);
+      throw error;
+    }
   };
 
-  const markNotificationRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+  /**
+   * Load all tasks (default behavior)
+   * Tasks are cached and can be filtered by project client-side
+   */
+  const loadAllTasks = useCallback(async () => {
+    if (!token) return;
+    setTasksLoading(true);
+    try {
+      const data = await fetchTasks(); // Fetch all tasks
+      const tasksArray = Array.isArray(data) ? data : [];
+      setTasks(tasksArray);
+      
+      // Update cache by project for quick filtering
+      const tasksByProjectMap = new Map();
+      tasksArray.forEach(task => {
+        const projectId = task.project_id;
+        if (projectId) {
+          if (!tasksByProjectMap.has(projectId)) {
+            tasksByProjectMap.set(projectId, []);
+          }
+          tasksByProjectMap.get(projectId).push(task);
+        }
+      });
+      setTasksByProject(tasksByProjectMap);
+    } catch (error) {
+      console.error('Failed to fetch all tasks', error);
+      setTasks([]);
+      setTasksByProject(new Map());
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [token]);
+
+  /**
+   * Get tasks filtered by project (client-side filtering from all tasks)
+   * @param {string} projectId - Project ID to filter by
+   * @returns {Array} Filtered tasks
+   */
+  const getTasksByProject = useCallback((projectId) => {
+    if (!projectId) return tasks;
+    return tasks.filter(task => task.project_id === projectId);
+  }, [tasks]);
+
+  /**
+   * Load tasks for a specific project (deprecated - use getTasksByProject instead)
+   * Kept for backward compatibility but now just filters from all tasks
+   * @param {string} projectId - Project ID
+   * @param {boolean} forceRefresh - Force refresh all tasks
+   */
+  const loadTasks = useCallback(
+    async (projectId, forceRefresh = false) => {
+      if (!token) return;
+      
+      // If we need to refresh or don't have tasks yet, fetch all
+      if (forceRefresh || tasks.length === 0) {
+        await loadAllTasks();
+      }
+      
+      // Return filtered tasks (client-side filtering)
+      if (projectId) {
+        return getTasksByProject(projectId);
+      }
+      
+      return tasks;
+    },
+    [token, tasks, loadAllTasks, getTasksByProject]
+  );
+
+  const addTask = async (task) => {
+    try {
+      const data = await apiCreateTask(task);
+      // Add to all tasks
+      setTasks((prev) => [...prev, data]);
+      // Add to project cache if project_id exists
+      if (task.project_id) {
+        setTasksByProject(prev => {
+          const newMap = new Map(prev);
+          const projectTasks = newMap.get(task.project_id) || [];
+          newMap.set(task.project_id, [...projectTasks, data]);
+          return newMap;
+        });
+      }
+      return data;
+    } catch (error) {
+      console.error('Failed to create task', error);
+      throw error;
+    }
   };
 
-  const addTask = (task) => {
-    setTasks(prev => [...prev, { ...task, id: Date.now() }]);
+  const updateTask = async (id, updates) => {
+    // Find the task to get its project_id
+    const taskToUpdate = tasks.find(t => t.id === id);
+    const projectId = updates.project_id || taskToUpdate?.project_id;
+
+    // Optimistic update
+    setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, ...updates } : task)));
+    
+    // Update cache if project_id exists
+    if (projectId) {
+      setTasksByProject(prev => {
+        const newMap = new Map(prev);
+        const projectTasks = newMap.get(projectId) || [];
+        newMap.set(projectId, projectTasks.map(task => task.id === id ? { ...task, ...updates } : task));
+        return newMap;
+      });
+    }
+
+    try {
+      const data = await apiUpdateTask(id, updates);
+      // Update with server response
+      setTasks((prev) => prev.map((task) => (task.id === id ? data : task)));
+      
+      // Update cache
+      if (projectId) {
+        setTasksByProject(prev => {
+          const newMap = new Map(prev);
+          const projectTasks = newMap.get(projectId) || [];
+          newMap.set(projectId, projectTasks.map(task => task.id === id ? data : task));
+          return newMap;
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to update task', error);
+      // Revert optimistic update on error
+      if (projectId) {
+        loadTasks(projectId, true); // Force refresh
+      }
+      throw error;
+    }
   };
 
-  const updateTask = (id, updates) => {
-    setTasks(prev => 
-      prev.map(task => 
-        task.id === id ? { ...task, ...updates } : task
-      )
-    );
+  const deleteTask = async (id) => {
+    // Optimistic removal
+    const taskToDelete = tasks.find(t => t.id === id);
+    const projectId = taskToDelete?.project_id;
+    
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+    
+    // Remove from cache
+    if (projectId) {
+      setTasksByProject(prev => {
+        const newMap = new Map(prev);
+        const projectTasks = newMap.get(projectId) || [];
+        newMap.set(projectId, projectTasks.filter(task => task.id !== id));
+        return newMap;
+      });
+    }
+    
+    try {
+      await apiDeleteTask(id);
+    } catch (error) {
+      console.error('Failed to delete task', error);
+      // Revert optimistic removal
+      if (taskToDelete) {
+        setTasks((prev) => [...prev, taskToDelete]);
+        if (projectId) {
+          setTasksByProject(prev => {
+            const newMap = new Map(prev);
+            const projectTasks = newMap.get(projectId) || [];
+            newMap.set(projectId, [...projectTasks, taskToDelete]);
+            return newMap;
+          });
+        }
+      }
+      throw error;
+    }
   };
 
-  const deleteTask = (id) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+  const sendInvite = async ({ projectId, email, role }) => {
+    if (!projectId) {
+      throw new Error('Project is required to send an invite.');
+    }
+    try {
+      return await inviteToProject(projectId, { email, role });
+    } catch (error) {
+      console.error('Failed to send invite', error);
+      throw error;
+    }
   };
 
-  const addDocument = (document) => {
-    setDocuments(prev => [...prev, { ...document, id: Date.now() }]);
+  const loadDocuments = useCallback(async (projectId) => {
+    if (!token || !projectId) return;
+    try {
+      const data = await apiFetchDocuments(projectId);
+      setDocuments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch documents', error);
+      throw error;
+    }
+  }, [token]);
+
+  const createDocument = async (payload) => {
+    try {
+      const data = await apiCreateDocument(payload);
+      setDocuments((prev) => [...prev, data]);
+      return data;
+    } catch (error) {
+      console.error('Failed to create document', error);
+      throw error;
+    }
   };
+
+  const loadAnalytics = useCallback(async (projectId) => {
+    if (!token || !projectId) return null;
+    try {
+      return await apiGetAnalytics(projectId);
+    } catch (error) {
+      console.error('Failed to fetch analytics', error);
+      throw error;
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token && currentCompany) {
+      loadNotifications();
+      loadProjects();
+      loadAllTasks(); // Always load all tasks by default
+      const interval = setInterval(() => loadNotifications(), 60000);
+      return () => clearInterval(interval);
+    } else {
+      setNotifications([]);
+      setProjects([]);
+      setTasks([]);
+      setTasksByProject(new Map());
+    }
+  }, [token, currentCompany, loadNotifications, loadProjects, loadAllTasks]);
 
   const value = {
     notifications,
-    addNotification,
+    notificationsLoading,
+    addNotification: (notification) =>
+      setNotifications((prev) => [
+        { ...notification, id: Date.now(), timestamp: new Date(), read: false },
+        ...prev
+      ]),
     markNotificationRead,
+    markAllNotificationsRead,
     projects,
-    setProjects,
+    projectsLoading,
+    loadProjects,
+    createProject,
     tasks,
+    tasksLoading,
+    loadTasks,
+    loadAllTasks,
+    getTasksByProject,
     addTask,
     updateTask,
     deleteTask,
     documents,
-    addDocument,
-    setDocuments
+    loadDocuments,
+    createDocument,
+    loadAnalytics,
+    addDocument: (document) =>
+      setDocuments((prev) => [...prev, { ...document, id: Date.now() }]),
+    setDocuments,
+    sendInvite,
+    upgradeModalOpen,
+    upgradeMessage,
+    openUpgradeModal,
+    closeUpgradeModal,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,0 +1,51 @@
+.rate-limit-message {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #fde68a;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.rate-limit-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rate-limit-icon {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.rate-limit-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.rate-limit-description {
+  margin: 0 0 16px 0;
+  color: #78350f;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.rate-limit-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.rate-limit-timer svg {
+  color: #d97706;
+}
+

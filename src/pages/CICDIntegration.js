@@ -36,66 +36,14 @@ const CICDIntegration = () => {
     setShowCodeModal(true);
   };
 
-  const pipelines = [
-    {
-      id: 1,
-      name: 'Main CI/CD Pipeline',
-      branch: 'main',
-      status: 'success',
-      lastRun: '10 minutes ago',
-      duration: '4m 32s',
-      commit: '4398a8d: Fix authentication bug',
-      author: 'John Doe',
-      tests: { passed: 45, failed: 0, total: 45 }
-    },
-    {
-      id: 2,
-      name: 'Staging Deployment',
-      branch: 'staging',
-      status: 'running',
-      lastRun: 'Now',
-      duration: '2m 15s',
-      commit: '08bc01b: Update dashboard UI',
-      author: 'Jane Smith',
-      tests: { passed: 23, failed: 0, total: 30 }
-    },
-    {
-      id: 3,
-      name: 'Feature Branch Build',
-      branch: 'feature/user-auth',
-      status: 'failed',
-      lastRun: '1 hour ago',
-      duration: '3m 18s',
-      commit: '2f6c81a: Add OAuth integration',
-      author: 'Mike Johnson',
-      tests: { passed: 38, failed: 5, total: 43 }
-    },
-    {
-      id: 4,
-      name: 'Production Deploy',
-      branch: 'main',
-      status: 'success',
-      lastRun: '2 hours ago',
-      duration: '6m 42s',
-      commit: '25d2e6c: Release v2.4.1',
-      author: 'Sarah Wilson',
-      tests: { passed: 52, failed: 0, total: 52 }
-    }
-  ];
+  // TODO: Load pipelines from CI/CD API when available
+  const pipelines = [];
 
-  const deployments = [
-    { id: 1, env: 'Production', version: 'v2.4.1', status: 'success', time: '2 hours ago', uptime: '99.9%' },
-    { id: 2, env: 'Staging', version: 'v2.5.0-rc1', status: 'success', time: '30 minutes ago', uptime: '100%' },
-    { id: 3, env: 'Development', version: 'v2.5.0-beta', status: 'running', time: 'Now', uptime: '98.5%' }
-  ];
+  // TODO: Load deployments from CI/CD API when available
+  const deployments = [];
 
-  const commits = [
-    { id: 1, hash: '4398a8d', message: 'Fix authentication bug', author: 'John Doe', time: '10 minutes ago', branch: 'main' },
-    { id: 2, hash: '08bc01b', message: 'Update dashboard UI', author: 'Jane Smith', time: '1 hour ago', branch: 'staging' },
-    { id: 3, hash: '2f6c81a', message: 'Add OAuth integration', author: 'Mike Johnson', time: '2 hours ago', branch: 'feature/user-auth' },
-    { id: 4, hash: '25d2e6c', message: 'Release v2.4.1', author: 'Sarah Wilson', time: '3 hours ago', branch: 'main' },
-    { id: 5, hash: '1a4ed74', message: 'Refactor API endpoints', author: 'Tom Brown', time: '5 hours ago', branch: 'develop' }
-  ];
+  // TODO: Load commits from CI/CD API when available
+  const commits = [];
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -130,9 +78,9 @@ const CICDIntegration = () => {
             <CheckCircle size={24} />
           </div>
           <div className="overview-content">
-            <div className="overview-value">98.5%</div>
+            <div className="overview-value">N/A</div>
             <div className="overview-label">Build Success Rate</div>
-            <div className="overview-trend success">+2.3% this week</div>
+            <div className="overview-trend" style={{ color: '#718096' }}>Connect CI/CD to see data</div>
           </div>
         </div>
 
@@ -141,9 +89,9 @@ const CICDIntegration = () => {
             <Activity size={24} />
           </div>
           <div className="overview-content">
-            <div className="overview-value">3</div>
+            <div className="overview-value">0</div>
             <div className="overview-label">Active Pipelines</div>
-            <div className="overview-trend">Running now</div>
+            <div className="overview-trend" style={{ color: '#718096' }}>No active pipelines</div>
           </div>
         </div>
 
@@ -152,9 +100,9 @@ const CICDIntegration = () => {
             <Server size={24} />
           </div>
           <div className="overview-content">
-            <div className="overview-value">45</div>
+            <div className="overview-value">0</div>
             <div className="overview-label">Deployments Today</div>
-            <div className="overview-trend success">+12 from yesterday</div>
+            <div className="overview-trend" style={{ color: '#718096' }}>No deployments yet</div>
           </div>
         </div>
 
@@ -163,9 +111,9 @@ const CICDIntegration = () => {
             <Code size={24} />
           </div>
           <div className="overview-content">
-            <div className="overview-value">127</div>
+            <div className="overview-value">0</div>
             <div className="overview-label">Commits This Week</div>
-            <div className="overview-trend success">+18 from last week</div>
+            <div className="overview-trend" style={{ color: '#718096' }}>No commits yet</div>
           </div>
         </div>
       </div>
@@ -198,8 +146,9 @@ const CICDIntegration = () => {
       {/* Pipelines Tab */}
       {activeTab === 'pipelines' && (
         <div className="cicd-content">
-          <div className="pipelines-list">
-            {pipelines.map(pipeline => (
+          {pipelines.length > 0 ? (
+            <div className="pipelines-list">
+              {pipelines.map(pipeline => (
               <div key={pipeline.id} className="pipeline-item">
                 <div className="pipeline-status">
                   {getStatusIcon(pipeline.status)}
@@ -252,16 +201,24 @@ const CICDIntegration = () => {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state" style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <GitBranch size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No pipelines configured</h3>
+              <p style={{ color: '#718096', marginBottom: '24px' }}>Connect your CI/CD to see pipeline activity</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Deployments Tab */}
       {activeTab === 'deployments' && (
         <div className="cicd-content">
-          <div className="deployments-grid">
-            {deployments.map(deploy => (
+          {deployments.length > 0 ? (
+            <div className="deployments-grid">
+              {deployments.map(deploy => (
               <div key={deploy.id} className="deployment-item">
                 <div className="deployment-header">
                   <div className="deployment-env">
@@ -299,16 +256,24 @@ const CICDIntegration = () => {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state" style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <Server size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No deployments yet</h3>
+              <p style={{ color: '#718096', marginBottom: '24px' }}>Deployments will appear here once your CI/CD is configured</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Commits Tab */}
       {activeTab === 'commits' && (
         <div className="cicd-content">
-          <div className="commits-list">
-            {commits.map(commit => (
+          {commits.length > 0 ? (
+            <div className="commits-list">
+              {commits.map(commit => (
               <div key={commit.id} className="commit-item">
                 <div className="commit-icon">
                   <GitBranch size={18} />
@@ -330,8 +295,15 @@ const CICDIntegration = () => {
                   View Code
                 </button>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state" style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <Code size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No commits yet</h3>
+              <p style={{ color: '#718096', marginBottom: '24px' }}>Recent commits will appear here once your CI/CD is connected</p>
+            </div>
+          )}
         </div>
       )}
 

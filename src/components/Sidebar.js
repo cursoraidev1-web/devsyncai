@@ -1,64 +1,237 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
-  FileText, 
-  CheckSquare, 
-  FolderOpen, 
-  GitBranch, 
-  BarChart3, 
-  Bell,
-  Settings
+  CheckSquare,
+  FolderOpen,
+  Users,
+  Wrench,
+  Network,
+  ArrowRightLeft,
+  Bot,
+  Puzzle,
+  Settings,
+  Headphones,
+  MessageSquare,
+  LogOut,
+  ChevronRight
 } from 'lucide-react';
+import Modal from './ui/Modal';
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen }) => {
-  const { user } = useAuth();
+  const { user, logout, logoutLoading } = useAuth();
+  const location = useLocation();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
 
-  const navItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/prd-designer', icon: FileText, label: 'PRD Designer' },
-    { path: '/tasks', icon: CheckSquare, label: 'Task Tracker' },
-    { path: '/documents', icon: FolderOpen, label: 'Documents' },
-    { path: '/ci-cd', icon: GitBranch, label: 'CI/CD' },
-    { path: '/analytics', icon: BarChart3, label: 'Analytics' },
-    { path: '/notifications', icon: Bell, label: 'Notifications' },
-    { path: '/settings', icon: Settings, label: 'Settings' },
+  // Define access levels for different roles
+  const getAccessLevel = () => {
+    if (!user) return 'viewer';
+    
+    const roleAccess = {
+      'admin': 'admin',
+      'pm': 'editor',
+      'product-owner': 'editor',
+      'developer': 'editor',
+      'qa': 'editor',
+      'devops': 'editor'
+    };
+    
+    return roleAccess[user.role] || 'viewer';
+  };
+
+  const accessLevel = getAccessLevel();
+  const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+
+  // Main Menu - Available to all authenticated users
+  const mainMenuItems = [
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', access: 'all' },
+    { path: '/tasks', icon: CheckSquare, label: 'My Tasks', access: 'all' },
+    { path: '/projects', icon: FolderOpen, label: 'Projects', access: 'all' },
+    { path: '/teams', icon: Users, label: 'Teams', access: 'all' },
   ];
 
+  // Product Tools - Available to editors and admins
+  const productToolsItems = [
+    { path: '/prd-designer', icon: Wrench, label: 'PRD Designer', access: 'editor' },
+    { path: '/documents', icon: Network, label: 'Documentation Hub', access: 'editor' },
+    { path: '/handoffs', icon: ArrowRightLeft, label: 'Handoff System', access: 'editor' },
+    { path: '/ci-cd', icon: Bot, label: 'CI/CD Auto-Agent', access: 'editor' },
+    { path: '/integrations', icon: Puzzle, label: 'Integrations', access: 'editor' },
+  ];
+
+  // Settings - Available to all
+  const settingsItems = [
+    { path: '/settings', icon: Settings, label: 'Settings', access: 'all' },
+    { path: '/support', icon: Headphones, label: 'Support & Help', access: 'all' },
+    { path: '/feedback', icon: MessageSquare, label: 'Feedback', access: 'all' },
+  ];
+
+  const canAccess = (itemAccess) => {
+    if (itemAccess === 'all') return true;
+    if (itemAccess === 'editor' && (accessLevel === 'editor' || accessLevel === 'admin')) return true;
+    if (itemAccess === 'admin' && accessLevel === 'admin') return true;
+    return false;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowLogoutModal(false);
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
-      <div className="sidebar-header">
-        <h1 className="sidebar-logo">Zyndrx</h1>
-        <p className="sidebar-tagline">Project Coordination</p>
-      </div>
-
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => 
-              `nav-item ${isActive ? 'active' : ''}`
-            }
-          >
-            <item.icon size={20} />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="user-info">
-          <img src={user?.avatar} alt={user?.name} className="user-avatar" />
-          <div className="user-details">
-            <div className="user-name">{user?.name}</div>
-            <div className="user-role">{user?.role}</div>
+    <>
+      <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="sidebar-logo-icon">Z</div>
+            <span className="sidebar-logo-text">ZynDrx</span>
           </div>
         </div>
-      </div>
-    </aside>
+
+        <nav className="sidebar-nav">
+          {/* Main Menu Section */}
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">MAIN MENU</div>
+            {mainMenuItems.map((item) => {
+              if (!canAccess(item.access)) return null;
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path || 
+                              (item.path === '/dashboard' && location.pathname.startsWith('/dashboard'));
+              
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+
+          {/* Product Tools Section */}
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">PRODUCT TOOLS</div>
+            {productToolsItems.map((item) => {
+              if (!canAccess(item.access)) return null;
+              const Icon = item.icon;
+              const isActive = location.pathname.startsWith(item.path);
+              
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+
+          {/* Settings Section */}
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">SETTINGS</div>
+            {settingsItems.map((item) => {
+              if (!canAccess(item.access)) return null;
+              const Icon = item.icon;
+              const isActive = location.pathname.startsWith(item.path);
+              
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div 
+            className="user-profile-card"
+            onClick={() => setShowLogoutModal(true)}
+          >
+            <div className="user-profile-avatar">
+              {userInitials}
+            </div>
+            <div className="user-profile-info">
+              <div className="user-profile-name">{user?.name || 'User'}</div>
+              <div className="user-profile-email">{user?.email || 'user@example.com'}</div>
+            </div>
+            <ChevronRight size={16} className="user-profile-arrow" />
+          </div>
+        </div>
+      </aside>
+
+      {/* Logout Modal */}
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Log Out?"
+        size="sm"
+        footer={
+          <>
+            <button 
+              className="modal-btn-cancel"
+              onClick={() => setShowLogoutModal(false)}
+            >
+              Cancel
+            </button>
+            <button 
+              className="modal-btn-danger"
+              onClick={handleLogout}
+              disabled={logoutLoading}
+            >
+              {logoutLoading ? (
+                <>
+                  <span className="spinner-small"></span>
+                  Logging out...
+                </>
+              ) : (
+                'Log Out'
+              )}
+            </button>
+          </>
+        }
+      >
+        <div className="logout-modal-content">
+          <p className="logout-modal-description">
+            You're about to log out of your ZynDrx workspace.
+          </p>
+          <div className="logout-user-info">
+            <div className="logout-user-avatar">{userInitials}</div>
+            <div>
+              <div className="logout-user-name">{user?.name || 'User'}</div>
+              <div className="logout-user-email">{user?.email || 'user@example.com'}</div>
+            </div>
+          </div>
+          <label className="logout-remember-device">
+            <input
+              type="checkbox"
+              checked={rememberDevice}
+              onChange={(e) => setRememberDevice(e.target.checked)}
+            />
+            <span>Remember this device</span>
+          </label>
+        </div>
+      </Modal>
+    </>
   );
 };
 

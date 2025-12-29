@@ -1,0 +1,582 @@
+.handoff-details-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.handoff-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #4A5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #F9FAFB;
+  border-color: #CBD5E0;
+}
+
+.handoff-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.review-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-btn.approve {
+  background: #22C55E;
+  color: white;
+}
+
+.review-btn.approve:hover {
+  background: #16A34A;
+}
+
+.review-btn.reject {
+  background: #EF4444;
+  color: white;
+}
+
+.review-btn.reject:hover {
+  background: #DC2626;
+}
+
+.handoff-details-content {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+.handoff-main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.handoff-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.handoff-title-section h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1A1F36;
+  margin: 0;
+  flex: 1;
+}
+
+.handoff-meta-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.handoff-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #F9FAFB;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4A5568;
+}
+
+.status-icon.completed {
+  color: #22C55E;
+}
+
+.status-icon.in-review {
+  color: #F59E0B;
+}
+
+.status-icon.pending {
+  color: #718096;
+}
+
+.handoff-priority-badge {
+  padding: 6px 12px;
+  background: #F9FAFB;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.handoff-participants {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+}
+
+.participant-card {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.participant-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #6B46C1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.participant-info {
+  flex: 1;
+}
+
+.participant-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.participant-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1F36;
+  margin-bottom: 4px;
+}
+
+.participant-role {
+  font-size: 13px;
+  color: #4A5568;
+  margin-bottom: 4px;
+}
+
+.participant-email {
+  font-size: 12px;
+  color: #718096;
+}
+
+.participant-arrow {
+  font-size: 24px;
+  color: #CBD5E0;
+  flex-shrink: 0;
+}
+
+.handoff-description-section,
+.handoff-tags-section,
+.handoff-attachments-section,
+.handoff-comments-section {
+  padding: 24px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+}
+
+.handoff-description-section h2,
+.handoff-tags-section h2,
+.handoff-attachments-section h2,
+.handoff-comments-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1A1F36;
+  margin: 0 0 16px 0;
+}
+
+.handoff-description-section p {
+  font-size: 14px;
+  color: #4A5568;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.handoff-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.handoff-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #EEF0FF;
+  color: #6B46C1;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+}
+
+.attachment-item svg {
+  color: #718096;
+  flex-shrink: 0;
+}
+
+.attachment-info {
+  flex: 1;
+}
+
+.attachment-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1A1F36;
+  margin-bottom: 4px;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: #718096;
+}
+
+.attachment-download {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6B46C1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.attachment-download:hover {
+  background: #EEF0FF;
+  border-color: #6B46C1;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+}
+
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #6B46C1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.comment-author {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1F36;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: #718096;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #4A5568;
+  line-height: 1.5;
+}
+
+.comment-input {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-input textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.comment-input textarea:focus {
+  outline: none;
+  border-color: #6B46C1;
+  box-shadow: 0 0 0 3px rgba(132, 9, 189, 0.1);
+}
+
+.comment-submit-btn {
+  align-self: flex-end;
+  padding: 8px 16px;
+  background: #6B46C1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.comment-submit-btn:hover {
+  background: #5B21B6;
+}
+
+.handoff-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-section {
+  padding: 20px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+}
+
+.sidebar-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1F36;
+  margin: 0 0 16px 0;
+}
+
+.detail-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-item svg {
+  color: #718096;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #718096;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1A1F36;
+}
+
+.review-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1A1F36;
+}
+
+.form-group textarea {
+  padding: 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #6B46C1;
+  box-shadow: 0 0 0 3px rgba(132, 9, 189, 0.1);
+}
+
+.review-summary {
+  padding: 16px;
+  background: #F9FAFB;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+}
+
+.review-summary h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1A1F36;
+  margin: 0 0 12px 0;
+}
+
+.review-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.review-summary-item span:first-child {
+  color: #718096;
+}
+
+.review-summary-item span:last-child {
+  color: #1A1F36;
+  font-weight: 500;
+}
+
+.modal-btn-cancel,
+.modal-btn-primary,
+.modal-btn-danger {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-btn-cancel {
+  background: #E2E8F0;
+  color: #1A1F36;
+}
+
+.modal-btn-cancel:hover {
+  background: #CBD5E0;
+}
+
+.modal-btn-primary {
+  background: #6B46C1;
+  color: white;
+}
+
+.modal-btn-primary:hover {
+  background: #5B21B6;
+}
+
+.modal-btn-danger {
+  background: #EF4444;
+  color: white;
+}
+
+.modal-btn-danger:hover {
+  background: #DC2626;
+}
+
+@media (max-width: 1024px) {
+  .handoff-details-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .handoff-details-page {
+    padding: 16px;
+  }
+
+  .handoff-details-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .handoff-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .handoff-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .handoff-participants {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .participant-arrow {
+    transform: rotate(90deg);
+  }
+}
+

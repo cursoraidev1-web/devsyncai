@@ -18,37 +18,40 @@ const PMDashboardNew = () => {
   const navigate = useNavigate();
   const { projects, tasks, documents } = useApp();
 
+  const activeProjectsCount = projects.filter(p => p.status === 'active').length;
+  const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
+
   const stats = [
     {
       label: 'Active Projects',
-      value: projects.filter(p => p.status === 'active').length,
+      value: activeProjectsCount,
       icon: FileText,
       color: 'var(--color-primary)',
-      trend: '+12%',
+      trend: activeProjectsCount > 0 ? `${activeProjectsCount} active` : 'No active projects',
       bgColor: 'var(--color-primary-soft)'
     },
     {
       label: 'Completed Tasks',
-      value: tasks.filter(t => t.status === 'completed').length,
+      value: completedTasksCount,
       icon: CheckCircle,
       color: 'var(--color-success)',
-      trend: '+8%',
+      trend: completedTasksCount > 0 ? `${completedTasksCount} completed` : 'No completed tasks',
       bgColor: '#D1FAE5'
     },
     {
       label: 'Pending Approvals',
-      value: 3,
+      value: 0, // TODO: Load from API when handoff system is available
       icon: AlertCircle,
       color: 'var(--color-warning)',
-      trend: '-2%',
+      trend: 'No pending',
       bgColor: '#FEF3C7'
     },
     {
       label: 'Team Members',
-      value: 12,
+      value: 0, // TODO: Load from teams API
       icon: Users,
       color: '#8b5cf6',
-      trend: '+3',
+      trend: 'No members',
       bgColor: '#EDE9FE'
     }
   ];
@@ -114,13 +117,12 @@ const PMDashboardNew = () => {
                   </div>
                   <div style={{ 
                     fontSize: '12px',
-                    color: 'var(--color-success)',
+                    color: stat.value === 0 ? 'var(--color-text-muted)' : 'var(--color-text-secondary)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    <TrendingUp size={14} />
-                    {stat.trend} from last month
+                    {stat.trend}
                   </div>
                 </div>
               </div>

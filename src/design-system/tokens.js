@@ -4,9 +4,9 @@
 export const tokens = {
   // Colors
   colors: {
-    primary: '#4A3AFF',
-    primaryHover: '#3A2FCC',
-    primarySoft: '#EEF0FF',
+    primary: '#8409BD',
+    primaryHover: '#6B0898',
+    primarySoft: '#F3E5F5',
     
     background: '#F5F7FA',
     surface: '#FFFFFF',

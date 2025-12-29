@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { 
   Bug, 
   CheckCircle, 
@@ -15,52 +16,64 @@ import './Dashboard.css';
 const QADashboard = () => {
   const navigate = useNavigate();
   const { tasks } = useApp();
+  const { user } = useAuth();
 
-  const qaTasks = tasks.filter(t => t.assignee === 'qa' || t.tags.includes('testing'));
+  // Filter tasks assigned to current QA user or tagged with testing
+  const qaTasks = tasks.filter(t => 
+    t.assigned_to === user?.id || 
+    t.assignee_id === user?.id ||
+    t.tags?.includes('testing') ||
+    (user?.role === 'qa' && !t.assigned_to && !t.assignee_id) // Fallback: unassigned tasks for QA
+  );
   
+  // Calculate stats from actual tasks
+  const testTasks = qaTasks.filter(t => t.tags?.includes('testing') || t.type === 'test');
+  const bugTasks = qaTasks.filter(t => t.tags?.includes('bug') || t.priority === 'high');
+  const pendingTasks = qaTasks.filter(t => t.status === 'todo' || t.status === 'in-progress');
+  const completedTasks = qaTasks.filter(t => t.status === 'completed');
+  const passRate = qaTasks.length > 0 ? Math.round((completedTasks.length / qaTasks.length) * 100) : 0;
+
   const stats = [
     {
       label: 'Test Cases',
-      value: 45,
+      value: testTasks.length,
       icon: CheckCircle,
       color: '#4f46e5',
-      trend: '+12 this week'
+      trend: testTasks.length > 0 ? `${testTasks.length} active` : 'No test cases'
     },
     {
       label: 'Open Bugs',
-      value: 8,
+      value: bugTasks.length,
       icon: Bug,
       color: '#ef4444',
-      trend: '-3 from last week'
+      trend: bugTasks.length > 0 ? `${bugTasks.length} open` : 'No open bugs'
     },
     {
       label: 'Tests Pending',
-      value: 12,
+      value: pendingTasks.length,
       icon: Clock,
       color: '#f59e0b',
-      trend: '5 critical'
+      trend: pendingTasks.length > 0 ? `${pendingTasks.length} pending` : 'No pending tests'
     },
     {
       label: 'Pass Rate',
-      value: '94%',
+      value: `${passRate}%`,
       icon: TrendingUp,
       color: '#10b981',
-      trend: '+2% improvement'
+      trend: qaTasks.length > 0 ? `${completedTasks.length} completed` : 'No tests run'
     }
   ];
 
-  const testResults = [
-    { id: 1, name: 'Authentication Flow', status: 'passed', tests: 24, failed: 0 },
-    { id: 2, name: 'User Dashboard', status: 'passed', tests: 18, failed: 0 },
-    { id: 3, name: 'Payment Integration', status: 'failed', tests: 15, failed: 3 },
-    { id: 4, name: 'API Endpoints', status: 'running', tests: 32, failed: 0 }
-  ];
+  // TODO: Load test results from API when CI/CD integration is available
+  const testResults = [];
 
-  const recentBugs = [
-    { id: 1, title: 'Login button not responsive on mobile', severity: 'high', status: 'open' },
-    { id: 2, title: 'Dashboard data not loading', severity: 'critical', status: 'in-progress' },
-    { id: 3, title: 'Typo in success message', severity: 'low', status: 'resolved' }
-  ];
+  // Use actual bug tasks instead of demo data
+  const recentBugs = bugTasks.slice(0, 5).map(task => ({
+    id: task.id,
+    title: task.title,
+    severity: task.priority || 'medium',
+    status: task.status
+  }));
 
   return (
     <div className="dashboard">
@@ -104,7 +117,8 @@ const QADashboard = () => {
             </button>
           </div>
           <div className="test-results-list">
-            {testResults.map(test => (
+            {testResults.length > 0 ? (
+              testResults.map(test => (
               <div key={test.id} className="test-result-card">
                 <div className="test-header">
                   <h3>{test.name}</h3>
@@ -135,7 +149,14 @@ const QADashboard = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <CheckCircle size={48} />
+                <p>No test results yet</p>
+                <p style={{ fontSize: '14px', color: '#718096' }}>Connect CI/CD to see test results</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -148,7 +169,8 @@ const QADashboard = () => {
             </button>
           </div>
           <div className="activity-list">
-            {recentBugs.map(bug => (
+            {recentBugs.length > 0 ? (
+              recentBugs.map(bug => (
               <div key={bug.id} className="activity-item">
                 <div className="activity-icon">
                   {bug.status === 'resolved' ? (
@@ -173,7 +195,13 @@ const QADashboard = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <Bug size={48} />
+                <p>No bugs reported</p>
+              </div>
+            )}
           </div>
         </div>
 

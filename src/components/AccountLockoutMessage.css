@@ -1,0 +1,78 @@
+.account-lockout-message {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #fecaca;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.lockout-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.lockout-icon {
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.lockout-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #991b1b;
+}
+
+.lockout-description {
+  margin: 0 0 16px 0;
+  color: #7f1d1d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.lockout-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #991b1b;
+  font-weight: 500;
+}
+
+.lockout-timer svg {
+  color: #dc2626;
+}
+
+.lockout-progress {
+  margin-bottom: 12px;
+}
+
+.lockout-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #fee2e2;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.lockout-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.lockout-note {
+  margin: 0;
+  font-size: 12px;
+  color: #991b1b;
+  opacity: 0.8;
+}
+

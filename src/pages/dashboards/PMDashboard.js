@@ -16,34 +16,37 @@ const PMDashboard = () => {
   const navigate = useNavigate();
   const { projects, tasks, documents } = useApp();
 
+  const activeProjectsCount = projects.filter(p => p.status === 'active').length;
+  const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
+
   const stats = [
     {
       label: 'Active Projects',
-      value: projects.filter(p => p.status === 'active').length,
+      value: activeProjectsCount,
       icon: FileText,
       color: '#4f46e5',
-      trend: '+12%'
+      trend: activeProjectsCount > 0 ? `${activeProjectsCount} active` : 'No active projects'
     },
     {
       label: 'Completed Tasks',
-      value: tasks.filter(t => t.status === 'completed').length,
+      value: completedTasksCount,
       icon: CheckCircle,
       color: '#10b981',
-      trend: '+8%'
+      trend: completedTasksCount > 0 ? `${completedTasksCount} completed` : 'No completed tasks'
     },
     {
       label: 'Pending Approvals',
-      value: 3,
+      value: 0, // TODO: Load from API when handoff system is available
       icon: AlertCircle,
       color: '#f59e0b',
-      trend: '-2%'
+      trend: 'No pending'
     },
     {
       label: 'Team Members',
-      value: 12,
+      value: 0, // TODO: Load from teams API
       icon: Users,
       color: '#8b5cf6',
-      trend: '+3'
+      trend: 'No members'
     }
   ];
 
@@ -74,9 +77,8 @@ const PMDashboard = () => {
             <div className="stat-content">
               <div className="stat-label">{stat.label}</div>
               <div className="stat-value">{stat.value}</div>
-              <div className="stat-trend">
-                <TrendingUp size={14} />
-                {stat.trend} from last month
+              <div className="stat-trend" style={{ color: stat.value === 0 ? '#718096' : 'inherit' }}>
+                {stat.trend}
               </div>
             </div>
           </div>
@@ -93,8 +95,9 @@ const PMDashboard = () => {
             </button>
           </div>
           <div className="projects-list">
-            {activeProjects.map(project => (
-              <div key={project.id} className="project-card">
+            {activeProjects.length > 0 ? (
+              activeProjects.map(project => (
+                <div key={project.id} className="project-card">
                 <div className="project-info">
                   <h3>{project.name}</h3>
                   <div className="project-meta">
@@ -127,7 +130,16 @@ const PMDashboard = () => {
                   </button>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <FileText size={48} />
+                <p>No active projects</p>
+                <button className="btn btn-primary" onClick={() => navigate('/projects')}>
+                  Create Your First Project
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -140,8 +152,9 @@ const PMDashboard = () => {
             </button>
           </div>
           <div className="activity-list">
-            {recentTasks.map(task => (
-              <div key={task.id} className="activity-item">
+            {recentTasks.length > 0 ? (
+              recentTasks.map(task => (
+                <div key={task.id} className="activity-item">
                 <div className="activity-icon">
                   {task.status === 'completed' ? (
                     <CheckCircle size={18} className="text-success" />
@@ -159,7 +172,13 @@ const PMDashboard = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <CheckCircle size={48} />
+                <p>No recent tasks</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -172,8 +191,9 @@ const PMDashboard = () => {
             </button>
           </div>
           <div className="documents-grid">
-            {recentDocs.map(doc => (
-              <div key={doc.id} className="document-card">
+            {recentDocs.length > 0 ? (
+              recentDocs.map(doc => (
+                <div key={doc.id} className="document-card">
                 <div className="document-icon">
                   <FileText size={32} />
                 </div>
@@ -190,7 +210,13 @@ const PMDashboard = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <FileText size={48} />
+                <p>No documents yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

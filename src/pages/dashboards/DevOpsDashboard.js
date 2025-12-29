@@ -15,83 +15,46 @@ import './Dashboard.css';
 const DevOpsDashboard = () => {
   const navigate = useNavigate();
 
+  // TODO: Load stats from CI/CD API when available
   const stats = [
     {
       label: 'Active Deployments',
-      value: 3,
+      value: 0,
       icon: Server,
       color: '#4f46e5',
-      trend: '2 in progress'
+      trend: 'No active deployments'
     },
     {
       label: 'Build Success',
-      value: '98.5%',
+      value: '0%',
       icon: CheckCircle,
       color: '#10b981',
-      trend: '+1.2% this week'
+      trend: 'No builds yet'
     },
     {
       label: 'System Uptime',
-      value: '99.9%',
+      value: 'N/A',
       icon: Activity,
       color: '#8b5cf6',
-      trend: '30 days streak'
+      trend: 'Connect CI/CD to monitor'
     },
     {
       label: 'Open Incidents',
-      value: 2,
+      value: 0,
       icon: AlertCircle,
       color: '#f59e0b',
-      trend: '-1 from yesterday'
+      trend: 'No incidents'
     }
   ];
 
-  const deployments = [
-    { 
-      id: 1, 
-      project: 'E-Commerce Platform', 
-      environment: 'Production', 
-      status: 'success', 
-      time: '2 hours ago',
-      version: 'v2.4.1'
-    },
-    { 
-      id: 2, 
-      project: 'Mobile App Backend', 
-      environment: 'Staging', 
-      status: 'in-progress', 
-      time: 'Now',
-      version: 'v1.8.0'
-    },
-    { 
-      id: 3, 
-      project: 'Admin Dashboard', 
-      environment: 'Production', 
-      status: 'success', 
-      time: '5 hours ago',
-      version: 'v3.1.2'
-    },
-    { 
-      id: 4, 
-      project: 'API Gateway', 
-      environment: 'Development', 
-      status: 'failed', 
-      time: '1 day ago',
-      version: 'v2.0.0-beta'
-    }
-  ];
+  // TODO: Load deployments from CI/CD API when available
+  const deployments = [];
 
-  const pipelines = [
-    { id: 1, name: 'Main CI Pipeline', status: 'passing', lastRun: '10 min ago', success: 45, failed: 2 },
-    { id: 2, name: 'Staging Deploy', status: 'running', lastRun: 'Now', success: 23, failed: 0 },
-    { id: 3, name: 'Integration Tests', status: 'passing', lastRun: '1 hour ago', success: 67, failed: 3 }
-  ];
+  // TODO: Load pipelines from CI/CD API when available
+  const pipelines = [];
 
-  const serverMetrics = [
-    { name: 'Production Server', cpu: 45, memory: 62, status: 'healthy' },
-    { name: 'Staging Server', cpu: 28, memory: 48, status: 'healthy' },
-    { name: 'Database Server', cpu: 71, memory: 85, status: 'warning' }
-  ];
+  // TODO: Load server metrics from monitoring API when available
+  const serverMetrics = [];
 
   return (
     <div className="dashboard">
@@ -135,7 +98,8 @@ const DevOpsDashboard = () => {
             </button>
           </div>
           <div className="deployments-list">
-            {deployments.map(deploy => (
+            {deployments.length > 0 ? (
+              deployments.map(deploy => (
               <div key={deploy.id} className="deployment-card">
                 <div className="deployment-status">
                   {deploy.status === 'success' ? (
@@ -161,7 +125,14 @@ const DevOpsDashboard = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <Server size={48} />
+                <p>No deployments yet</p>
+                <p style={{ fontSize: '14px', color: '#718096' }}>Connect CI/CD to see deployment history</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -174,7 +145,8 @@ const DevOpsDashboard = () => {
             </button>
           </div>
           <div className="pipelines-list">
-            {pipelines.map(pipeline => (
+            {pipelines.length > 0 ? (
+              pipelines.map(pipeline => (
               <div key={pipeline.id} className="pipeline-card">
                 <div className="pipeline-header">
                   <h3>{pipeline.name}</h3>
@@ -202,7 +174,14 @@ const DevOpsDashboard = () => {
                   Last run: {pipeline.lastRun}
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <GitBranch size={48} />
+                <p>No pipelines configured</p>
+                <p style={{ fontSize: '14px', color: '#718096' }}>Set up CI/CD pipelines to get started</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -215,7 +194,8 @@ const DevOpsDashboard = () => {
             </button>
           </div>
           <div className="servers-grid">
-            {serverMetrics.map((server, idx) => (
+            {serverMetrics.length > 0 ? (
+              serverMetrics.map((server, idx) => (
               <div key={idx} className="server-card">
                 <div className="server-header">
                   <div className="server-icon">
@@ -265,7 +245,14 @@ const DevOpsDashboard = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="empty-state">
+                <Server size={48} />
+                <p>No server metrics available</p>
+                <p style={{ fontSize: '14px', color: '#718096' }}>Connect monitoring tools to see server metrics</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import TrialBanner from './TrialBanner';
 import './Layout.css';
 
 const Layout = () => {
@@ -43,6 +44,7 @@ const Layout = () => {
       </div>
       
       <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+        <TrialBanner />
         <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <div className="content-area">
           <Outlet />

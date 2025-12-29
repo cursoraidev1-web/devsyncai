@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -13,72 +14,41 @@ import {
 import './Analytics.css';
 
 const Analytics = () => {
+  const { loadAnalytics, projects } = useApp();
   const [timeRange, setTimeRange] = useState('week');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const kpiCards = [
-    {
-      label: 'PRD Completion Rate',
-      value: '87%',
-      change: '+5.2%',
-      trend: 'up',
-      icon: CheckCircle,
-      color: '#10b981'
-    },
-    {
-      label: 'Avg Task Velocity',
-      value: '24',
-      change: '+8',
-      trend: 'up',
-      icon: Activity,
-      color: '#4f46e5'
-    },
-    {
-      label: 'Bug-to-Feature Ratio',
-      value: '0.18',
-      change: '-0.04',
-      trend: 'down',
-      icon: Target,
-      color: '#f59e0b'
-    },
-    {
-      label: 'Team Utilization',
-      value: '92%',
-      change: '+3%',
-      trend: 'up',
-      icon: Users,
-      color: '#8b5cf6'
+  useEffect(() => {
+    const projectId = projects?.[0]?.id;
+    if (projectId) {
+      setLoading(true);
+      loadAnalytics(projectId)
+        .then(data => setAnalyticsData(data))
+        .catch(error => {
+          console.error('Failed to load analytics:', error);
+          setAnalyticsData(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setAnalyticsData(null);
     }
-  ];
+  }, [projects, loadAnalytics, timeRange]);
 
-  const projectProgress = [
-    { name: 'E-Commerce Platform', progress: 65, tasks: { total: 45, completed: 29 }, status: 'on-track' },
-    { name: 'Mobile App Redesign', progress: 40, tasks: { total: 32, completed: 13 }, status: 'on-track' },
-    { name: 'API Integration', progress: 78, tasks: { total: 18, completed: 14 }, status: 'ahead' },
-    { name: 'Admin Dashboard', progress: 25, tasks: { total: 28, completed: 7 }, status: 'behind' }
-  ];
+  // TODO: Load KPI cards from analyticsData when API is available
+  const kpiCards = analyticsData?.kpiCards || [];
 
-  const teamPerformance = [
-    { member: 'John Doe', role: 'Developer', tasksCompleted: 24, onTime: '95%', quality: 'A' },
-    { member: 'Jane Smith', role: 'Designer', tasksCompleted: 18, onTime: '92%', quality: 'A' },
-    { member: 'Mike Johnson', role: 'Developer', tasksCompleted: 21, onTime: '88%', quality: 'B+' },
-    { member: 'Sarah Wilson', role: 'QA Engineer', tasksCompleted: 32, onTime: '97%', quality: 'A+' },
-    { member: 'Tom Brown', role: 'DevOps', tasksCompleted: 15, onTime: '90%', quality: 'A' }
-  ];
+  // TODO: Load project progress from analyticsData when API is available
+  const projectProgress = analyticsData?.projectProgress || [];
 
-  const deploymentMetrics = [
-    { metric: 'Total Deployments', value: 145, change: '+23', period: 'this month' },
-    { metric: 'Success Rate', value: '98.5%', change: '+1.2%', period: 'vs last month' },
-    { metric: 'Avg Deploy Time', value: '4m 32s', change: '-45s', period: 'improvement' },
-    { metric: 'Failed Deployments', value: 3, change: '-2', period: 'this month' }
-  ];
+  // TODO: Load team performance from analyticsData when API is available
+  const teamPerformance = analyticsData?.teamPerformance || [];
 
-  const sprintVelocity = [
-    { sprint: 'Sprint 1', planned: 45, completed: 42, percentage: 93 },
-    { sprint: 'Sprint 2', planned: 48, completed: 46, percentage: 96 },
-    { sprint: 'Sprint 3', planned: 52, completed: 48, percentage: 92 },
-    { sprint: 'Sprint 4', planned: 50, completed: 50, percentage: 100 },
-    { sprint: 'Sprint 5', planned: 55, completed: 51, percentage: 93 }
-  ];
+  // TODO: Load deployment metrics from analyticsData when API is available
+  const deploymentMetrics = analyticsData?.deploymentMetrics || [];
+
+  // TODO: Load sprint velocity from analyticsData when API is available
+  const sprintVelocity = analyticsData?.sprintVelocity || [];
 
   return (
     <div className="analytics">
@@ -104,7 +74,8 @@ const Analytics = () => {
 
       {/* KPI Cards */}
       <div className="kpi-grid">
-        {kpiCards.map((kpi, index) => (
+        {kpiCards.length > 0 ? (
+          kpiCards.map((kpi, index) => (
           <div key={index} className="kpi-card">
             <div className="kpi-icon" style={{ backgroundColor: `${kpi.color}15`, color: kpi.color }}>
               <kpi.icon size={24} />
@@ -118,7 +89,14 @@ const Analytics = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <BarChart3 size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+            <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No analytics data available</h3>
+            <p style={{ color: '#718096' }}>Analytics will appear here once you have project data</p>
+          </div>
+        )}
       </div>
 
       {/* Main Content Grid */}
@@ -128,8 +106,9 @@ const Analytics = () => {
           <div className="section-header">
             <h2>Project Progress</h2>
           </div>
-          <div className="project-progress-list">
-            {projectProgress.map((project, index) => (
+          {projectProgress.length > 0 ? (
+            <div className="project-progress-list">
+              {projectProgress.map((project, index) => (
               <div key={index} className="progress-item">
                 <div className="progress-item-header">
                   <h3>{project.name}</h3>
@@ -152,8 +131,15 @@ const Analytics = () => {
                   />
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Target size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No project progress data</h3>
+              <p style={{ color: '#718096' }}>Project progress will appear here once available</p>
+            </div>
+          )}
         </div>
 
         {/* Sprint Velocity */}
@@ -161,8 +147,10 @@ const Analytics = () => {
           <div className="section-header">
             <h2>Sprint Velocity</h2>
           </div>
-          <div className="velocity-chart">
-            {sprintVelocity.map((sprint, index) => (
+          {sprintVelocity.length > 0 ? (
+            <>
+              <div className="velocity-chart">
+                {sprintVelocity.map((sprint, index) => (
               <div key={index} className="velocity-bar-group">
                 <div className="velocity-bars">
                   <div 
@@ -179,18 +167,26 @@ const Analytics = () => {
                 <div className="velocity-label">{sprint.sprint}</div>
                 <div className="velocity-percentage">{sprint.percentage}%</div>
               </div>
-            ))}
-          </div>
-          <div className="velocity-legend">
-            <div className="legend-item">
-              <div className="legend-color planned"></div>
-              <span>Planned</span>
+                ))}
+              </div>
+              <div className="velocity-legend">
+                <div className="legend-item">
+                  <div className="legend-color planned"></div>
+                  <span>Planned</span>
+                </div>
+                <div className="legend-item">
+                  <div className="legend-color completed"></div>
+                  <span>Completed</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Activity size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No sprint velocity data</h3>
+              <p style={{ color: '#718096' }}>Sprint velocity will appear here once available</p>
             </div>
-            <div className="legend-item">
-              <div className="legend-color completed"></div>
-              <span>Completed</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Team Performance */}
@@ -198,16 +194,17 @@ const Analytics = () => {
           <div className="section-header">
             <h2>Team Performance</h2>
           </div>
-          <div className="team-table">
-            <div className="table-header">
-              <div className="table-col col-member">Team Member</div>
-              <div className="table-col col-role">Role</div>
-              <div className="table-col col-tasks">Tasks Completed</div>
-              <div className="table-col col-ontime">On-Time Delivery</div>
-              <div className="table-col col-quality">Quality Score</div>
-            </div>
-            <div className="table-body">
-              {teamPerformance.map((member, index) => (
+          {teamPerformance.length > 0 ? (
+            <div className="team-table">
+              <div className="table-header">
+                <div className="table-col col-member">Team Member</div>
+                <div className="table-col col-role">Role</div>
+                <div className="table-col col-tasks">Tasks Completed</div>
+                <div className="table-col col-ontime">On-Time Delivery</div>
+                <div className="table-col col-quality">Quality Score</div>
+              </div>
+              <div className="table-body">
+                {teamPerformance.map((member, index) => (
                 <div key={index} className="table-row">
                   <div className="table-col col-member">
                     <div className="member-info">
@@ -238,9 +235,16 @@ const Analytics = () => {
                     </span>
                   </div>
                 </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Users size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No team performance data</h3>
+              <p style={{ color: '#718096' }}>Team performance metrics will appear here once available</p>
+            </div>
+          )}
         </div>
 
         {/* Deployment Metrics */}
@@ -248,8 +252,9 @@ const Analytics = () => {
           <div className="section-header">
             <h2>Deployment Metrics</h2>
           </div>
-          <div className="deployment-metrics-grid">
-            {deploymentMetrics.map((metric, index) => (
+          {deploymentMetrics.length > 0 ? (
+            <div className="deployment-metrics-grid">
+              {deploymentMetrics.map((metric, index) => (
               <div key={index} className="metric-card">
                 <div className="metric-label">{metric.metric}</div>
                 <div className="metric-value">{metric.value}</div>
@@ -261,8 +266,15 @@ const Analytics = () => {
                   <span className="metric-period">{metric.period}</span>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Activity size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+              <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No deployment metrics</h3>
+              <p style={{ color: '#718096' }}>Deployment metrics will appear here once CI/CD is configured</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
