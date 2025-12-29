@@ -1,8 +1,16 @@
 // Base URL from environment variable (REACT_APP_API_URL should include /api/v1)
-// If not set, assume it's just the base URL and we'll add /api/v1 prefix
+// If not set in development, use relative URL to leverage proxy in package.json
+// In production, set REACT_APP_API_URL to your backend URL
 const ENV_BASE_URL = process.env.REACT_APP_API_URL || '';
-// If ENV_BASE_URL already includes /api/v1, use it as-is, otherwise add the prefix
-const BASE_URL = ENV_BASE_URL.includes('/api/v1') ? ENV_BASE_URL : `${ENV_BASE_URL}/api/v1`;
+let BASE_URL;
+
+if (ENV_BASE_URL) {
+  // If API URL is set, use it (production or custom dev setup)
+  BASE_URL = ENV_BASE_URL.includes('/api/v1') ? ENV_BASE_URL : `${ENV_BASE_URL}/api/v1`;
+} else {
+  // If no API URL set, use relative URL (will use proxy in package.json for development)
+  BASE_URL = '/api/v1';
+}
 
 let upgradeHandler = null;
 

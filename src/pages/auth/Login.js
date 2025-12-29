@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { getGoogleOAuthUrl, getGitHubOAuthUrl } from '../../utils/oauth';
 import DashboardPreview from '../../components/DashboardPreview';
+import AccountLockoutMessage from '../../components/AccountLockoutMessage';
 import { handleApiError } from '../../utils/errorHandler';
 import { sanitizeInput } from '../../utils/inputSanitization';
 import './Auth.css';
