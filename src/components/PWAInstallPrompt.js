@@ -43,6 +43,8 @@ const PWAInstallPrompt = () => {
 
     // Listen for beforeinstallprompt event (Chrome/Edge/Firefox)
     // This is the ONLY way to show install prompt - no fallbacks
+    let timeoutId = null;
+    
     const handler = (e) => {
       e.preventDefault();
       promptFiredRef.current = true;
@@ -57,7 +59,7 @@ const PWAInstallPrompt = () => {
       // Only show if not dismissed or dismissed more than 7 days ago
       if (!dismissed || daysSinceDismissed >= 7) {
         // Show after a short delay to let page load
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           setShowPrompt(true);
         }, 2000);
       }
@@ -66,6 +68,9 @@ const PWAInstallPrompt = () => {
     window.addEventListener('beforeinstallprompt', handler);
 
     return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       window.removeEventListener('beforeinstallprompt', handler);
     };
   }, []); // Empty dependency array - only run once on mount

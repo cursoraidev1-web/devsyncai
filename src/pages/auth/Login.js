@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { getGoogleOAuthUrl, getGitHubOAuthUrl } from '../../utils/oauth';
 import DashboardPreview from '../../components/DashboardPreview';
-import AccountLockoutMessage from '../../components/AccountLockoutMessage';
 import { handleApiError } from '../../utils/errorHandler';
 import { sanitizeInput } from '../../utils/inputSanitization';
 import './Auth.css';
@@ -118,7 +117,14 @@ const Login = () => {
           
           <h2 className="login-form-title">Welcome Back</h2>
 
-          {error && (
+          {lockoutTime && lockoutTime > 0 && (
+            <AccountLockoutMessage
+              lockoutTime={lockoutTime}
+              onDismiss={() => setLockoutTime(null)}
+            />
+          )}
+
+          {error && !lockoutTime && (
             <div className="login-error">
               {error}
             </div>
