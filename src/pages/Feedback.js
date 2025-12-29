@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Send, MessageSquare, Star, Bug, Lightbulb, AlertCircle } from 'lucide-react';
+import { submitFeedback } from '../api/feedback';
+import { toast } from 'react-toastify';
 import './Feedback.css';
 
 const Feedback = () => {
@@ -11,6 +13,7 @@ const Feedback = () => {
     email: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const feedbackTypes = [
     { value: 'general', label: 'General Feedback', icon: MessageSquare },
@@ -26,20 +29,37 @@ const Feedback = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle feedback submission
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        type: 'general',
-        rating: 0,
-        title: '',
-        description: '',
-        email: ''
-      });
-    }, 3000);
+    
+    if (!formData.title || !formData.description || formData.rating === 0) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    setSubmitting(true);
+    
+    try {
+      await submitFeedback(formData);
+      setSubmitted(true);
+      toast.success('Feedback submitted successfully!');
+      
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({
+          type: 'general',
+          rating: 0,
+          title: '',
+          description: '',
+          email: ''
+        });
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+      toast.error('Failed to submit feedback. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -141,9 +161,9 @@ const Feedback = () => {
             </div>
 
             <div className="feedback-actions">
-              <button type="submit" className="feedback-submit-btn">
+              <button type="submit" className="feedback-submit-btn" disabled={submitting}>
                 <Send size={18} />
-                Submit Feedback
+                {submitting ? 'Submitting...' : 'Submit Feedback'}
               </button>
             </div>
           </form>

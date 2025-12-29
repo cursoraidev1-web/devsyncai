@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { usePlan } from '../context/PlanContext';
 import { Plus, Search, Filter, Users, Mail, Phone, MoreVertical, UserPlus } from 'lucide-react';
 import { Modal } from '../components/ui';
+import PulsingLoader from '../components/PulsingLoader';
 import './Teams.css';
 
 const Teams = () => {
-  const { openUpgradeModal } = useApp();
+  const { teams, teamsLoading, loadTeams, createTeam, teamMembers, loadTeamMembers, openUpgradeModal } = useApp();
   const { canCreate, getRemaining, limits, usage } = usePlan();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    loadTeams();
+  }, [loadTeams]);
 
   const handleAddMemberClick = () => {
     if (!canCreate('teamMember')) {
@@ -25,12 +30,6 @@ const Teams = () => {
     }
     setShowAddMemberModal(true);
   };
-
-  // TODO: Load teams from API when available
-  const teams = [];
-
-  // TODO: Load team members from API when available
-  const teamMembers = [];
 
   return (
     <div className="teams-page">
@@ -64,11 +63,14 @@ const Teams = () => {
         </button>
       </div>
 
-      <div className="teams-content">
-        <div className="teams-section">
-          <h2 className="teams-section-title">Teams</h2>
-          <div className="teams-grid">
-            {teams.length > 0 ? (
+      {teamsLoading ? (
+        <PulsingLoader message="Loading teams..." />
+      ) : (
+        <div className="teams-content">
+          <div className="teams-section">
+            <h2 className="teams-section-title">Teams</h2>
+            <div className="teams-grid">
+              {teams.length > 0 ? (
               <>
                 {teams.map(team => (
                   <div key={team.id} className="team-card">
@@ -166,6 +168,7 @@ const Teams = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Create New Team Modal */}
       <Modal

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
+import { fetchIntegrations, connectIntegration, disconnectIntegration } from '../api/integrations';
+import { toast } from 'react-toastify';
 import './Integrations.css';
 
 const Integrations = () => {
@@ -59,15 +61,32 @@ const Integrations = () => {
     }
   ];
 
-  // Load integrations from API (when available)
+  // Load integrations from API
   useEffect(() => {
-    // TODO: Replace with actual API call when backend is ready
-    // For now, set all as not connected
-    setIntegrations(availableIntegrationsCatalog.map(integration => ({
-      ...integration,
-      connected: false
-    })));
-    setLoading(false);
+    const loadIntegrations = async () => {
+      try {
+        const data = await fetchIntegrations();
+        if (Array.isArray(data) && data.length > 0) {
+          setIntegrations(data);
+        } else {
+          // Use default catalog if no integrations from API
+          setIntegrations(availableIntegrationsCatalog.map(integration => ({
+            ...integration,
+            connected: false
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to load integrations:', error);
+        // Use default catalog on error
+        setIntegrations(availableIntegrationsCatalog.map(integration => ({
+          ...integration,
+          connected: false
+        })));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadIntegrations();
   }, []);
 
   const filteredIntegrations = integrations.filter(integration =>

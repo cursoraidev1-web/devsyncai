@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   GitBranch, 
   CheckCircle, 
@@ -12,6 +12,9 @@ import {
   Settings,
   AlertCircle
 } from 'lucide-react';
+import { fetchPipelines, fetchDeployments, fetchCommits, getCICDMetrics } from '../api/cicd';
+import { toast } from 'react-toastify';
+import PulsingLoader from '../components/PulsingLoader';
 import './CICDIntegration.css';
 
 const CICDIntegration = () => {
@@ -19,6 +22,35 @@ const CICDIntegration = () => {
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [pipelines, setPipelines] = useState([]);
+  const [deployments, setDeployments] = useState([]);
+  const [commits, setCommits] = useState([]);
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [pipelinesData, deploymentsData, commitsData, metricsData] = await Promise.all([
+          fetchPipelines().catch(() => []),
+          fetchDeployments().catch(() => []),
+          fetchCommits().catch(() => []),
+          getCICDMetrics().catch(() => null)
+        ]);
+        
+        setPipelines(Array.isArray(pipelinesData) ? pipelinesData : []);
+        setDeployments(Array.isArray(deploymentsData) ? deploymentsData : []);
+        setCommits(Array.isArray(commitsData) ? commitsData : []);
+        setMetrics(metricsData);
+      } catch (error) {
+        console.error('Failed to load CI/CD data:', error);
+        toast.error('Failed to load CI/CD data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const handleViewLogs = (deployment) => {
     setSelectedItem(deployment);
@@ -27,7 +59,7 @@ const CICDIntegration = () => {
 
   const handleRollback = (deployment) => {
     if (window.confirm(`Are you sure you want to rollback ${deployment.env} to previous version?`)) {
-      alert(`Rolling back ${deployment.env} environment...`);
+      toast.info(`Rolling back ${deployment.env} environment...`);
     }
   };
 
@@ -35,15 +67,6 @@ const CICDIntegration = () => {
     setSelectedItem(commit);
     setShowCodeModal(true);
   };
-
-  // TODO: Load pipelines from CI/CD API when available
-  const pipelines = [];
-
-  // TODO: Load deployments from CI/CD API when available
-  const deployments = [];
-
-  // TODO: Load commits from CI/CD API when available
-  const commits = [];
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -57,6 +80,20 @@ const CICDIntegration = () => {
         return <Clock size={20} className="status-icon pending" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="cicd-integration">
+        <div className="cicd-header">
+          <div>
+            <h1>CI/CD Integration</h1>
+            <p className="page-subtitle">Monitor builds, deployments, and code activity</p>
+          </div>
+        </div>
+        <PulsingLoader message="Loading CI/CD data..." />
+      </div>
+    );
+  }
 
   return (
     <div className="cicd-integration">
