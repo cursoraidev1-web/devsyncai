@@ -2,12 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { Building2, ChevronDown, Check, Plus } from 'lucide-react';
+import { Modal } from './ui';
+import { toast } from 'react-toastify';
 import './CompanySwitcher.css';
 
 const CompanySwitcher = () => {
-  const { currentCompany, companies, switchCompany, loading } = useCompany();
+  const { currentCompany, companies, switchCompany, createCompany, loading } = useCompany();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceDescription, setWorkspaceDescription] = useState('');
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -56,7 +62,48 @@ const CompanySwitcher = () => {
 
   const handleCreateWorkspace = () => {
     setIsOpen(false);
-    navigate('/register');
+    setShowCreateModal(true);
+  };
+
+  const handleCreateWorkspaceSubmit = async () => {
+    if (!workspaceName.trim()) {
+      toast.error('Workspace name is required');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      // Prepare payload - ensure we only send defined fields
+      const payload = {
+        name: workspaceName.trim()
+      };
+      
+      // Only include description if it's not empty
+      if (workspaceDescription.trim()) {
+        payload.description = workspaceDescription.trim();
+      }
+      
+      await createCompany(payload);
+      toast.success('Workspace created successfully!');
+      setShowCreateModal(false);
+      setWorkspaceName('');
+      setWorkspaceDescription('');
+      // The switchCompany in createCompany will reload the page automatically
+    } catch (error) {
+      console.error('Failed to create workspace:', error);
+      // Extract error message from various formats
+      let errorMessage = 'Failed to create workspace';
+      if (error?.response?.data) {
+        errorMessage = error.response.data.error || error.response.data.message || errorMessage;
+      } else if (error?.data) {
+        errorMessage = error.data.error || error.data.message || errorMessage;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -107,6 +154,79 @@ const CompanySwitcher = () => {
           </div>
         </>
       )}
+
+      {/* Create Workspace Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          if (!creating) {
+            setShowCreateModal(false);
+            setWorkspaceName('');
+            setWorkspaceDescription('');
+          }
+        }}
+        title="Create New Workspace"
+        size="md"
+        footer={
+          <>
+            <button
+              className="modal-btn-cancel"
+              onClick={() => {
+                if (!creating) {
+                  setShowCreateModal(false);
+                  setWorkspaceName('');
+                  setWorkspaceDescription('');
+                }
+              }}
+              disabled={creating}
+            >
+              Cancel
+            </button>
+            <button
+              className="modal-btn-primary"
+              onClick={handleCreateWorkspaceSubmit}
+              disabled={creating || !workspaceName.trim()}
+            >
+              {creating ? 'Creating...' : 'Create Workspace'}
+            </button>
+          </>
+        }
+      >
+        <div className="create-workspace-form">
+          <div className="input-group">
+            <label htmlFor="workspace-name">
+              Workspace Name <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <input
+              id="workspace-name"
+              type="text"
+              placeholder="e.g., Acme Inc."
+              value={workspaceName}
+              onChange={(e) => setWorkspaceName(e.target.value)}
+              disabled={creating}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && workspaceName.trim() && !creating) {
+                  handleCreateWorkspaceSubmit();
+                }
+              }}
+            />
+            <p className="help-text">This will be the name of your workspace</p>
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="workspace-description">Description (Optional)</label>
+            <textarea
+              id="workspace-description"
+              rows={3}
+              placeholder="Brief description of your workspace..."
+              value={workspaceDescription}
+              onChange={(e) => setWorkspaceDescription(e.target.value)}
+              disabled={creating}
+            />
+            <p className="help-text">A short description to help identify this workspace</p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

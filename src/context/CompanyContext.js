@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { switchCompany as apiSwitchCompany, getUserCompanies as apiGetUserCompanies } from '../api/auth';
+import { switchCompany as apiSwitchCompany, getUserCompanies as apiGetUserCompanies, createCompany as apiCreateCompany } from '../api/auth';
 
 const CompanyContext = createContext(null);
 
@@ -84,6 +84,50 @@ export const CompanyProvider = ({ children }) => {
     }
   }, [token, companies]);
 
+  // Create a new company/workspace
+  const createCompany = useCallback(async (companyData) => {
+    if (!token) {
+      throw new Error('You must be logged in to create a workspace');
+    }
+
+    try {
+      console.log('Creating company with payload:', companyData);
+      const response = await apiCreateCompany(companyData);
+      console.log('Create company API response:', response);
+      
+      // Handle response format: { success: true, data: { company: {...} } } or { success: true, data: {...} } or direct company object
+      const data = response?.data || response;
+      
+      // Extract company from various response formats
+      const newCompany = data?.company || data;
+      
+      if (!newCompany || !newCompany.id) {
+        console.error('Invalid company response:', { response, data, newCompany });
+        throw new Error('Failed to create workspace: Invalid response from server');
+      }
+      
+      console.log('Company created successfully:', newCompany);
+      
+      // Add to companies list
+      setCompanies(prev => [...prev, newCompany]);
+      
+      // Switch to the new company (this will reload the page)
+      await switchCompany(newCompany.id);
+      
+      return newCompany;
+    } catch (error) {
+      console.error('Failed to create company:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        status: error?.status,
+        response: error?.response,
+        data: error?.data
+      });
+      // Re-throw to let component handle it
+      throw error;
+    }
+  }, [token, switchCompany]);
+
   // Load companies when token changes
   useEffect(() => {
     loadCompanies();
@@ -94,6 +138,7 @@ export const CompanyProvider = ({ children }) => {
     companies,
     loading,
     switchCompany,
+    createCompany,
     reloadCompanies: loadCompanies,
   };
 

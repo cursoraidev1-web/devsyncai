@@ -94,16 +94,35 @@ const DocumentStore = () => {
     if (file) {
       handleFileSelect(file);
     }
+    // Reset the input value to allow selecting the same file again
+    e.target.value = '';
   };
 
   // Handle drag and drop
-  const handleDrag = (e) => {
+  const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (!uploading) {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragActive to false if we're leaving the upload area itself
+    // (not just moving between child elements)
+    if (!e.currentTarget.contains(e.relatedTarget)) {
       setDragActive(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Set dragActive on dragover to ensure it stays active
+    if (!uploading) {
+      setDragActive(true);
     }
   };
 
@@ -112,9 +131,16 @@ const DocumentStore = () => {
     e.stopPropagation();
     setDragActive(false);
     
+    if (uploading) {
+      toast.error('Please wait for the current upload to complete');
+      return;
+    }
+    
     const file = e.dataTransfer.files?.[0];
     if (file) {
       handleFileSelect(file);
+    } else {
+      toast.error('No file detected. Please try again.');
     }
   };
 
@@ -577,11 +603,16 @@ const DocumentStore = () => {
           <div
             ref={uploadAreaRef}
             className={`upload-area ${dragActive ? 'drag-active' : ''} ${selectedFile ? 'has-file' : ''}`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
             onDrop={handleDrop}
-            onClick={() => !uploading && fileInputRef.current?.click()}
+            onClick={(e) => {
+              // Only trigger file input if clicking directly on the upload area (not on child elements like buttons)
+              if (!uploading && !selectedFile && e.target === e.currentTarget) {
+                fileInputRef.current?.click();
+              }
+            }}
           >
             <input
               ref={fileInputRef}
@@ -624,7 +655,22 @@ const DocumentStore = () => {
               <>
                 <Upload size={48} />
                 <p>Drag & drop files here or click to browse</p>
-                <button className="btn btn-outline" onClick={(e) => e.stopPropagation()}>
+                <button 
+                  className="btn btn-outline" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!uploading) {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.click();
+                      } else {
+                        console.error('File input ref is not available');
+                        toast.error('File input not available. Please refresh the page.');
+                      }
+                    }
+                  }}
+                  type="button"
+                >
                   Choose Files
                 </button>
               </>

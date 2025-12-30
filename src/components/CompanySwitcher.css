@@ -143,6 +143,62 @@
   flex-shrink: 0;
 }
 
+/* Create Workspace Modal Styles */
+.create-workspace-form {
+  padding: 0;
+}
+
+.create-workspace-form .input-group {
+  margin-bottom: 20px;
+}
+
+.create-workspace-form .input-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary, #111827);
+  margin-bottom: 8px;
+}
+
+.create-workspace-form .input-group input,
+.create-workspace-form .input-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-primary, #111827);
+}
+
+.create-workspace-form .input-group input:focus,
+.create-workspace-form .input-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #8409bd);
+  box-shadow: 0 0 0 3px rgba(132, 9, 189, 0.1);
+}
+
+.create-workspace-form .input-group input:disabled,
+.create-workspace-form .input-group textarea:disabled {
+  background: var(--color-surface-alt, #f9fafb);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.create-workspace-form .input-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.create-workspace-form .help-text {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
 
 
 

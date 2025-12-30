@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePlan } from '../context/PlanContext';
@@ -22,7 +22,8 @@ import {
   Settings as SettingsIcon,
   Plus,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  X
 } from 'lucide-react';
 import './Settings.css';
 
@@ -69,11 +70,31 @@ const Settings = () => {
     name: user?.name || user?.fullName || '',
     email: user?.email || '',
     role: user?.role || '',
-    bio: '',
-    location: '',
-    timezone: 'UTC-5',
-    language: 'en'
+    bio: user?.bio || '',
+    location: user?.location || '',
+    timezone: user?.timezone || 'UTC-5',
+    language: user?.language || 'en'
   });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || user?.avatarUrl || null);
+  const [saving, setSaving] = useState(false);
+  const avatarInputRef = useRef(null);
+
+  // Update form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user?.name || user?.fullName || '',
+        email: user?.email || '',
+        role: user?.role || '',
+        bio: user?.bio || '',
+        location: user?.location || '',
+        timezone: user?.timezone || 'UTC-5',
+        language: user?.language || 'en'
+      });
+      setAvatarPreview(user?.avatar || user?.avatarUrl || null);
+    }
+  }, [user]);
 
   // Initialize twoFactorEnabled from user object (no need to fetch again)
   React.useEffect(() => {
@@ -99,16 +120,75 @@ const Settings = () => {
     showAvatars: true
   });
 
+  // Handle avatar file selection
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size must be less than 2MB');
+      return;
+    }
+
+    setAvatarFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveProfile = async () => {
+    setSaving(true);
     try {
-      await updateProfile({
+      // Prepare update payload
+      const updates = {
         fullName: formData.name,
-        avatarUrl: formData.avatarUrl
-      });
-      updateUser(formData); // Also update local state
-      toast.success('Profile updated successfully!');
+        email: formData.email,
+        role: formData.role,
+        bio: formData.bio,
+        location: formData.location,
+        timezone: formData.timezone,
+        language: formData.language
+      };
+
+      // If avatar file is selected, upload it first
+      // Note: This assumes the backend accepts avatar uploads
+      // You may need to implement avatar upload separately
+      if (avatarFile) {
+        // For now, we'll create a data URL and send it
+        // In production, you'd upload to Supabase Storage first
+        updates.avatarUrl = avatarPreview;
+      }
+
+      const response = await updateProfile(updates);
+      
+      // Handle response format: { success: true, data: {...} } or direct user object
+      const updatedUser = response?.data || response;
+      
+      if (updatedUser) {
+        // Update local state
+        updateUser(updatedUser);
+        setAvatarFile(null); // Clear selected file after successful upload
+        toast.success('Profile updated successfully!');
+      } else {
+        toast.error('Profile update failed: No user data returned');
+      }
     } catch (error) {
-      toast.error('Failed to update profile: ' + (error.message || 'Unknown error'));
+      console.error('Profile update error:', error);
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error('Failed to update profile: ' + errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -163,13 +243,53 @@ const Settings = () => {
 
               <div className="profile-avatar-section">
                 <div className="avatar-preview">
-                  <img src={user?.avatar} alt={user?.name} />
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt={formData.name || 'User'} />
+                  ) : (
+                    <div className="avatar-placeholder">
+                      <User size={48} />
+                    </div>
+                  )}
                 </div>
                 <div className="avatar-actions">
-                  <button className="btn btn-outline">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif"
+                    onChange={handleAvatarSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <button 
+                    className="btn btn-outline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      avatarInputRef.current?.click();
+                    }}
+                    type="button"
+                    disabled={saving}
+                  >
                     <Camera size={18} />
-                    Change Avatar
+                    {avatarFile ? 'Change Avatar' : 'Change Avatar'}
                   </button>
+                  {avatarFile && (
+                    <button
+                      className="btn btn-outline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setAvatarFile(null);
+                        setAvatarPreview(user?.avatar || user?.avatarUrl || null);
+                        if (avatarInputRef.current) {
+                          avatarInputRef.current.value = '';
+                        }
+                      }}
+                      type="button"
+                      disabled={saving}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      <X size={18} />
+                      Cancel
+                    </button>
+                  )}
                   <p className="help-text">JPG, PNG or GIF. Max size 2MB.</p>
                 </div>
               </div>
@@ -343,9 +463,22 @@ const Settings = () => {
               </div>
 
               <div className="settings-actions">
-                <button className="btn btn-primary" onClick={handleSaveProfile}>
-                  <Save size={18} />
-                  Save Changes
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <span className="spinner" style={{ display: 'inline-block', marginRight: '8px' }}>⏳</span>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </div>

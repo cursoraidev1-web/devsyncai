@@ -225,12 +225,14 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
-      const updatedUser = await authApi.updateProfile(updates);
+      const response = await authApi.updateProfile(updates);
+      // Handle response format: { success: true, data: { user } } or direct user object
+      const updatedUser = response?.data?.user || response?.data || response;
       if (updatedUser) {
         setUser(updatedUser);
         localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
       }
-      return updatedUser;
+      return response; // Return full response so component can handle it
     } catch (error) {
       console.error('Failed to update profile:', error);
       throw error;
