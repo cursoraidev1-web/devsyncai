@@ -10,7 +10,8 @@ const AcceptInvite = () => {
   const [message, setMessage] = useState('Joining team...');
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    // Support both 'token' and 'invite' URL parameters
+    const token = searchParams.get('token') || searchParams.get('invite');
     if (!token) {
       setStatus('error');
       setMessage('Invite token missing. Please use the invite link from your email.');
@@ -25,7 +26,11 @@ const AcceptInvite = () => {
         setTimeout(() => navigate('/dashboard'), 1500);
       } catch (err) {
         setStatus('error');
-        setMessage(err?.message || 'Invite expired or invalid.');
+        // Extract error message from API response
+        // API client throws error with message and data properties
+        const errorMessage = err?.data?.error || err?.message || 'Invite expired or invalid.';
+        setMessage(errorMessage);
+        console.error('Accept invite error:', err);
       }
     };
 
