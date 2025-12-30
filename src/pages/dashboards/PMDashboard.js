@@ -14,11 +14,14 @@ import './Dashboard.css';
 
 const PMDashboard = () => {
   const navigate = useNavigate();
-  const { projects, tasks, documents, teams, loadTeams } = useApp();
+  const { projects, tasks, documents, teams, loadTeams, loadProjects, loadAllTasks, projectsLoading, tasksLoading } = useApp();
 
   useEffect(() => {
+    // Ensure data is loaded when dashboard mounts
+    loadProjects();
+    loadAllTasks();
     loadTeams();
-  }, [loadTeams]);
+  }, [loadProjects, loadAllTasks, loadTeams]);
 
   const activeProjectsCount = projects.filter(p => p.status === 'active').length;
   const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
@@ -95,12 +98,17 @@ const PMDashboard = () => {
         <div className="dashboard-section">
           <div className="section-header">
             <h2>Active Projects</h2>
-            <button className="btn btn-outline" onClick={() => navigate('/tasks')}>
+            <button className="btn btn-outline" onClick={() => navigate('/projects')}>
               View All
             </button>
           </div>
           <div className="projects-list">
-            {activeProjects.length > 0 ? (
+            {projectsLoading ? (
+              <div className="empty-state">
+                <FileText size={48} />
+                <p>Loading projects...</p>
+              </div>
+            ) : activeProjects.length > 0 ? (
               activeProjects.map(project => (
                 <div key={project.id} className="project-card">
                 <div className="project-info">
@@ -109,7 +117,7 @@ const PMDashboard = () => {
                     <span className="badge badge-primary">{project.status}</span>
                     <span className="project-team">
                       <Users size={14} />
-                      {project.team.length} members
+                      {project.members || project.member_count || (Array.isArray(project.team) ? project.team.length : 0)} members
                     </span>
                   </div>
                 </div>
@@ -157,7 +165,12 @@ const PMDashboard = () => {
             </button>
           </div>
           <div className="activity-list">
-            {recentTasks.length > 0 ? (
+            {tasksLoading ? (
+              <div className="empty-state">
+                <CheckCircle size={48} />
+                <p>Loading tasks...</p>
+              </div>
+            ) : recentTasks.length > 0 ? (
               recentTasks.map(task => (
                 <div key={task.id} className="activity-item">
                 <div className="activity-icon">

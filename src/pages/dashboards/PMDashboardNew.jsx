@@ -177,7 +177,7 @@ const PMDashboardNew = () => {
                       gap: '4px'
                     }}>
                       <Users size={14} />
-                      {project.team.length} members
+                      {project.members || project.member_count || (Array.isArray(project.team) ? project.team.length : 0)} members
                     </span>
                   </div>
                 </div>

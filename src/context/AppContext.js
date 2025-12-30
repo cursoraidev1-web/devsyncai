@@ -97,17 +97,45 @@ export const AppProvider = ({ children }) => {
       const projectsData = response?.data || (Array.isArray(response) ? response : []);
       
       // Transform backend fields to frontend format
-      const transformedProjects = projectsData.map(project => ({
-        ...project,
-        // Map backend fields to frontend expected fields
-        dueDate: project.end_date || project.dueDate,
-        deadline: project.end_date || project.deadline,
-        team: project.team_name || project.team || 'Unassigned',
-        // Calculate or default missing fields
-        progress: project.progress || 0,
-        members: project.members || 0,
-        isMine: project.owner_id === user?.id || false
-      }));
+      const transformedProjects = projectsData.map(project => {
+        // Format deadline/due date
+        const endDate = project.end_date || project.due_date || project.deadline;
+        let formattedDeadline = 'No due date';
+        if (endDate) {
+          try {
+            const date = new Date(endDate);
+            formattedDeadline = date.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          } catch (e) {
+            formattedDeadline = endDate;
+          }
+        }
+
+        // Handle team/members - ensure it's always an array for .length access
+        const teamMembers = project.members || project.team_members || project.team || [];
+        const teamArray = Array.isArray(teamMembers) ? teamMembers : [];
+        const memberCount = project.member_count || project.members_count || teamArray.length || 0;
+
+        return {
+          ...project,
+          // Map backend fields to frontend expected fields
+          dueDate: endDate,
+          deadline: formattedDeadline,
+          // Ensure team is always an array for dashboard compatibility
+          team: teamArray,
+          teamName: project.team_name || project.team_name || 'Unassigned',
+          // Calculate or default missing fields
+          progress: project.progress || project.completion_percentage || 0,
+          members: memberCount,
+          member_count: memberCount,
+          isMine: project.owner_id === user?.id || false,
+          // Ensure status is properly set
+          status: project.status || 'active'
+        };
+      });
       
       setProjects(transformedProjects);
     } catch (error) {
@@ -139,11 +167,46 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await fetchTasks(); // Fetch all tasks
       const tasksArray = Array.isArray(data) ? data : [];
-      setTasks(tasksArray);
+      
+      // Transform tasks to ensure all fields are properly formatted
+      const transformedTasks = tasksArray.map(task => {
+        // Format due date
+        const dueDate = task.due_date || task.dueDate;
+        let formattedDueDate = 'No due date';
+        if (dueDate) {
+          try {
+            const date = new Date(dueDate);
+            formattedDueDate = date.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          } catch (e) {
+            formattedDueDate = dueDate;
+          }
+        }
+
+        return {
+          ...task,
+          // Ensure both field names are available for compatibility
+          dueDate: formattedDueDate,
+          due_date: dueDate,
+          // Ensure status is normalized (already done in fetchTasks, but double-check)
+          status: task.status || 'todo',
+          // Ensure tags is always an array
+          tags: Array.isArray(task.tags) ? task.tags : (task.tags ? [task.tags] : []),
+          // Ensure description exists
+          description: task.description || task.desc || '',
+          // Ensure priority exists
+          priority: task.priority || 'medium'
+        };
+      });
+      
+      setTasks(transformedTasks);
       
       // Update cache by project for quick filtering
       const tasksByProjectMap = new Map();
-      tasksArray.forEach(task => {
+      transformedTasks.forEach(task => {
         const projectId = task.project_id;
         if (projectId) {
           if (!tasksByProjectMap.has(projectId)) {
