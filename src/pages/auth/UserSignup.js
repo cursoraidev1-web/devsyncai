@@ -13,7 +13,7 @@ import { handleApiError } from '../../utils/errorHandler';
 import { resendVerificationEmail } from '../../api/auth';
 import './Auth.css';
 
-const Register = () => {
+const UserSignup = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   
@@ -23,7 +23,6 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    workspaceName: '' // Company/workspace name (required for admin signup)
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,8 +50,8 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate required fields (workspace name always required for admin signup)
-    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'workspaceName'];
+    // Validate required fields (no workspace name for normal user signup)
+    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
     
     const missingFields = requiredFields.filter(field => !formData[field]);
     if (missingFields.length > 0) {
@@ -88,7 +87,7 @@ const Register = () => {
         email: formData.email.trim(),
         password: formData.password,
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
-        workspaceName: formData.workspaceName.trim(),
+        // No workspaceName - normal user signup
       };
 
       await register(registerPayload);
@@ -133,7 +132,7 @@ const Register = () => {
         // signInWithGitHub redirects automatically, so we don't need to do anything else
       }
     } catch (err) {
-      const errorMsg = err?.message || `Failed to register with ${provider}`;
+      const errorMsg = err?.message || `Failed to sign up with ${provider}`;
       setError(errorMsg);
       toast.error(errorMsg);
       console.error('OAuth error:', err);
@@ -185,8 +184,12 @@ const Register = () => {
           </div>
           
           <h2 className="register-form-title">
-            Create Your Workspace
+            Create Your Account
           </h2>
+
+          <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
+            Join the platform and get invited to workspaces or create your own later.
+          </p>
 
           {retryAfter && (
             <RateLimitMessage retryAfter={retryAfter} />
@@ -298,23 +301,6 @@ const Register = () => {
               )}
             </div>
 
-            <div className="register-input-group">
-              <label htmlFor="workspaceName">Workspace Name</label>
-              <input
-                type="text"
-                id="workspaceName"
-                name="workspaceName"
-                value={formData.workspaceName}
-                onChange={handleChange}
-                placeholder="e.g., Acme Corp, My Startup"
-                className="register-input"
-                required
-              />
-              <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px' }}>
-                This will be your company or workspace name. You'll be the admin.
-              </small>
-            </div>
-
             <button 
               type="submit" 
               className="register-submit-btn" 
@@ -323,10 +309,10 @@ const Register = () => {
               {loading ? (
                 <>
                   <span className="spinner"></span>
-                  Creating Workspace...
+                  Creating Account...
                 </>
               ) : (
-                'Create Workspace & Account'
+                'Create Account'
               )}
             </button>
           </form>
@@ -336,6 +322,12 @@ const Register = () => {
               Already have an account?{' '}
               <Link to="/login" className="register-link">
                 Sign In
+              </Link>
+            </p>
+            <p style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>
+              Want to create a workspace?{' '}
+              <Link to="/register" className="register-link">
+                Sign up as admin
               </Link>
             </p>
           </div>
@@ -369,4 +361,5 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default UserSignup;
+

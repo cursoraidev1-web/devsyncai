@@ -14,11 +14,11 @@ import Landing from './pages/Landing';
 // Auth Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import UserSignup from './pages/auth/UserSignup';
 import ResetPassword from './pages/auth/ResetPassword';
 import ResetPasswordSuccess from './pages/auth/ResetPasswordSuccess';
 import Verify2FA from './pages/auth/Verify2FA';
-import GoogleCallback from './pages/auth/GoogleCallback';
-import GitHubCallback from './pages/auth/GitHubCallback';
+import OAuthCallback from './pages/auth/OAuthCallback';
 import AcceptInvite from './pages/AcceptInvite';
 import AcceptCompanyInvite from './pages/AcceptCompanyInvite';
 
@@ -111,6 +111,10 @@ function AppRoutes() {
           element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} 
         />
         <Route 
+          path="/signup" 
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <UserSignup />} 
+        />
+        <Route 
           path="/forgot-password" 
           element={isAuthenticated ? <Navigate to="/dashboard" /> : <ResetPassword />} 
         />
@@ -127,12 +131,8 @@ function AppRoutes() {
           element={<Verify2FA />} 
         />
         <Route 
-          path="/auth/google/callback" 
-          element={<GoogleCallback />} 
-        />
-        <Route 
-          path="/auth/github/callback" 
-          element={<GitHubCallback />} 
+          path="/auth/callback" 
+          element={<OAuthCallback />} 
         />
         <Route 
           path="/accept-invite" 

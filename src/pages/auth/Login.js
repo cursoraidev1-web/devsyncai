@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
-import { getGoogleOAuthUrl, getGitHubOAuthUrl } from '../../utils/oauth';
+import { signInWithGoogle, signInWithGitHub } from '../../utils/oauth';
 import DashboardPreview from '../../components/DashboardPreview';
 import AccountLockoutMessage from '../../components/AccountLockoutMessage';
 import { handleApiError } from '../../utils/errorHandler';
@@ -88,13 +88,11 @@ const Login = () => {
     setError('');
     try {
       if (provider === 'google') {
-        // Redirect to Google OAuth
-        const googleUrl = getGoogleOAuthUrl();
-        window.location.href = googleUrl;
+        await signInWithGoogle();
+        // signInWithGoogle redirects automatically, so we don't need to do anything else
       } else if (provider === 'github') {
-        // Redirect to GitHub OAuth
-        const githubUrl = getGitHubOAuthUrl();
-        window.location.href = githubUrl;
+        await signInWithGitHub();
+        // signInWithGitHub redirects automatically, so we don't need to do anything else
       }
     } catch (err) {
       const errorMsg = err?.message || `Failed to login with ${provider}`;
@@ -223,8 +221,12 @@ const Login = () => {
           <div className="login-footer">
             <p>
               Don't have an account?{' '}
-              <Link to="/register" className="login-link">
+              <Link to="/signup" className="login-link">
                 Sign Up
+              </Link>
+              {' '}or{' '}
+              <Link to="/register" className="login-link">
+                Create Workspace
               </Link>
             </p>
           </div>

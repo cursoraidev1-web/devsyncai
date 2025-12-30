@@ -87,3 +87,5 @@ const EmailVerificationMessage = ({ email, onResend }) => {
 
 export default EmailVerificationMessage;
 
+
+

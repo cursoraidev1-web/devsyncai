@@ -72,4 +72,24 @@ export const switchCompany = (companyId) => api.post('/auth/switch-company', { c
 export const createCompany = (payload) => api.post('/companies', payload);
 export const getCompany = (id) => api.get(`/companies/${id}`);
 
+/**
+ * Sync Supabase session with backend
+ * This sends the Supabase access token to the backend to create/update user
+ * @param {Object} session - Supabase session object
+ * @returns {Promise} Backend response with user and token
+ */
+export const syncSupabaseSession = (session) => {
+  if (!session?.access_token) {
+    throw new Error('Invalid Supabase session: missing access_token');
+  }
+  
+  // Send Supabase access token to backend
+  // Backend will verify with Supabase and create/update user in database
+  return api.post('/auth/supabase', { 
+    access_token: session.access_token,
+    provider: session.user?.app_metadata?.provider || 'unknown',
+    user_metadata: session.user?.user_metadata || {},
+  }, { auth: false });
+};
+
 

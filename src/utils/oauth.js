@@ -1,160 +1,145 @@
 /**
- * OAuth utility functions for Google and GitHub authentication
- * Frontend handles OAuth flow and sends access token to backend
+ * OAuth utility functions using Supabase Auth
+ * 
+ * This module uses Supabase's built-in OAuth flow which handles:
+ * - Authorization URL generation
+ * - Code exchange
+ * - Token management
+ * - Session persistence
+ * 
+ * The frontend handles the login and Supabase automatically syncs the user to the database.
  */
 
-import { api } from '../api/client';
+import { getSupabaseAuthClient } from './supabaseAuth';
 
 /**
- * Get Google OAuth URL for authorization code flow
- * Note: This requires the backend to exchange the code for a token
- * OR we exchange it on frontend if we have client secret (not recommended)
+ * Sign in with Google OAuth using Supabase
+ * @param {Object} options - Optional configuration
+ * @param {string} options.redirectTo - Custom redirect URL (defaults to /auth/callback)
+ * @returns {Promise<void>} Redirects to Google OAuth
+ */
+export const signInWithGoogle = async (options = {}) => {
+  const supabase = getSupabaseAuthClient();
+  
+  const redirectTo = options.redirectTo || `${window.location.origin}/auth/callback`;
+  
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(`Failed to initiate Google login: ${error.message}`);
+  }
+};
+
+/**
+ * Sign in with GitHub OAuth using Supabase
+ * @param {Object} options - Optional configuration
+ * @param {string} options.redirectTo - Custom redirect URL (defaults to /auth/callback)
+ * @returns {Promise<void>} Redirects to GitHub OAuth
+ */
+export const signInWithGitHub = async (options = {}) => {
+  const supabase = getSupabaseAuthClient();
+  
+  const redirectTo = options.redirectTo || `${window.location.origin}/auth/callback`;
+  
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo,
+      scopes: 'user:email',
+    },
+  });
+
+  if (error) {
+    throw new Error(`Failed to initiate GitHub login: ${error.message}`);
+  }
+};
+
+/**
+ * Get the current Supabase session
+ * @returns {Promise<Object|null>} Current session or null
+ */
+export const getSupabaseSession = async () => {
+  const supabase = getSupabaseAuthClient();
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error) {
+    console.error('Error getting Supabase session:', error);
+    return null;
+  }
+  
+  return session;
+};
+
+/**
+ * Get the current Supabase user
+ * @returns {Promise<Object|null>} Current user or null
+ */
+export const getSupabaseUser = async () => {
+  const supabase = getSupabaseAuthClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  
+  if (error) {
+    console.error('Error getting Supabase user:', error);
+    return null;
+  }
+  
+  return user;
+};
+
+/**
+ * Sign out from Supabase
+ * @returns {Promise<void>}
+ */
+export const signOutFromSupabase = async () => {
+  const supabase = getSupabaseAuthClient();
+  const { error } = await supabase.auth.signOut();
+  
+  if (error) {
+    throw new Error(`Failed to sign out: ${error.message}`);
+  }
+};
+
+/**
+ * Legacy function names for backward compatibility
+ * These redirect to the new Supabase OAuth flow
  */
 export const getGoogleOAuthUrl = () => {
-  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    throw new Error('REACT_APP_GOOGLE_CLIENT_ID is not set in environment variables');
-  }
-  
-  const redirectUri = `${window.location.origin}/auth/google/callback`;
-  const scope = 'openid email profile';
-  const responseType = 'code'; // Use authorization code flow instead of token
-  const state = Math.random().toString(36).substring(7); // CSRF protection
-  
-  // Store state in sessionStorage for verification
-  sessionStorage.setItem('google_oauth_state', state);
-  
-  const params = new URLSearchParams({
-    client_id: clientId,
-    response_type: responseType,
-    scope: scope,
-    state: state,
-    access_type: 'offline', // Request refresh token
-    prompt: 'consent', // Force consent screen to get refresh token
-  });
-  
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  // This function is kept for backward compatibility
+  // It will trigger the OAuth flow directly
+  return signInWithGoogle();
 };
 
-/**
- * Exchange Google authorization code via backend endpoint
- * The backend handles the code exchange with Google
- */
-export const exchangeGoogleCode = async (code) => {
-  const redirectUri = `${window.location.origin}/auth/google/callback`;
-  
-  // Use the API client to send code to backend
-  // Backend will exchange the code for an access token and handle login
-  const { googleLoginWithCode } = await import('../api/auth');
-  return googleLoginWithCode(code, redirectUri);
-};
-
-/**
- * Send Google access token to backend
- */
-export const sendGoogleTokenToBackend = async (accessToken) => {
-  return api.post('/auth/google', { accessToken }, { auth: false });
-};
-
-/**
- * Send GitHub access token to backend
- */
-export const sendGitHubTokenToBackend = async (accessToken) => {
-  return api.post('/auth/github', { accessToken }, { auth: false });
-};
-
-/**
- * Get GitHub OAuth URL for redirect flow
- */
 export const getGitHubOAuthUrl = () => {
-  const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
-  if (!clientId) {
-    throw new Error('REACT_APP_GITHUB_CLIENT_ID is not set in environment variables');
-  }
-  
-  const redirectUri = `${window.location.origin}/auth/github/callback`;
-  const scope = 'user:email';
-  const state = Math.random().toString(36).substring(7); // CSRF protection
-  
-  // Store state in sessionStorage for verification
-  sessionStorage.setItem('github_oauth_state', state);
-  
-  return `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=${scope}&state=${state}`;
+  // This function is kept for backward compatibility
+  // It will trigger the OAuth flow directly
+  return signInWithGitHub();
 };
 
 /**
- * Exchange GitHub code for access token
- * Note: This requires REACT_APP_GITHUB_CLIENT_ID and REACT_APP_GITHUB_CLIENT_SECRET
- * For production, this should be done on the backend to keep the client secret secure
+ * @deprecated These functions are no longer needed with Supabase Auth
+ * Supabase handles code exchange automatically
  */
-export const exchangeGitHubCode = async (code) => {
-  const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
-  const clientSecret = process.env.REACT_APP_GITHUB_CLIENT_SECRET;
-  
-  if (!clientId) {
-    throw new Error('REACT_APP_GITHUB_CLIENT_ID is not set in environment variables');
-  }
-  
-  // Option 1: Try backend endpoint first (if available)
-  const backendUrl = process.env.REACT_APP_API_URL || '';
-  if (backendUrl) {
-    const exchangeUrl = backendUrl.includes('/api/v1') 
-      ? `${backendUrl.replace('/api/v1', '')}/api/v1/auth/github/callback`
-      : `${backendUrl}/api/v1/auth/github/callback`;
-    
-    try {
-      const response = await fetch(exchangeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.access_token) {
-          return data.access_token;
-        }
-      }
-    } catch (error) {
-      console.warn('Backend code exchange failed, trying direct exchange:', error);
-    }
-  }
-  
-  // Option 2: Exchange directly (requires client secret - not recommended for production)
-  if (!clientSecret) {
-    throw new Error(
-      'GitHub client secret not found. Either set REACT_APP_GITHUB_CLIENT_SECRET ' +
-      'or implement a backend endpoint at /api/v1/auth/github/callback to exchange the code.'
-    );
-  }
-  
-  try {
-    const response = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: code,
-      }),
-    });
-    
-    const data = await response.json();
-    if (data.error) {
-      throw new Error(data.error_description || data.error);
-    }
-    
-    if (data.access_token) {
-      return data.access_token;
-    }
-    
-    throw new Error('No access token received from GitHub');
-  } catch (error) {
-    console.error('Failed to exchange GitHub code:', error);
-    throw error;
-  }
+export const exchangeGoogleCode = async () => {
+  throw new Error('exchangeGoogleCode is deprecated. Supabase handles code exchange automatically.');
 };
 
+export const exchangeGitHubCode = async () => {
+  throw new Error('exchangeGitHubCode is deprecated. Supabase handles code exchange automatically.');
+};
+
+export const sendGoogleTokenToBackend = async () => {
+  throw new Error('sendGoogleTokenToBackend is deprecated. Use Supabase session instead.');
+};
+
+export const sendGitHubTokenToBackend = async () => {
+  throw new Error('sendGitHubTokenToBackend is deprecated. Use Supabase session instead.');
+};

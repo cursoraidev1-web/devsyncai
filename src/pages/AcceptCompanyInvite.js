@@ -262,3 +262,5 @@ const AcceptCompanyInvite = () => {
 
 export default AcceptCompanyInvite;
 
+
+

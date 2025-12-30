@@ -169,6 +169,34 @@ export const AuthProvider = ({ children }) => {
     return apiUser;
   };
 
+  /**
+   * Sync Supabase session with backend
+   * This is called after Supabase OAuth completes
+   * @param {Object} session - Supabase session object
+   * @returns {Promise} User object or error
+   */
+  const syncSupabaseSession = async (session) => {
+    try {
+      const response = await authApi.syncSupabaseSession(session);
+      // Handle spec format: { success, data: { user, token }, message }
+      const data = response?.data || response;
+      const { token: apiToken, user: apiUser, require2fa } = data || {};
+      
+      if (require2fa) {
+        return { require2fa: true, email: apiUser?.email };
+      }
+      
+      if (apiUser && apiToken) {
+        persistSession(apiUser, apiToken);
+      }
+      
+      return apiUser;
+    } catch (error) {
+      console.error('Failed to sync Supabase session:', error);
+      throw error;
+    }
+  };
+
   const requestPasswordReset = async (email) => {
     return authApi.forgotPassword({ email });
   };
@@ -256,6 +284,7 @@ export const AuthProvider = ({ children }) => {
     googleLogin,
     googleLoginWithCode,
     githubLogin,
+    syncSupabaseSession,
     requestPasswordReset,
     resetPassword,
     logout,
