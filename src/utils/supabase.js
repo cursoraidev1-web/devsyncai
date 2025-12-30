@@ -28,16 +28,30 @@ const initSupabase = () => {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
     const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
     
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Supabase credentials not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in your .env file.');
+    // Check which variables are missing and provide specific error
+    const missingVars = [];
+    if (!supabaseUrl) {
+      missingVars.push('REACT_APP_SUPABASE_URL');
+    }
+    if (!supabaseAnonKey) {
+      missingVars.push('REACT_APP_SUPABASE_ANON_KEY');
+    }
+    
+    if (missingVars.length > 0) {
+      const errorMessage = `Missing environment variable(s): ${missingVars.join(', ')}. Please add ${missingVars.length === 1 ? 'it' : 'them'} to your .env file and restart the development server.`;
+      console.error('Supabase configuration error:', errorMessage);
+      // Store error message for later retrieval
+      initSupabase.lastError = errorMessage;
       return null;
     }
     
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
     return supabaseClient;
   } catch (error) {
-    console.warn('Supabase library not installed. Run: npm install @supabase/supabase-js');
+    const errorMessage = 'Supabase library not installed. Run: npm install @supabase/supabase-js';
+    console.warn(errorMessage);
     console.warn('Error:', error.message);
+    initSupabase.lastError = errorMessage;
     return null;
   }
 };
@@ -54,7 +68,8 @@ export const uploadFile = async (file, bucketName, path, options = {}) => {
   const supabase = initSupabase();
   
   if (!supabase) {
-    throw new Error('Supabase not configured. Please check your environment variables.');
+    const errorMsg = initSupabase.lastError || 'Supabase not configured. Please check your environment variables.';
+    throw new Error(errorMsg);
   }
   
   try {
@@ -111,7 +126,8 @@ export const deleteFile = async (bucketName, path) => {
   const supabase = initSupabase();
   
   if (!supabase) {
-    throw new Error('Supabase not configured. Please check your environment variables.');
+    const errorMsg = initSupabase.lastError || 'Supabase not configured. Please check your environment variables.';
+    throw new Error(errorMsg);
   }
   
   try {
@@ -158,7 +174,8 @@ export const downloadFile = async (bucketName, path) => {
   const supabase = initSupabase();
   
   if (!supabase) {
-    throw new Error('Supabase not configured. Please check your environment variables.');
+    const errorMsg = initSupabase.lastError || 'Supabase not configured. Please check your environment variables.';
+    throw new Error(errorMsg);
   }
   
   try {
