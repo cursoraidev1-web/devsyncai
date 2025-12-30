@@ -1,13 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
-import { Building2, ChevronDown, Check } from 'lucide-react';
+import { Building2, ChevronDown, Check, Plus } from 'lucide-react';
 import './CompanySwitcher.css';
 
 const CompanySwitcher = () => {
   const { currentCompany, companies, switchCompany, loading } = useCompany();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  if (loading || !currentCompany) {
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  if (loading) {
+    return (
+      <div className="company-switcher-button">
+        <Building2 size={16} />
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  if (!currentCompany) {
     return null;
   }
 
@@ -25,22 +54,17 @@ const CompanySwitcher = () => {
     }
   };
 
-  // Don't show switcher if user only has one company
-  if (companies.length <= 1) {
-    return (
-      <div className="company-switcher-single">
-        <Building2 size={16} />
-        <span>{currentCompany.name}</span>
-      </div>
-    );
-  }
+  const handleCreateWorkspace = () => {
+    setIsOpen(false);
+    navigate('/register');
+  };
 
   return (
-    <div className="company-switcher">
+    <div className="company-switcher" ref={dropdownRef}>
       <button
         className="company-switcher-button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Switch company"
+        aria-label="Switch workspace"
       >
         <Building2 size={16} />
         <span className="company-switcher-name">{currentCompany.name}</span>
@@ -52,7 +76,7 @@ const CompanySwitcher = () => {
           <div className="company-switcher-backdrop" onClick={() => setIsOpen(false)} />
           <div className="company-switcher-dropdown">
             <div className="company-switcher-header">
-              <span>Switch Workspace</span>
+              <span>Workspaces</span>
             </div>
             <div className="company-switcher-list">
               {companies.map((company) => (
@@ -70,6 +94,15 @@ const CompanySwitcher = () => {
                   )}
                 </button>
               ))}
+            </div>
+            <div className="company-switcher-footer">
+              <button
+                className="company-switcher-create"
+                onClick={handleCreateWorkspace}
+              >
+                <Plus size={16} />
+                <span>Create Workspace</span>
+              </button>
             </div>
           </div>
         </>
