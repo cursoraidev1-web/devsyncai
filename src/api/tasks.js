@@ -68,9 +68,20 @@ export const createTask = (payload) => {
   // Normalize status if provided
   const normalizedPayload = { ...payload };
   
+  // Ensure required fields are present
+  if (!normalizedPayload.title) {
+    throw new Error('Task title is required');
+  }
+  
+  if (!normalizedPayload.project_id) {
+    throw new Error('Project ID is required');
+  }
+  
   // Normalize status
   if (normalizedPayload.status) {
     normalizedPayload.status = normalizeStatusToBackend(normalizedPayload.status);
+  } else {
+    normalizedPayload.status = 'todo'; // Default status
   }
   
   // Map frontend field names to backend field names
@@ -87,6 +98,20 @@ export const createTask = (payload) => {
     delete normalizedPayload.assignee;
   }
   
+  // Ensure tags is properly formatted (array or null)
+  if (normalizedPayload.tags) {
+    if (!Array.isArray(normalizedPayload.tags)) {
+      normalizedPayload.tags = [normalizedPayload.tags];
+    }
+  } else {
+    normalizedPayload.tags = [];
+  }
+  
+  // Ensure priority is set
+  if (!normalizedPayload.priority) {
+    normalizedPayload.priority = 'medium';
+  }
+  
   return api.post('/tasks', normalizedPayload).then(response => {
     // Handle response structure: { success: true, data: {...}, message: "..." } or direct task object
     const task = response?.data || response;
@@ -94,6 +119,13 @@ export const createTask = (payload) => {
       ...task,
       status: normalizeStatusFromBackend(task.status)
     };
+  }).catch(error => {
+    // Improve error message for RLS errors
+    const errorMessage = error?.data?.error || error?.message || 'Failed to create task';
+    if (errorMessage.includes('row-level security') || errorMessage.includes('RLS')) {
+      throw new Error('Permission denied: Unable to create task. Please contact your administrator.');
+    }
+    throw new Error(errorMessage);
   });
 };
 

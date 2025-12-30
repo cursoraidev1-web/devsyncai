@@ -103,7 +103,8 @@ const TaskTracker = () => {
       });
     } catch (error) {
       console.error('Failed to create task:', error);
-      alert('Failed to create task. Please try again.');
+      const errorMessage = error?.message || 'Failed to create task. Please try again.';
+      alert(errorMessage);
     }
   };
 
