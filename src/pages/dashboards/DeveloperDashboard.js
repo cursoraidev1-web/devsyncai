@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
+import { fetchCommits, getCICDMetrics } from '../../api/cicd';
 import { 
   Code, 
   GitBranch, 
@@ -17,6 +18,31 @@ const DeveloperDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tasks } = useApp();
+  const [commits, setCommits] = useState([]);
+  const [cicdMetrics, setCicdMetrics] = useState(null);
+  const [loadingCICD, setLoadingCICD] = useState(false);
+
+  useEffect(() => {
+    loadCICDData();
+  }, []);
+
+  const loadCICDData = async () => {
+    setLoadingCICD(true);
+    try {
+      const [commitsData, metricsData] = await Promise.all([
+        fetchCommits({ limit: 5 }),
+        getCICDMetrics()
+      ]);
+      setCommits(Array.isArray(commitsData) ? commitsData : []);
+      setCicdMetrics(metricsData);
+    } catch (error) {
+      console.error('Failed to load CI/CD data:', error);
+      setCommits([]);
+      setCicdMetrics(null);
+    } finally {
+      setLoadingCICD(false);
+    }
+  };
 
   // Filter tasks assigned to current user (by user ID, not role)
   const myTasks = tasks.filter(t => 
@@ -52,15 +78,16 @@ const DeveloperDashboard = () => {
     },
     {
       label: 'Pull Requests',
-      value: 0, // TODO: Load from API when CI/CD integration is available
+      value: cicdMetrics?.pull_requests?.open || cicdMetrics?.openPRs || 0,
       icon: GitBranch,
       color: '#8b5cf6',
-      trend: 'No active PRs'
+      trend: (cicdMetrics?.pull_requests?.open || cicdMetrics?.openPRs || 0) > 0
+        ? `${cicdMetrics?.pull_requests?.open || cicdMetrics?.openPRs || 0} open`
+        : 'No active PRs'
     }
   ];
 
-  // TODO: Load recent commits from API when CI/CD integration is available
-  const recentCommits = [];
+  const recentCommits = commits.slice(0, 5);
 
   return (
     <div className="dashboard">
@@ -159,17 +186,28 @@ const DeveloperDashboard = () => {
             </button>
           </div>
           <div className="activity-list">
-            {recentCommits.length > 0 ? (
+            {loadingCICD ? (
+              <div className="empty-state">
+                <GitBranch size={48} />
+                <p>Loading commits...</p>
+              </div>
+            ) : recentCommits.length > 0 ? (
               recentCommits.map(commit => (
-                <div key={commit.id} className="activity-item">
+                <div key={commit.id || commit.sha} className="activity-item">
                   <div className="activity-icon">
                     <GitBranch size={18} className="text-primary" />
                   </div>
                   <div className="activity-content">
-                    <div className="activity-title">{commit.message}</div>
+                    <div className="activity-title">
+                      {commit.message || commit.commit?.message || commit.title || 'No message'}
+                    </div>
                     <div className="activity-meta">
-                      <span className="badge badge-secondary">{commit.branch}</span>
-                      <span className="activity-date">{commit.time}</span>
+                      <span className="badge badge-secondary">
+                        {commit.branch || commit.ref || 'main'}
+                      </span>
+                      <span className="activity-date">
+                        {commit.time || commit.created_at || commit.timestamp || 'Recently'}
+                      </span>
                     </div>
                   </div>
                 </div>

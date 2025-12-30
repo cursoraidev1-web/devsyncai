@@ -2,14 +2,25 @@ import { api } from './client';
 
 export const createDocument = (payload) => {
   // Ensure all required fields are present
+  // Backend expects file_path, not file_url
   const documentPayload = {
     project_id: payload.project_id,
     title: payload.title,
-    file_url: payload.file_url,
+    file_path: payload.file_path || payload.file_url, // Support both for backward compatibility
     file_type: payload.file_type,
     file_size: payload.file_size
   };
+  
+  // Add optional fields if present
+  if (payload.tags) {
+    documentPayload.tags = payload.tags;
+  }
+  if (payload.prd_id) {
+    documentPayload.prd_id = payload.prd_id;
+  }
+  
   return api.post('/documents', documentPayload).then(response => {
+    // Handle response structure: { success: true, data: {...} }
     return response?.data || response;
   });
 };
@@ -77,9 +88,34 @@ export const uploadDocument = (file, projectId, metadata = {}) => {
   });
 };
 
+/**
+ * Get download URL (signed URL) for a document
+ * @param {string} id - Document ID
+ * @returns {Promise<string>} Signed download URL
+ */
+export const getDownloadUrl = async (id) => {
+  const response = await api.get(`/documents/${id}/download`);
+  // Handle response structure: { success: true, data: { download_url: "...", expires_at: "..." } }
+  const data = response?.data || response;
+  // Extract download_url from nested structure if needed
+  return data?.download_url || data?.data?.download_url || data;
+};
+
+/**
+ * Download a document by ID
+ * Returns the full response with download_url and expires_at
+ * @param {string} id - Document ID
+ * @returns {Promise<Object>} Response with download_url and expires_at
+ */
 export const downloadDocument = (id) => {
   return api.get(`/documents/${id}/download`).then(response => {
-    return response?.data || response;
+    // Handle response structure: { success: true, data: { download_url: "...", expires_at: "..." } }
+    const data = response?.data || response;
+    // Return the download_url directly if it's nested
+    if (data?.data?.download_url) {
+      return data.data;
+    }
+    return data;
   });
 };
 

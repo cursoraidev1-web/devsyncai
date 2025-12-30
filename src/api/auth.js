@@ -73,23 +73,30 @@ export const createCompany = (payload) => api.post('/companies', payload);
 export const getCompany = (id) => api.get(`/companies/${id}`);
 
 /**
- * Sync Supabase session with backend
+ * Exchange Supabase OAuth session token for backend JWT token
  * This sends the Supabase access token to the backend to create/update user
  * @param {Object} session - Supabase session object
+ * @param {string} companyName - Optional company name for new user signups
  * @returns {Promise} Backend response with user and token
  */
-export const syncSupabaseSession = (session) => {
+export const syncSupabaseSession = (session, companyName = null) => {
   if (!session?.access_token) {
     throw new Error('Invalid Supabase session: missing access_token');
   }
   
   // Send Supabase access token to backend
   // Backend will verify with Supabase and create/update user in database
-  return api.post('/auth/supabase', { 
-    access_token: session.access_token,
-    provider: session.user?.app_metadata?.provider || 'unknown',
-    user_metadata: session.user?.user_metadata || {},
-  }, { auth: false });
+  // Using the endpoint specified in the OAuth guide: /auth/oauth/session
+  const payload = {
+    accessToken: session.access_token, // Use camelCase as per guide
+  };
+  
+  // Add companyName if provided (for new signups)
+  if (companyName) {
+    payload.companyName = companyName;
+  }
+  
+  return api.post('/auth/oauth/session', payload, { auth: false });
 };
 
 

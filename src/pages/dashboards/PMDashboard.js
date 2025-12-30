@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { fetchHandoffs } from '../../api/handoffs';
 import { 
   FileText, 
   CheckCircle, 
@@ -15,13 +16,29 @@ import './Dashboard.css';
 const PMDashboard = () => {
   const navigate = useNavigate();
   const { projects, tasks, documents, teams, loadTeams, loadProjects, loadAllTasks, projectsLoading, tasksLoading } = useApp();
+  const [handoffs, setHandoffs] = useState([]);
+  const [handoffsLoading, setHandoffsLoading] = useState(false);
 
   useEffect(() => {
     // Ensure data is loaded when dashboard mounts
     loadProjects();
     loadAllTasks();
     loadTeams();
+    loadHandoffs();
   }, [loadProjects, loadAllTasks, loadTeams]);
+
+  const loadHandoffs = async () => {
+    setHandoffsLoading(true);
+    try {
+      const data = await fetchHandoffs();
+      setHandoffs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load handoffs:', error);
+      setHandoffs([]);
+    } finally {
+      setHandoffsLoading(false);
+    }
+  };
 
   const activeProjectsCount = projects.filter(p => p.status === 'active').length;
   const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
@@ -44,10 +61,12 @@ const PMDashboard = () => {
     },
     {
       label: 'Pending Approvals',
-      value: 0, // Note: Will be populated when handoffs are loaded
+      value: handoffs.filter(h => h.status === 'pending' || h.status === 'in-review').length,
       icon: AlertCircle,
       color: '#f59e0b',
-      trend: 'No pending'
+      trend: handoffs.filter(h => h.status === 'pending' || h.status === 'in-review').length > 0 
+        ? `${handoffs.filter(h => h.status === 'pending' || h.status === 'in-review').length} pending` 
+        : 'No pending'
     },
     {
       label: 'Team Members',

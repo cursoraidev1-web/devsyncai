@@ -37,8 +37,12 @@ const OAuthCallback = () => {
           return;
         }
 
-        // Supabase automatically handles the code exchange
-        // We just need to get the session
+        // Supabase automatically handles the code exchange from URL hash fragments
+        // With detectSessionInUrl: true, Supabase processes the hash automatically
+        // We'll wait a brief moment and then get the session
+        // This ensures Supabase has time to process the URL hash fragments
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -46,17 +50,37 @@ const OAuthCallback = () => {
         }
 
         if (!session) {
-          setStatus('error');
-          setMessage('No session found. Please try again.');
-          toast.error('No session found. Please try again.');
-          setTimeout(() => navigate('/login'), 3000);
-          return;
+          // If no session found, try one more time after a short delay
+          await new Promise(resolve => setTimeout(resolve, 300));
+          const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession();
+          
+          if (retryError) {
+            throw new Error(retryError.message);
+          }
+          
+          if (!retrySession) {
+            setStatus('error');
+            setMessage('No session found. Please try again.');
+            toast.error('No session found. Please try again.');
+            setTimeout(() => navigate('/login'), 3000);
+            return;
+          }
+          
+          // Use the retry session
+          session = retrySession;
         }
 
+        // Get companyName from sessionStorage if it was set (for new signups)
+        const companyName = sessionStorage.getItem('oauth_company_name');
+        if (companyName) {
+          sessionStorage.removeItem('oauth_company_name'); // Clean up after use
+        }
+        
         // Sync Supabase session with backend
         // This will create/update the user in your backend database
-        const result = await syncSupabaseSession(session);
+        const result = await syncSupabaseSession(session, companyName);
         
+        // Check if 2FA is required (response format: { require2fa: true, email: string })
         if (result?.require2fa) {
           toast.info('Please enter your 2FA code');
           navigate('/verify-2fa', { state: { email: result.email } });

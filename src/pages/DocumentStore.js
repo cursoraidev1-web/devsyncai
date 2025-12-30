@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
+import { deleteDocument, getDownloadUrl } from '../api/documents';
+import { uploadDocumentFile, formatFileSize, getFileTypeInfo, validateFile } from '../utils/fileUpload';
 import { 
   FileText, 
   Upload, 
@@ -14,28 +16,32 @@ import {
   Image,
   FileCode,
   Plus,
-  Edit
+  Edit,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { Modal } from '../components/ui';
 import PulsingLoader from '../components/PulsingLoader';
 import { CardSkeleton } from '../components/SkeletonLoader';
 import './DocumentStore.css';
 
 const DocumentStore = () => {
-  const { documents, loadDocuments, createDocument, projects } = useApp();
+  const { documents, loadDocuments, projects } = useApp();
   const navigate = useNavigate();
   const [view, setView] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [newDocument, setNewDocument] = useState({
-    title: '',
-    file_type: 'application/pdf',
-    file_url: '',
-    file_size: 0,
-    project_id: projects?.[0]?.id || ''
-  });
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [documentTitle, setDocumentTitle] = useState('');
+  const [documentTags, setDocumentTags] = useState('');
+  const [downloadingId, setDownloadingId] = useState(null);
+  const fileInputRef = useRef(null);
+  const uploadAreaRef = useRef(null);
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     const projectId = projects?.[0]?.id;
@@ -59,41 +65,216 @@ const DocumentStore = () => {
     return matchesSearch && matchesType;
   });
 
+  // Handle file selection
+  const handleFileSelect = (file) => {
+    if (!file) return;
+    
+    // Validate file
+    const validation = validateFile(file, {
+      maxSize: 100 * 1024 * 1024, // 100MB
+      allowedTypes: [] // Backend handles validation
+    });
+    
+    if (!validation.isValid) {
+      toast.error(validation.error);
+      return;
+    }
+    
+    setSelectedFile(file);
+    // Set default title to filename without extension
+    if (!documentTitle) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+      setDocumentTitle(nameWithoutExt);
+    }
+  };
+
+  // Handle file input change
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  // Handle drag and drop
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  // Handle upload
   const handleUpload = async () => {
-    if (!newDocument.title || !newDocument.project_id) {
-      alert('Please fill in all required fields');
+    if (!selectedFile) {
+      toast.error('Please select a file to upload');
       return;
     }
 
+    const projectId = projects?.[0]?.id;
+    if (!projectId) {
+      toast.error('No project selected');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+
     try {
-      await createDocument(newDocument);
+      // Parse tags from comma-separated string
+      const tags = documentTags
+        ? documentTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
+
+      // Simulate progress (Supabase doesn't provide progress events easily)
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      // Upload document using 3-step flow
+      await uploadDocumentFile(
+        projectId,
+        selectedFile,
+        {
+          title: documentTitle || selectedFile.name,
+          tags: tags
+        },
+        {
+          onProgress: (progress) => {
+            setUploadProgress(progress);
+          }
+        }
+      );
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Refresh document list
+      await loadDocuments(projectId);
+
+      // Reset form
+      setSelectedFile(null);
+      setDocumentTitle('');
+      setDocumentTags('');
       setShowUploadModal(false);
-      setNewDocument({
-        title: '',
-        file_type: 'application/pdf',
-        file_url: '',
-        file_size: 0,
-        project_id: projects?.[0]?.id || ''
-      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      toast.success('Document uploaded successfully');
+      
+      // Reset progress after a delay
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploading(false);
+      }, 1000);
     } catch (error) {
-      console.error('Failed to create document:', error);
-      alert('Failed to upload document. Please try again.');
+      setUploading(false);
+      setUploadProgress(0);
+      const errorMessage = error?.message || 'Failed to upload document. Please try again.';
+      toast.error(errorMessage);
+      console.error('Upload error:', error);
     }
   };
+
+  // Handle download
+  const handleDownload = async (doc) => {
+    if (downloadingId === doc.id) return; // Prevent double-click
+    
+    setDownloadingId(doc.id);
+    
+    try {
+      const downloadUrl = await getDownloadUrl(doc.id);
+      
+      // Create temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = doc.title || doc.name || 'document';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Download error:', error);
+      const errorMessage = error?.message || 'Failed to download document. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const handleDelete = async (id) => {
-    // Note: Delete endpoint may not be available in the API
-    // For now, this is a placeholder - implement when delete endpoint is available
-    if (window.confirm('Are you sure you want to delete this document?')) {
-      // Optimistic update - remove from local state
-      // In production, call API delete endpoint here
-      console.warn('Document delete not yet implemented in API');
+    setDeleteConfirmId(id);
+  };
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  const handleDelete = async (id) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    
+    const projectId = projects?.[0]?.id;
+    
+    try {
+      await deleteDocument(deleteConfirmId);
+      toast.success('Document deleted successfully');
+      setDeleteConfirmId(null);
+      
+      // Refresh document list
+      if (projectId) {
+        await loadDocuments(projectId);
+      }
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to delete document';
+      toast.error(errorMessage);
+      setDeleteConfirmId(null);
     }
   };
 
-  const getDocumentIcon = (type) => {
-    const docType = documentTypes.find(t => t.id === type);
-    return docType || documentTypes[documentTypes.length - 1];
+  const getDocumentIcon = (doc) => {
+    // Use file type info if available, otherwise fall back to document type
+    const fileType = doc.file_type || doc.type || '';
+    const fileInfo = getFileTypeInfo(fileType);
+    
+    // Map file type to document type icon for backward compatibility
+    const docType = documentTypes.find(t => t.id === doc.type);
+    if (docType) {
+      return docType;
+    }
+    
+    // Return a default icon based on file type
+    return {
+      icon: File,
+      color: fileInfo.color
+    };
   };
 
   return (
@@ -184,20 +365,36 @@ const DocumentStore = () => {
                   <docIcon.icon size={32} />
                 </div>
                 <div className="document-card-content">
-                  <h3>{doc.name}</h3>
+                  <h3>{doc.title || doc.name}</h3>
                   <div className="document-card-meta">
-                    <span className="document-size">{doc.size}</span>
-                    <span className="document-date">{doc.uploadedAt}</span>
+                    <span className="document-size">{doc.size || formatFileSize(doc.file_size || 0)}</span>
+                    <span className="document-date">{doc.uploadedAt || 'Unknown date'}</span>
                   </div>
-                  <div className="document-card-tags">
-                    {doc.tags.map((tag, idx) => (
-                      <span key={idx} className="badge badge-secondary">{tag}</span>
-                    ))}
-                  </div>
+                  {doc.uploadedBy && (
+                    <div className="document-card-uploader" style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      By {doc.uploadedBy}
+                    </div>
+                  )}
+                  {doc.tags && doc.tags.length > 0 && (
+                    <div className="document-card-tags">
+                      {doc.tags.map((tag, idx) => (
+                        <span key={idx} className="badge badge-secondary">{tag}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="document-card-actions">
-                  <button className="action-btn" title="Download">
-                    <Download size={16} />
+                  <button 
+                    className="action-btn" 
+                    title="Download"
+                    onClick={() => handleDownload(doc)}
+                    disabled={downloadingId === doc.id}
+                  >
+                    {downloadingId === doc.id ? (
+                      <PulsingLoader size={16} />
+                    ) : (
+                      <Download size={16} />
+                    )}
                   </button>
                   <button className="action-btn danger" onClick={() => handleDelete(doc.id)} title="Delete">
                     <Trash2 size={16} />
@@ -231,30 +428,45 @@ const DocumentStore = () => {
                         <docIcon.icon size={20} />
                       </div>
                       <div>
-                        <div className="document-list-title">{doc.name}</div>
-                        <div className="document-list-uploader">By {doc.uploadedBy}</div>
+                        <div className="document-list-title">{doc.title || doc.name}</div>
+                        <div className="document-list-uploader">By {doc.uploadedBy || 'Unknown'}</div>
                       </div>
                     </div>
                   </div>
                   <div className="list-col col-type">
-                    <span className="badge badge-primary">{doc.type}</span>
+                    <span className="badge badge-primary">{doc.type || 'other'}</span>
                   </div>
-                  <div className="list-col col-size">{doc.size}</div>
-                  <div className="list-col col-uploaded">{doc.uploadedAt}</div>
+                  <div className="list-col col-size">{doc.size || formatFileSize(doc.file_size || 0)}</div>
+                  <div className="list-col col-uploaded">{doc.uploadedAt || 'Unknown date'}</div>
                   <div className="list-col col-tags">
                     <div className="document-tags-cell">
-                      {doc.tags.slice(0, 2).map((tag, idx) => (
-                        <span key={idx} className="badge badge-secondary">{tag}</span>
-                      ))}
-                      {doc.tags.length > 2 && (
-                        <span className="badge badge-secondary">+{doc.tags.length - 2}</span>
+                      {doc.tags && doc.tags.length > 0 ? (
+                        <>
+                          {doc.tags.slice(0, 2).map((tag, idx) => (
+                            <span key={idx} className="badge badge-secondary">{tag}</span>
+                          ))}
+                          {doc.tags.length > 2 && (
+                            <span className="badge badge-secondary">+{doc.tags.length - 2}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontSize: '12px' }}>No tags</span>
                       )}
                     </div>
                   </div>
                   <div className="list-col col-actions">
                     <div className="document-list-actions">
-                      <button className="action-btn" title="Download">
-                        <Download size={16} />
+                      <button 
+                        className="action-btn" 
+                        title="Download"
+                        onClick={() => handleDownload(doc)}
+                        disabled={downloadingId === doc.id}
+                      >
+                        {downloadingId === doc.id ? (
+                          <PulsingLoader size={16} />
+                        ) : (
+                          <Download size={16} />
+                        )}
                       </button>
                       <button className="action-btn danger" onClick={() => handleDelete(doc.id)} title="Delete">
                         <Trash2 size={16} />
@@ -280,65 +492,185 @@ const DocumentStore = () => {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Delete Document"
+        subtitle="Are you sure you want to delete this document? This action cannot be undone."
+        size="md"
+        footer={
+          <>
+            <button
+              className="modal-btn-cancel"
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="modal-btn-danger"
+              onClick={confirmDelete}
+            >
+              Delete
+            </button>
+          </>
+        }
+      />
+
       {/* Upload Modal */}
-      {showUploadModal && (
-        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Upload Document</h2>
+      <Modal
+        isOpen={showUploadModal}
+        onClose={() => {
+          if (!uploading) {
+            setShowUploadModal(false);
+            setSelectedFile(null);
+            setDocumentTitle('');
+            setDocumentTags('');
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }
+        }}
+        title="Upload Document"
+        size="lg"
+        footer={
+          <>
+            <button
+              className="modal-btn-cancel"
+              onClick={() => {
+                if (!uploading) {
+                  setShowUploadModal(false);
+                  setSelectedFile(null);
+                  setDocumentTitle('');
+                  setDocumentTags('');
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }
+              }}
+              disabled={uploading}
+            >
+              Cancel
+            </button>
+            <button
+              className="modal-btn-primary"
+              onClick={handleUpload}
+              disabled={!selectedFile || uploading}
+            >
+              {uploading ? (
+                <>
+                  <PulsingLoader size={16} />
+                  Uploading... {uploadProgress}%
+                </>
+              ) : (
+                <>
+                  <Upload size={18} />
+                  Upload
+                </>
+              )}
+            </button>
+          </>
+        }
+      >
+        <div className="upload-modal-content">
+          {/* File Upload Area */}
+          <div
+            ref={uploadAreaRef}
+            className={`upload-area ${dragActive ? 'drag-active' : ''} ${selectedFile ? 'has-file' : ''}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => !uploading && fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileInputChange}
+              disabled={uploading}
+              style={{ display: 'none' }}
+              accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp,.xls,.xlsx,.csv,.zip,.rar"
+            />
             
-            <div className="upload-area">
-              <Upload size={48} />
-              <p>Drag & drop files here or click to browse</p>
-              <button className="btn btn-outline">Choose Files</button>
-            </div>
+            {selectedFile ? (
+              <div className="selected-file">
+                <div className="file-icon">
+                  {(() => {
+                    const fileInfo = getFileTypeInfo(selectedFile.type);
+                    return <span style={{ fontSize: '48px' }}>{fileInfo.icon}</span>;
+                  })()}
+                </div>
+                <div className="file-info">
+                  <div className="file-name">{selectedFile.name}</div>
+                  <div className="file-size">{formatFileSize(selectedFile.size)}</div>
+                </div>
+                {!uploading && (
+                  <button
+                    className="remove-file-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFile(null);
+                      setDocumentTitle('');
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <Upload size={48} />
+                <p>Drag & drop files here or click to browse</p>
+                <button className="btn btn-outline" onClick={(e) => e.stopPropagation()}>
+                  Choose Files
+                </button>
+              </>
+            )}
+          </div>
 
-            <div className="input-group">
-              <label htmlFor="doc-name">Document Name</label>
-              <input
-                id="doc-name"
-                type="text"
-                placeholder="E.g., API Documentation v2.0"
-                value={newDocument.name}
-                onChange={(e) => setNewDocument({ ...newDocument, name: e.target.value })}
-              />
+          {/* Upload Progress */}
+          {uploading && (
+            <div className="upload-progress">
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <div className="progress-text">{uploadProgress}%</div>
             </div>
+          )}
 
-            <div className="input-group">
-              <label htmlFor="doc-type">Document Type</label>
-              <select
-                id="doc-type"
-                value={newDocument.type}
-                onChange={(e) => setNewDocument({ ...newDocument, type: e.target.value })}
-              >
-                {documentTypes.map(type => (
-                  <option key={type.id} value={type.id}>{type.label}</option>
-                ))}
-              </select>
-            </div>
+          {/* Document Title */}
+          <div className="input-group">
+            <label htmlFor="doc-title">Document Title</label>
+            <input
+              id="doc-title"
+              type="text"
+              placeholder="E.g., API Documentation v2.0"
+              value={documentTitle}
+              onChange={(e) => setDocumentTitle(e.target.value)}
+              disabled={uploading}
+            />
+          </div>
 
-            <div className="input-group">
-              <label htmlFor="doc-tags">Tags (comma-separated)</label>
-              <input
-                id="doc-tags"
-                type="text"
-                placeholder="E.g., technical, api, backend"
-                value={newDocument.tags}
-                onChange={(e) => setNewDocument({ ...newDocument, tags: e.target.value })}
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setShowUploadModal(false)}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleUpload}>
-                <Upload size={18} />
-                Upload
-              </button>
-            </div>
+          {/* Document Tags */}
+          <div className="input-group">
+            <label htmlFor="doc-tags">Tags (comma-separated)</label>
+            <input
+              id="doc-tags"
+              type="text"
+              placeholder="E.g., technical, api, backend"
+              value={documentTags}
+              onChange={(e) => setDocumentTags(e.target.value)}
+              disabled={uploading}
+            />
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

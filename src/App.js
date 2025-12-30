@@ -7,6 +7,7 @@ import { CompanyProvider } from './context/CompanyContext';
 import { PlanProvider } from './context/PlanContext';
 import { AppProvider, useApp } from './context/AppContext';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Landing Page
 import Landing from './pages/Landing';
@@ -205,10 +206,11 @@ const GlobalUI = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <CompanyProvider>
-        <PlanProvider>
-          <AppProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CompanyProvider>
+          <PlanProvider>
+            <AppProvider>
             <GlobalUI />
             <AppRoutes />
             <OfflineIndicator />
@@ -224,10 +226,11 @@ function App() {
               pauseOnHover
               theme="light"
             />
-          </AppProvider>
-        </PlanProvider>
-      </CompanyProvider>
-    </AuthProvider>
+            </AppProvider>
+          </PlanProvider>
+        </CompanyProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -11,6 +11,7 @@ import {
   Activity,
   Calendar
 } from 'lucide-react';
+import PulsingLoader from '../components/PulsingLoader';
 import './Analytics.css';
 
 const Analytics = () => {
@@ -24,7 +25,17 @@ const Analytics = () => {
     if (projectId) {
       setLoading(true);
       loadAnalytics(projectId)
-        .then(data => setAnalyticsData(data))
+        .then(data => {
+          // Transform API response to match expected format
+          const transformed = {
+            kpiCards: data?.kpiCards || data?.kpi_cards || data?.kpis || [],
+            projectProgress: data?.projectProgress || data?.project_progress || data?.projects || [],
+            teamPerformance: data?.teamPerformance || data?.team_performance || data?.teams || [],
+            deploymentMetrics: data?.deploymentMetrics || data?.deployment_metrics || data?.deployments || [],
+            sprintVelocity: data?.sprintVelocity || data?.sprint_velocity || data?.sprints || []
+          };
+          setAnalyticsData(transformed);
+        })
         .catch(error => {
           console.error('Failed to load analytics:', error);
           setAnalyticsData(null);
@@ -35,19 +46,19 @@ const Analytics = () => {
     }
   }, [projects, loadAnalytics, timeRange]);
 
-  // TODO: Load KPI cards from analyticsData when API is available
+  // Load KPI cards from analyticsData
   const kpiCards = analyticsData?.kpiCards || [];
 
-  // TODO: Load project progress from analyticsData when API is available
+  // Load project progress from analyticsData
   const projectProgress = analyticsData?.projectProgress || [];
 
-  // TODO: Load team performance from analyticsData when API is available
+  // Load team performance from analyticsData
   const teamPerformance = analyticsData?.teamPerformance || [];
 
-  // TODO: Load deployment metrics from analyticsData when API is available
+  // Load deployment metrics from analyticsData
   const deploymentMetrics = analyticsData?.deploymentMetrics || [];
 
-  // TODO: Load sprint velocity from analyticsData when API is available
+  // Load sprint velocity from analyticsData
   const sprintVelocity = analyticsData?.sprintVelocity || [];
 
   return (
@@ -74,7 +85,11 @@ const Analytics = () => {
 
       {/* KPI Cards */}
       <div className="kpi-grid">
-        {kpiCards.length > 0 ? (
+        {loading ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <PulsingLoader message="Loading analytics data..." />
+          </div>
+        ) : kpiCards.length > 0 ? (
           kpiCards.map((kpi, index) => (
           <div key={index} className="kpi-card">
             <div className="kpi-icon" style={{ backgroundColor: `${kpi.color}15`, color: kpi.color }}>

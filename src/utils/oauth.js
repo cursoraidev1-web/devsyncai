@@ -16,12 +16,18 @@ import { getSupabaseAuthClient } from './supabaseAuth';
  * Sign in with Google OAuth using Supabase
  * @param {Object} options - Optional configuration
  * @param {string} options.redirectTo - Custom redirect URL (defaults to /auth/callback)
+ * @param {string} options.companyName - Optional company name for new signups
  * @returns {Promise<void>} Redirects to Google OAuth
  */
 export const signInWithGoogle = async (options = {}) => {
   const supabase = getSupabaseAuthClient();
   
   const redirectTo = options.redirectTo || `${window.location.origin}/auth/callback`;
+  
+  // Store companyName in sessionStorage if provided (for new signups)
+  if (options.companyName) {
+    sessionStorage.setItem('oauth_company_name', options.companyName);
+  }
   
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -43,12 +49,18 @@ export const signInWithGoogle = async (options = {}) => {
  * Sign in with GitHub OAuth using Supabase
  * @param {Object} options - Optional configuration
  * @param {string} options.redirectTo - Custom redirect URL (defaults to /auth/callback)
+ * @param {string} options.companyName - Optional company name for new signups
  * @returns {Promise<void>} Redirects to GitHub OAuth
  */
 export const signInWithGitHub = async (options = {}) => {
   const supabase = getSupabaseAuthClient();
   
   const redirectTo = options.redirectTo || `${window.location.origin}/auth/callback`;
+  
+  // Store companyName in sessionStorage if provided (for new signups)
+  if (options.companyName) {
+    sessionStorage.setItem('oauth_company_name', options.companyName);
+  }
   
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'github',

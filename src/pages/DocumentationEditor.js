@@ -16,6 +16,7 @@ import {
   X,
   Eye
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import './DocumentationEditor.css';
 
 const DocumentationEditor = () => {
@@ -32,7 +33,7 @@ const DocumentationEditor = () => {
 
   const handleSave = () => {
     // Handle save logic
-    alert('Documentation saved successfully!');
+    toast.success('Documentation saved successfully!');
     navigate('/documents');
   };
 

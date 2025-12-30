@@ -15,6 +15,7 @@ import {
   Sun,
   Check
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { Button, Input, Select, Card, Modal, Switch, Textarea } from '../components/ui';
 import { PageHeader, ContentContainer, Section } from '../components/layout';
 import './Settings.css';
@@ -66,20 +67,20 @@ const SettingsNew = () => {
 
   const handleSaveProfile = () => {
     updateUser(formData);
-    alert('Profile updated successfully!');
+    toast.success('Profile updated successfully!');
   };
 
   const handleChangePassword = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Passwords do not match!');
+      toast.error('Passwords do not match!');
       return;
     }
     if (passwordData.newPassword.length < 8) {
-      alert('Password must be at least 8 characters long!');
+      toast.error('Password must be at least 8 characters long!');
       return;
     }
     // Save password
-    alert('Password changed successfully!');
+    toast.success('Password changed successfully!');
     setShowPasswordModal(false);
     setPasswordData({
       currentPassword: '',
@@ -93,9 +94,9 @@ const SettingsNew = () => {
       setTwoFactorEnabled(true);
       setShow2FAModal(false);
       setVerificationCode('');
-      alert('Two-Factor Authentication enabled successfully!');
+      toast.success('Two-Factor Authentication enabled successfully!');
     } else {
-      alert('Please enter a valid 6-digit code');
+      toast.error('Please enter a valid 6-digit code');
     }
   };
 
@@ -103,7 +104,7 @@ const SettingsNew = () => {
     setPreferences({ ...preferences, theme: newTheme });
     // Apply theme
     document.documentElement.setAttribute('data-theme', newTheme);
-    alert(`Theme changed to ${newTheme}`);
+    toast.success(`Theme changed to ${newTheme}`);
   };
 
   const tabs = [

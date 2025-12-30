@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -14,17 +14,53 @@ import {
   Tag,
   ArrowRightLeft
 } from 'lucide-react';
+import { getHandoff, getHandoffComments, addHandoffComment, approveHandoff, rejectHandoff } from '../api/handoffs';
 import { Modal } from '../components/ui';
+import { toast } from 'react-toastify';
+import PulsingLoader from '../components/PulsingLoader';
 import './HandoffDetails.css';
 
 const HandoffDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [handoff, setHandoff] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewStatus, setReviewStatus] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [newComment, setNewComment] = useState('');
 
-  // TODO: Load handoff from API when available
-  const handoff = null; // Will be loaded from API based on id param
+  useEffect(() => {
+    const loadHandoffData = async () => {
+      if (!id) {
+        setError('Invalid handoff ID');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const [handoffData, commentsData] = await Promise.all([
+          getHandoff(id),
+          getHandoffComments(id)
+        ]);
+        setHandoff(handoffData);
+        setComments(Array.isArray(commentsData) ? commentsData : []);
+      } catch (err) {
+        console.error('Failed to load handoff:', err);
+        setError(err?.response?.data?.error || err?.message || 'Failed to load handoff');
+        toast.error('Failed to load handoff details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHandoffData();
+  }, [id]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -70,17 +106,72 @@ const HandoffDetails = () => {
 
   const handleReview = (status) => {
     setReviewStatus(status);
+    setReviewComment('');
     setShowReviewModal(true);
   };
 
-  const handleReviewSubmit = () => {
-    // Handle review submission
-    alert(`Handoff ${reviewStatus === 'approved' ? 'approved' : 'rejected'} successfully!`);
-    setShowReviewModal(false);
-    navigate('/handoffs');
+  const handleReviewSubmit = async () => {
+    if (reviewStatus === 'rejected' && !reviewComment.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (reviewStatus === 'approved') {
+        await approveHandoff(id, reviewComment);
+        toast.success('Handoff approved successfully!');
+      } else {
+        await rejectHandoff(id, reviewComment);
+        toast.success('Handoff rejected');
+      }
+      setShowReviewModal(false);
+      // Reload handoff to get updated status
+      const updatedHandoff = await getHandoff(id);
+      setHandoff(updatedHandoff);
+      navigate('/handoffs');
+    } catch (error) {
+      console.error('Failed to review handoff:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to review handoff';
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (!handoff) {
+  const handleAddComment = async () => {
+    if (!newComment.trim()) {
+      toast.error('Please enter a comment');
+      return;
+    }
+
+    try {
+      const comment = await addHandoffComment(id, newComment);
+      setComments(prev => [...prev, comment]);
+      setNewComment('');
+      toast.success('Comment added');
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to add comment';
+      toast.error(errorMessage);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="handoff-details-page">
+        <div className="handoff-details-header">
+          <button className="back-btn" onClick={() => navigate('/handoffs')}>
+            <ArrowLeft size={18} />
+            Back to Handoffs
+          </button>
+        </div>
+        <PulsingLoader message="Loading handoff details..." />
+      </div>
+    );
+  }
+
+  if (error || !handoff) {
     return (
       <div className="handoff-details-page">
         <div className="handoff-details-header">
@@ -92,7 +183,9 @@ const HandoffDetails = () => {
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <ArrowRightLeft size={48} style={{ color: '#718096', marginBottom: '16px' }} />
           <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>Handoff not found</h3>
-          <p style={{ color: '#718096', marginBottom: '24px' }}>The handoff you're looking for doesn't exist or has been removed.</p>
+          <p style={{ color: '#718096', marginBottom: '24px' }}>
+            {error || 'The handoff you're looking for doesn't exist or has been removed.'}
+          </p>
           <button className="btn btn-primary" onClick={() => navigate('/handoffs')}>
             Go to Handoffs
           </button>
@@ -150,22 +243,38 @@ const HandoffDetails = () => {
 
           <div className="handoff-participants">
             <div className="participant-card">
-              <div className="participant-avatar">{handoff.from.avatar}</div>
+              <div className="participant-avatar">
+                {handoff.from_user?.name?.[0]?.toUpperCase() || handoff.from?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
               <div className="participant-info">
                 <div className="participant-label">From</div>
-                <div className="participant-name">{handoff.from.name}</div>
-                <div className="participant-role">{handoff.from.role}</div>
-                <div className="participant-email">{handoff.from.email}</div>
+                <div className="participant-name">
+                  {handoff.from_user?.name || handoff.from?.name || handoff.from_user_id || 'Unknown'}
+                </div>
+                <div className="participant-role">
+                  {handoff.from_user?.role || handoff.from?.role || ''}
+                </div>
+                <div className="participant-email">
+                  {handoff.from_user?.email || handoff.from?.email || ''}
+                </div>
               </div>
             </div>
             <div className="participant-arrow">→</div>
             <div className="participant-card">
-              <div className="participant-avatar">{handoff.to.avatar}</div>
+              <div className="participant-avatar">
+                {handoff.to_user?.name?.[0]?.toUpperCase() || handoff.to?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
               <div className="participant-info">
                 <div className="participant-label">To</div>
-                <div className="participant-name">{handoff.to.name}</div>
-                <div className="participant-role">{handoff.to.role}</div>
-                <div className="participant-email">{handoff.to.email}</div>
+                <div className="participant-name">
+                  {handoff.to_user?.name || handoff.to?.name || handoff.to_user_id || 'Unknown'}
+                </div>
+                <div className="participant-role">
+                  {handoff.to_user?.role || handoff.to?.role || ''}
+                </div>
+                <div className="participant-email">
+                  {handoff.to_user?.email || handoff.to?.email || ''}
+                </div>
               </div>
             </div>
           </div>
@@ -175,53 +284,74 @@ const HandoffDetails = () => {
             <p>{handoff.description}</p>
           </div>
 
-          <div className="handoff-tags-section">
-            <h2>Tags</h2>
-            <div className="handoff-tags">
-              {handoff.tags.map((tag, idx) => (
-                <span key={idx} className="handoff-tag">
-                  <Tag size={14} />
-                  {tag}
-                </span>
-              ))}
+          {handoff.tags && handoff.tags.length > 0 && (
+            <div className="handoff-tags-section">
+              <h2>Tags</h2>
+              <div className="handoff-tags">
+                {handoff.tags.map((tag, idx) => (
+                  <span key={idx} className="handoff-tag">
+                    <Tag size={14} />
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="handoff-attachments-section">
-            <h2>Attachments</h2>
-            <div className="attachments-list">
-              {handoff.attachments.map(attachment => (
-                <div key={attachment.id} className="attachment-item">
-                  <FileText size={20} />
-                  <div className="attachment-info">
-                    <div className="attachment-name">{attachment.name}</div>
-                    <div className="attachment-size">{attachment.size}</div>
+          {handoff.attachments && handoff.attachments.length > 0 && (
+            <div className="handoff-attachments-section">
+              <h2>Attachments</h2>
+              <div className="attachments-list">
+                {handoff.attachments.map(attachment => (
+                  <div key={attachment.id || attachment.name} className="attachment-item">
+                    <FileText size={20} />
+                    <div className="attachment-info">
+                      <div className="attachment-name">{attachment.name}</div>
+                      <div className="attachment-size">{attachment.size}</div>
+                    </div>
+                    <button className="attachment-download">Download</button>
                   </div>
-                  <button className="attachment-download">Download</button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="handoff-comments-section">
             <h2>Comments</h2>
             <div className="comments-list">
-              {handoff.comments.map(comment => (
-                <div key={comment.id} className="comment-item">
-                  <div className="comment-avatar">{comment.avatar}</div>
-                  <div className="comment-content">
-                    <div className="comment-header">
-                      <span className="comment-author">{comment.author}</span>
-                      <span className="comment-time">{formatDate(comment.timestamp)}</span>
+              {comments.length > 0 ? (
+                comments.map(comment => (
+                  <div key={comment.id} className="comment-item">
+                    <div className="comment-avatar">
+                      {comment.user?.name?.[0]?.toUpperCase() || comment.author?.[0]?.toUpperCase() || 'U'}
                     </div>
-                    <div className="comment-text">{comment.text}</div>
+                    <div className="comment-content">
+                      <div className="comment-header">
+                        <span className="comment-author">
+                          {comment.user?.name || comment.author || 'Unknown'}
+                        </span>
+                        <span className="comment-time">
+                          {formatDate(comment.created_at || comment.timestamp || comment.createdAt)}
+                        </span>
+                      </div>
+                      <div className="comment-text">{comment.comment || comment.text || comment.content}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p style={{ color: '#718096', fontStyle: 'italic' }}>No comments yet</p>
+              )}
             </div>
             <div className="comment-input">
-              <textarea placeholder="Add a comment..." rows={3} />
-              <button className="comment-submit-btn">Post Comment</button>
+              <textarea
+                placeholder="Add a comment..."
+                rows={3}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+              <button className="comment-submit-btn" onClick={handleAddComment}>
+                Post Comment
+              </button>
             </div>
           </div>
         </div>
@@ -233,16 +363,22 @@ const HandoffDetails = () => {
               <Calendar size={16} />
               <div>
                 <div className="detail-label">Created</div>
-                <div className="detail-value">{formatDate(handoff.createdAt)}</div>
+                <div className="detail-value">
+                  {formatDate(handoff.created_at || handoff.createdAt)}
+                </div>
               </div>
             </div>
-            <div className="detail-item">
-              <Clock size={16} />
-              <div>
-                <div className="detail-label">Due Date</div>
-                <div className="detail-value">{formatDate(handoff.dueDate)}</div>
+            {handoff.due_date || handoff.dueDate ? (
+              <div className="detail-item">
+                <Clock size={16} />
+                <div>
+                  <div className="detail-label">Due Date</div>
+                  <div className="detail-value">
+                    {formatDate(handoff.due_date || handoff.dueDate)}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -261,27 +397,37 @@ const HandoffDetails = () => {
             <button 
               className="modal-btn-cancel"
               onClick={() => setShowReviewModal(false)}
+              disabled={submitting}
             >
               Cancel
             </button>
             <button 
               className={`modal-btn-${reviewStatus === 'approved' ? 'primary' : 'danger'}`}
               onClick={handleReviewSubmit}
+              disabled={submitting}
             >
-              {reviewStatus === 'approved' ? 'Approve' : 'Reject'} Handoff
+              {submitting ? 'Processing...' : `${reviewStatus === 'approved' ? 'Approve' : 'Reject'} Handoff`}
             </button>
           </>
         }
       >
         <div className="review-modal-content">
-          {reviewStatus === 'rejected' && (
+          {(reviewStatus === 'approved' || reviewStatus === 'rejected') && (
             <div className="form-group">
-              <label htmlFor="rejection-reason">Reason for Rejection *</label>
+              <label htmlFor="review-comment">
+                {reviewStatus === 'rejected' ? 'Reason for Rejection *' : 'Comment (optional)'}
+              </label>
               <textarea
-                id="rejection-reason"
-                placeholder="Please explain why this handoff is being rejected..."
+                id="review-comment"
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder={
+                  reviewStatus === 'rejected'
+                    ? 'Please explain why this handoff is being rejected...'
+                    : 'Add any additional comments...'
+                }
                 rows={4}
-                required
+                required={reviewStatus === 'rejected'}
               />
             </div>
           )}
@@ -293,11 +439,11 @@ const HandoffDetails = () => {
             </div>
             <div className="review-summary-item">
               <span>From:</span>
-              <span>{handoff.from.name}</span>
+              <span>{handoff.from_user?.name || handoff.from?.name || 'Unknown'}</span>
             </div>
             <div className="review-summary-item">
               <span>To:</span>
-              <span>{handoff.to.name}</span>
+              <span>{handoff.to_user?.name || handoff.to?.name || 'Unknown'}</span>
             </div>
             <div className="review-summary-item">
               <span>Priority:</span>

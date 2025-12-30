@@ -91,9 +91,8 @@ export const createTask = (payload) => {
   }
   
   // Remove assignee if it's a role string (backend expects assignee_id, not assignee)
-  // TODO: When user selection is implemented, map assignee to assignee_id
+  // User selection is now implemented - assignee_id is set from user picker
   if (normalizedPayload.assignee && !normalizedPayload.assignee_id) {
-    // For now, remove assignee since backend doesn't support role-based assignment
     // Backend expects assignee_id (user UUID), not assignee (role string)
     delete normalizedPayload.assignee;
   }

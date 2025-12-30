@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { getTeamMembers } from '../api/teams';
 import { 
   Plus, 
   Search, 
@@ -11,24 +12,27 @@ import {
   Calendar,
   Tag
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import PulsingLoader from '../components/PulsingLoader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './TaskTracker.css';
 
 const TaskTracker = () => {
-  const { tasks, tasksLoading, addTask, updateTask, deleteTask, getTasksByProject, loadAllTasks, projects } = useApp();
+  const { tasks, tasksLoading, addTask, updateTask, deleteTask, getTasksByProject, loadAllTasks, projects, teams } = useApp();
   const [view, setView] = useState('board'); // 'board' or 'list'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterProject, setFilterProject] = useState('all'); // 'all' or project ID
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
     status: 'todo',
     priority: 'medium',
-    assignee: 'developer',
+    assignee_id: '',
     dueDate: '',
     tags: []
   });
@@ -44,6 +48,42 @@ const TaskTracker = () => {
   useEffect(() => {
     loadAllTasks();
   }, [loadAllTasks]);
+
+  // Load users when modal opens
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (showNewTaskModal && teams.length > 0) {
+        setLoadingUsers(true);
+        try {
+          const allUsers = [];
+          for (const team of teams) {
+            try {
+              const members = await getTeamMembers(team.id);
+              if (Array.isArray(members)) {
+                members.forEach(member => {
+                  if (!allUsers.find(u => u.id === member.id || u.id === member.user_id)) {
+                    allUsers.push({
+                      id: member.id || member.user_id,
+                      name: member.name || member.fullName || `${member.firstName || ''} ${member.lastName || ''}`.trim(),
+                      email: member.email
+                    });
+                  }
+                });
+              }
+            } catch (error) {
+              console.error(`Failed to load members for team ${team.id}:`, error);
+            }
+          }
+          setAvailableUsers(allUsers);
+        } catch (error) {
+          console.error('Failed to load users:', error);
+        } finally {
+          setLoadingUsers(false);
+        }
+      }
+    };
+    loadUsers();
+  }, [showNewTaskModal, teams]);
 
   // Get filtered tasks based on project filter
   const getFilteredTasks = () => {
@@ -82,7 +122,7 @@ const TaskTracker = () => {
     if (!newTask.title) return;
     
     if (!selectedProjectId) {
-      alert('Please select a project first');
+      toast.error('Please select a project first');
       return;
     }
 
@@ -97,14 +137,14 @@ const TaskTracker = () => {
         description: '',
         status: 'todo',
         priority: 'medium',
-        assignee: 'developer',
+        assignee_id: '',
         dueDate: '',
         tags: []
       });
     } catch (error) {
       console.error('Failed to create task:', error);
       const errorMessage = error?.message || 'Failed to create task. Please try again.';
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -125,7 +165,7 @@ const TaskTracker = () => {
         await updateTask(task.id, { status: newStatus });
       } catch (error) {
         console.error('Failed to update task:', error);
-        alert('Failed to update task. Please try again.');
+        toast.error('Failed to update task. Please try again.');
       }
     }
   };
@@ -414,14 +454,19 @@ const TaskTracker = () => {
                 <label htmlFor="task-assignee">Assignee</label>
                 <select
                   id="task-assignee"
-                  value={newTask.assignee}
-                  onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+                  value={newTask.assignee_id}
+                  onChange={(e) => setNewTask({ ...newTask, assignee_id: e.target.value })}
                 >
-                  <option value="developer">Developer</option>
-                  <option value="qa">QA Engineer</option>
-                  <option value="devops">DevOps</option>
-                  <option value="designer">Designer</option>
-                  <option value="pm">Product Manager</option>
+                  <option value="">Unassigned</option>
+                  {loadingUsers ? (
+                    <option disabled>Loading users...</option>
+                  ) : (
+                    availableUsers.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} {user.email ? `(${user.email})` : ''}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 

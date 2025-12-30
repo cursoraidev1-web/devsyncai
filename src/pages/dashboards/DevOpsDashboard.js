@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchDeployments, fetchPipelines, getCICDMetrics } from '../../api/cicd';
 import { 
   Server, 
   Activity, 
@@ -10,51 +11,78 @@ import {
   XCircle,
   ArrowRight
 } from 'lucide-react';
+import PulsingLoader from '../../components/PulsingLoader';
 import './Dashboard.css';
 
 const DevOpsDashboard = () => {
   const navigate = useNavigate();
+  const [deployments, setDeployments] = useState([]);
+  const [pipelines, setPipelines] = useState([]);
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Load stats from CI/CD API when available
+  useEffect(() => {
+    loadCICDData();
+  }, []);
+
+  const loadCICDData = async () => {
+    setLoading(true);
+    try {
+      const [deploymentsData, pipelinesData, metricsData] = await Promise.all([
+        fetchDeployments({ limit: 10 }),
+        fetchPipelines({ limit: 10 }),
+        getCICDMetrics()
+      ]);
+      setDeployments(Array.isArray(deploymentsData) ? deploymentsData : []);
+      setPipelines(Array.isArray(pipelinesData) ? pipelinesData : []);
+      setMetrics(metricsData);
+    } catch (error) {
+      console.error('Failed to load CI/CD data:', error);
+      setDeployments([]);
+      setPipelines([]);
+      setMetrics(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activeDeployments = deployments.filter(d => 
+    d.status === 'active' || d.status === 'deploying' || d.status === 'running'
+  ).length;
+  const buildSuccessRate = metrics?.build_success_rate || metrics?.successRate || 0;
+  const systemUptime = metrics?.uptime || metrics?.system_uptime || null;
+  const openIncidents = metrics?.incidents?.open || metrics?.open_incidents || 0;
+
   const stats = [
     {
       label: 'Active Deployments',
-      value: 0,
+      value: activeDeployments,
       icon: Server,
       color: '#4f46e5',
-      trend: 'No active deployments'
+      trend: activeDeployments > 0 ? `${activeDeployments} active` : 'No active deployments'
     },
     {
       label: 'Build Success',
-      value: '0%',
+      value: typeof buildSuccessRate === 'number' ? `${buildSuccessRate}%` : buildSuccessRate || '0%',
       icon: CheckCircle,
       color: '#10b981',
-      trend: 'No builds yet'
+      trend: buildSuccessRate > 0 ? `${buildSuccessRate}% success rate` : 'No builds yet'
     },
     {
       label: 'System Uptime',
-      value: 'N/A',
+      value: systemUptime || 'N/A',
       icon: Activity,
       color: '#8b5cf6',
-      trend: 'Connect CI/CD to monitor'
+      trend: systemUptime ? `${systemUptime}` : 'Connect CI/CD to monitor'
     },
     {
       label: 'Open Incidents',
-      value: 0,
+      value: openIncidents,
       icon: AlertCircle,
       color: '#f59e0b',
-      trend: 'No incidents'
+      trend: openIncidents > 0 ? `${openIncidents} open` : 'No incidents'
     }
   ];
-
-  // TODO: Load deployments from CI/CD API when available
-  const deployments = [];
-
-  // TODO: Load pipelines from CI/CD API when available
-  const pipelines = [];
-
-  // TODO: Load server metrics from monitoring API when available
-  const serverMetrics = [];
 
   return (
     <div className="dashboard">
@@ -98,30 +126,34 @@ const DevOpsDashboard = () => {
             </button>
           </div>
           <div className="deployments-list">
-            {deployments.length > 0 ? (
+            {loading ? (
+              <PulsingLoader message="Loading deployments..." />
+            ) : deployments.length > 0 ? (
               deployments.map(deploy => (
               <div key={deploy.id} className="deployment-card">
                 <div className="deployment-status">
-                  {deploy.status === 'success' ? (
+                  {deploy.status === 'success' || deploy.status === 'completed' ? (
                     <CheckCircle size={20} className="text-success" />
-                  ) : deploy.status === 'failed' ? (
+                  ) : deploy.status === 'failed' || deploy.status === 'error' ? (
                     <XCircle size={20} className="text-danger" />
                   ) : (
                     <Activity size={20} className="text-primary" />
                   )}
                 </div>
                 <div className="deployment-info">
-                  <h3>{deploy.project}</h3>
+                  <h3>{deploy.project || deploy.project_name || deploy.name || 'Deployment'}</h3>
                   <div className="deployment-meta">
                     <span className={`badge badge-${
-                      deploy.environment === 'Production' ? 'danger' : 
-                      deploy.environment === 'Staging' ? 'warning' : 
+                      (deploy.environment || deploy.env) === 'Production' || (deploy.environment || deploy.env) === 'production' ? 'danger' : 
+                      (deploy.environment || deploy.env) === 'Staging' || (deploy.environment || deploy.env) === 'staging' ? 'warning' : 
                       'secondary'
                     }`}>
-                      {deploy.environment}
+                      {deploy.environment || deploy.env || 'Unknown'}
                     </span>
-                    <span className="badge badge-secondary">{deploy.version}</span>
-                    <span className="deployment-time">{deploy.time}</span>
+                    <span className="badge badge-secondary">{deploy.version || deploy.tag || 'N/A'}</span>
+                    <span className="deployment-time">
+                      {deploy.time || deploy.created_at || deploy.timestamp || 'Recently'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -145,33 +177,35 @@ const DevOpsDashboard = () => {
             </button>
           </div>
           <div className="pipelines-list">
-            {pipelines.length > 0 ? (
+            {loading ? (
+              <PulsingLoader message="Loading pipelines..." />
+            ) : pipelines.length > 0 ? (
               pipelines.map(pipeline => (
               <div key={pipeline.id} className="pipeline-card">
                 <div className="pipeline-header">
-                  <h3>{pipeline.name}</h3>
+                  <h3>{pipeline.name || pipeline.pipeline_name || 'Pipeline'}</h3>
                   <span className={`badge ${
-                    pipeline.status === 'passing' ? 'badge-success' : 
-                    pipeline.status === 'running' ? 'badge-warning' : 
+                    pipeline.status === 'passing' || pipeline.status === 'success' || pipeline.status === 'completed' ? 'badge-success' : 
+                    pipeline.status === 'running' || pipeline.status === 'in_progress' ? 'badge-warning' : 
                     'badge-danger'
                   }`}>
-                    {pipeline.status}
+                    {pipeline.status || 'unknown'}
                   </span>
                 </div>
                 <div className="pipeline-stats">
                   <div className="pipeline-stat">
                     <CheckCircle size={16} className="text-success" />
-                    <span>{pipeline.success} passed</span>
+                    <span>{pipeline.success || pipeline.success_count || 0} passed</span>
                   </div>
-                  {pipeline.failed > 0 && (
+                  {(pipeline.failed || pipeline.failed_count || 0) > 0 && (
                     <div className="pipeline-stat">
                       <XCircle size={16} className="text-danger" />
-                      <span>{pipeline.failed} failed</span>
+                      <span>{pipeline.failed || pipeline.failed_count || 0} failed</span>
                     </div>
                   )}
                 </div>
                 <div className="pipeline-footer">
-                  Last run: {pipeline.lastRun}
+                  Last run: {pipeline.lastRun || pipeline.last_run || pipeline.updated_at || 'N/A'}
                 </div>
               </div>
               ))
@@ -261,3 +295,5 @@ const DevOpsDashboard = () => {
 };
 
 export default DevOpsDashboard;
+
+

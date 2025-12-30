@@ -106,21 +106,20 @@ const Settings = () => {
         avatarUrl: formData.avatarUrl
       });
       updateUser(formData); // Also update local state
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error) {
-      alert('Failed to update profile: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to update profile: ' + (error.message || 'Unknown error'));
     }
-    alert('Profile updated successfully!');
   };
 
   const handleSaveNotifications = () => {
     // Save notification preferences
-    alert('Notification settings updated!');
+    toast.success('Notification settings updated!');
   };
 
   const handleSavePreferences = () => {
     // Save preferences
-    alert('Preferences updated!');
+    toast.success('Preferences updated!');
   };
 
   const tabs = [

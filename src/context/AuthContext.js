@@ -172,21 +172,36 @@ export const AuthProvider = ({ children }) => {
   /**
    * Sync Supabase session with backend
    * This is called after Supabase OAuth completes
+   * Exchanges Supabase access token for backend JWT token
    * @param {Object} session - Supabase session object
-   * @returns {Promise} User object or error
+   * @param {string} companyName - Optional company name for new signups
+   * @returns {Promise} User object or { require2fa: true, email: string } if 2FA required
    */
-  const syncSupabaseSession = async (session) => {
+  const syncSupabaseSession = async (session, companyName = null) => {
     try {
-      const response = await authApi.syncSupabaseSession(session);
-      // Handle spec format: { success, data: { user, token }, message }
+      const response = await authApi.syncSupabaseSession(session, companyName);
+      // Handle spec format: { success, data: { user, token, companies, currentCompany }, message }
+      // Or 2FA format: { success, data: { require2fa: true, email: string } }
       const data = response?.data || response;
-      const { token: apiToken, user: apiUser, require2fa } = data || {};
       
-      if (require2fa) {
-        return { require2fa: true, email: apiUser?.email };
+      // Check if 2FA is required
+      if (data?.require2fa) {
+        return { require2fa: true, email: data.email };
       }
       
+      const { token: apiToken, user: apiUser, companies, currentCompany, companyId } = data || {};
+      
       if (apiUser && apiToken) {
+        // Store companies and current company if provided
+        if (companies) {
+          localStorage.setItem('zyndrx_companies', JSON.stringify(companies));
+        }
+        if (currentCompany) {
+          localStorage.setItem('zyndrx_company', currentCompany.id);
+        } else if (companyId) {
+          localStorage.setItem('zyndrx_company', companyId);
+        }
+        
         persistSession(apiUser, apiToken);
       }
       

@@ -378,9 +378,69 @@ export const AppProvider = ({ children }) => {
     if (!token || !projectId) return;
     try {
       const data = await apiFetchDocuments(projectId);
-      setDocuments(Array.isArray(data) ? data : []);
+      const documentsArray = Array.isArray(data) ? data : [];
+      
+      // Transform backend response fields to frontend format
+      const transformedDocuments = documentsArray.map(doc => {
+        // Format file size if it's a number
+        let formattedSize = doc.size || doc.file_size || '0 Bytes';
+        if (typeof formattedSize === 'number') {
+          // Import formatFileSize dynamically or use a simple formatter
+          const k = 1024;
+          const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(formattedSize) / Math.log(k));
+          formattedSize = Math.round(formattedSize / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        // Format date
+        let formattedDate = doc.uploadedAt || doc.created_at || '';
+        if (formattedDate) {
+          try {
+            const date = new Date(formattedDate);
+            formattedDate = date.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          } catch (e) {
+            // Keep original if parsing fails
+          }
+        }
+        
+        // Handle tags - ensure it's an array
+        const tags = Array.isArray(doc.tags) ? doc.tags : (doc.tags ? [doc.tags] : []);
+        
+        // Handle uploader information
+        const uploaderName = doc.uploader?.full_name || doc.uploader?.name || doc.uploaded_by || 'Unknown';
+        
+        return {
+          ...doc,
+          // Map backend fields to frontend expected fields
+          title: doc.title || doc.name || 'Untitled',
+          name: doc.title || doc.name || 'Untitled', // Support both for backward compatibility
+          file_type: doc.file_type || doc.type || 'application/octet-stream',
+          file_size: doc.file_size || doc.size || 0,
+          size: formattedSize,
+          tags: tags,
+          uploadedAt: formattedDate,
+          uploadedBy: uploaderName,
+          type: doc.type || doc.file_type || 'other', // For filtering
+          // Preserve all other fields
+          id: doc.id,
+          project_id: doc.project_id,
+          file_path: doc.file_path,
+          file_url: doc.file_url,
+          created_at: doc.created_at,
+          updated_at: doc.updated_at,
+          prd_id: doc.prd_id,
+          uploader: doc.uploader
+        };
+      });
+      
+      setDocuments(transformedDocuments);
     } catch (error) {
       console.error('Failed to fetch documents', error);
+      setDocuments([]);
       throw error;
     }
   }, [token]);

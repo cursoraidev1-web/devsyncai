@@ -126,10 +126,10 @@ const Register = () => {
     setError('');
     try {
       if (provider === 'google') {
-        await signInWithGoogle();
+        await signInWithGoogle({ companyName: formData.workspaceName });
         // signInWithGoogle redirects automatically, so we don't need to do anything else
       } else if (provider === 'github') {
-        await signInWithGitHub();
+        await signInWithGitHub({ companyName: formData.workspaceName });
         // signInWithGitHub redirects automatically, so we don't need to do anything else
       }
     } catch (err) {

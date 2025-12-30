@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
+import { fetchHandoffs } from '../../api/handoffs';
+import { fetchTeams } from '../../api/teams';
 import { 
   FileText, 
   CheckCircle, 
@@ -16,7 +18,35 @@ import { PageHeader, ContentContainer, Section } from '../../components/layout';
 
 const PMDashboardNew = () => {
   const navigate = useNavigate();
-  const { projects, tasks, documents } = useApp();
+  const { projects, tasks, documents, teams, loadTeams } = useApp();
+  const [handoffs, setHandoffs] = useState([]);
+  const [allTeams, setAllTeams] = useState([]);
+
+  useEffect(() => {
+    loadTeams();
+    loadHandoffsData();
+    loadTeamsData();
+  }, [loadTeams]);
+
+  const loadHandoffsData = async () => {
+    try {
+      const data = await fetchHandoffs();
+      setHandoffs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load handoffs:', error);
+      setHandoffs([]);
+    }
+  };
+
+  const loadTeamsData = async () => {
+    try {
+      const data = await fetchTeams();
+      setAllTeams(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load teams:', error);
+      setAllTeams([]);
+    }
+  };
 
   const activeProjectsCount = projects.filter(p => p.status === 'active').length;
   const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
@@ -40,18 +70,25 @@ const PMDashboardNew = () => {
     },
     {
       label: 'Pending Approvals',
-      value: 0, // TODO: Load from API when handoff system is available
+      value: handoffs.filter(h => h.status === 'pending' || h.status === 'in-review').length,
       icon: AlertCircle,
       color: 'var(--color-warning)',
-      trend: 'No pending',
+      trend: handoffs.filter(h => h.status === 'pending' || h.status === 'in-review').length > 0
+        ? `${handoffs.filter(h => h.status === 'pending' || h.status === 'in-review').length} pending`
+        : 'No pending',
       bgColor: '#FEF3C7'
     },
     {
       label: 'Team Members',
-      value: 0, // TODO: Load from teams API
+      value: allTeams.reduce((acc, team) => acc + (team.members?.length || team.member_count || 0), 0) || 
+             teams.reduce((acc, team) => acc + (team.members?.length || team.member_count || 0), 0),
       icon: Users,
       color: '#8b5cf6',
-      trend: 'No members',
+      trend: (allTeams.reduce((acc, team) => acc + (team.members?.length || team.member_count || 0), 0) || 
+              teams.reduce((acc, team) => acc + (team.members?.length || team.member_count || 0), 0)) > 0
+        ? `${allTeams.reduce((acc, team) => acc + (team.members?.length || team.member_count || 0), 0) || 
+            teams.reduce((acc, team) => acc + (team.members?.length || team.member_count || 0), 0)} members`
+        : 'No members',
       bgColor: '#EDE9FE'
     }
   ];

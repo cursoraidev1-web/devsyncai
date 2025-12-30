@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
+import { getCICDMetrics } from '../../api/cicd';
 import { 
   Bug, 
   CheckCircle, 
@@ -11,12 +12,39 @@ import {
   XCircle,
   ArrowRight
 } from 'lucide-react';
+import PulsingLoader from '../../components/PulsingLoader';
 import './Dashboard.css';
 
 const QADashboard = () => {
   const navigate = useNavigate();
   const { tasks } = useApp();
   const { user } = useAuth();
+  const [testResults, setTestResults] = useState([]);
+  const [loadingTests, setLoadingTests] = useState(false);
+
+  useEffect(() => {
+    loadTestResults();
+  }, []);
+
+  const loadTestResults = async () => {
+    setLoadingTests(true);
+    try {
+      const metrics = await getCICDMetrics();
+      // Extract test results from metrics
+      if (metrics?.test_results) {
+        setTestResults(Array.isArray(metrics.test_results) ? metrics.test_results : []);
+      } else if (metrics?.tests) {
+        setTestResults(Array.isArray(metrics.tests) ? metrics.tests : []);
+      } else {
+        setTestResults([]);
+      }
+    } catch (error) {
+      console.error('Failed to load test results:', error);
+      setTestResults([]);
+    } finally {
+      setLoadingTests(false);
+    }
+  };
 
   // Filter tasks assigned to current QA user or tagged with testing
   const qaTasks = tasks.filter(t => 
@@ -64,8 +92,7 @@ const QADashboard = () => {
     }
   ];
 
-  // TODO: Load test results from API when CI/CD integration is available
-  const testResults = [];
+  // Test results loaded from CI/CD API
 
   // Use actual bug tasks instead of demo data
   const recentBugs = bugTasks.slice(0, 5).map(task => ({
@@ -117,39 +144,46 @@ const QADashboard = () => {
             </button>
           </div>
           <div className="test-results-list">
-            {testResults.length > 0 ? (
-              testResults.map(test => (
-              <div key={test.id} className="test-result-card">
-                <div className="test-header">
-                  <h3>{test.name}</h3>
-                  <span className={`badge ${
-                    test.status === 'passed' ? 'badge-success' : 
-                    test.status === 'failed' ? 'badge-danger' : 
-                    'badge-warning'
-                  }`}>
-                    {test.status}
-                  </span>
-                </div>
-                <div className="test-stats">
-                  <div className="test-stat">
-                    <span className="test-stat-label">Total Tests</span>
-                    <span className="test-stat-value">{test.tests}</span>
+            {loadingTests ? (
+              <PulsingLoader message="Loading test results..." />
+            ) : testResults.length > 0 ? (
+              testResults.map(test => {
+                const totalTests = test.tests || test.total_tests || test.total || 0;
+                const failedTests = test.failed || test.failed_tests || 0;
+                const passRate = totalTests > 0 ? Math.round(((totalTests - failedTests) / totalTests) * 100) : 0;
+                return (
+                  <div key={test.id || test.test_id} className="test-result-card">
+                    <div className="test-header">
+                      <h3>{test.name || test.test_name || test.suite_name || 'Test Suite'}</h3>
+                      <span className={`badge ${
+                        test.status === 'passed' || test.status === 'success' ? 'badge-success' : 
+                        test.status === 'failed' || test.status === 'error' ? 'badge-danger' : 
+                        'badge-warning'
+                      }`}>
+                        {test.status || 'unknown'}
+                      </span>
+                    </div>
+                    <div className="test-stats">
+                      <div className="test-stat">
+                        <span className="test-stat-label">Total Tests</span>
+                        <span className="test-stat-value">{totalTests}</span>
+                      </div>
+                      <div className="test-stat">
+                        <span className="test-stat-label">Failed</span>
+                        <span className="test-stat-value" style={{ color: failedTests > 0 ? '#ef4444' : '#10b981' }}>
+                          {failedTests}
+                        </span>
+                      </div>
+                      <div className="test-stat">
+                        <span className="test-stat-label">Pass Rate</span>
+                        <span className="test-stat-value">
+                          {passRate}%
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="test-stat">
-                    <span className="test-stat-label">Failed</span>
-                    <span className="test-stat-value" style={{ color: test.failed > 0 ? '#ef4444' : '#10b981' }}>
-                      {test.failed}
-                    </span>
-                  </div>
-                  <div className="test-stat">
-                    <span className="test-stat-label">Pass Rate</span>
-                    <span className="test-stat-value">
-                      {Math.round(((test.tests - test.failed) / test.tests) * 100)}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-              ))
+                );
+              })
             ) : (
               <div className="empty-state">
                 <CheckCircle size={48} />
