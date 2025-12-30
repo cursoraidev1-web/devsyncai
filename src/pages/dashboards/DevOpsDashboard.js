@@ -228,8 +228,8 @@ const DevOpsDashboard = () => {
             </button>
           </div>
           <div className="servers-grid">
-            {serverMetrics.length > 0 ? (
-              serverMetrics.map((server, idx) => (
+            {metrics?.servers && metrics.servers.length > 0 ? (
+              metrics.servers.map((server, idx) => (
               <div key={idx} className="server-card">
                 <div className="server-header">
                   <div className="server-icon">

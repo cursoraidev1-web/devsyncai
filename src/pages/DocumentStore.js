@@ -257,12 +257,6 @@ const DocumentStore = () => {
     setDeleteConfirmId(id);
   };
 
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-
-  const handleDelete = async (id) => {
-    setDeleteConfirmId(id);
-  };
-
   const confirmDelete = async () => {
     if (!deleteConfirmId) return;
     

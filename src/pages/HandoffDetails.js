@@ -184,7 +184,7 @@ const HandoffDetails = () => {
           <ArrowRightLeft size={48} style={{ color: '#718096', marginBottom: '16px' }} />
           <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>Handoff not found</h3>
           <p style={{ color: '#718096', marginBottom: '24px' }}>
-            {error || 'The handoff you're looking for doesn't exist or has been removed.'}
+            {error ? String(error) : 'The handoff you\'re looking for doesn\'t exist or has been removed.'}
           </p>
           <button className="btn btn-primary" onClick={() => navigate('/handoffs')}>
             Go to Handoffs
