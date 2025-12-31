@@ -43,7 +43,14 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
+    // Read values from form inputs (fallback for browser automation)
+    const form = e.target;
+    const emailInput = form.querySelector('input[name="email"]');
+    const passwordInput = form.querySelector('input[name="password"]');
+    const email = formData.email || (emailInput?.value || '').trim();
+    const password = formData.password || (passwordInput?.value || '').trim();
+    
+    if (!email || !password) {
       setError('Please fill in all fields');
       return;
     }
@@ -60,22 +67,23 @@ const Login = () => {
     
     try {
       console.log('Attempting login...');
-      const result = await login(formData.email, formData.password);
+      const result = await login(email, password);
       console.log('Login result:', result);
       
       if (result?.require2fa) {
         toast.info('Please enter your 2FA code');
-        router.push('/verify-2fa?email=' + encodeURIComponent(result.email || formData.email));
+        router.push('/verify-2fa?email=' + encodeURIComponent(result.email || email));
         return;
       }
       
       console.log('Login successful, navigating to dashboard...');
       toast.success('Welcome back!');
       
-      // Small delay to ensure state updates
+      // Use window.location for more reliable redirect
+      // Small delay to ensure state and cookie are set
       setTimeout(() => {
-        router.push('/dashboard');
-      }, 100);
+        window.location.href = '/dashboard';
+      }, 200);
     } catch (err) {
       console.error('Login error:', err);
       const errorInfo = handleApiError(err);

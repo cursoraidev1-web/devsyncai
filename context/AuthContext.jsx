@@ -21,7 +21,7 @@ const safeLocalStorage = {
       return null;
     }
     try {
-      return safeLocalStorage.getItem(key);
+      return localStorage.getItem(key);
     } catch (error) {
       console.error('safeLocalStorage.getItem error:', error);
       return null;
@@ -32,7 +32,7 @@ const safeLocalStorage = {
       return;
     }
     try {
-      safeLocalStorage.setItem(key, value);
+      localStorage.setItem(key, value);
     } catch (error) {
       console.error('safeLocalStorage.setItem error:', error);
     }
@@ -42,7 +42,7 @@ const safeLocalStorage = {
       return;
     }
     try {
-      safeLocalStorage.removeItem(key);
+      localStorage.removeItem(key);
     } catch (error) {
       console.error('safeLocalStorage.removeItem error:', error);
     }
@@ -60,6 +60,11 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     safeLocalStorage.removeItem(USER_KEY);
     safeLocalStorage.removeItem(TOKEN_KEY);
+    
+    // Also clear cookie
+    if (typeof document !== 'undefined') {
+      document.cookie = 'auth-token=; path=/; max-age=0';
+    }
   }, []);
 
   // Fetch current user on mount if token exists
@@ -128,6 +133,12 @@ export const AuthProvider = ({ children }) => {
     setToken(nextToken);
     safeLocalStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     safeLocalStorage.setItem(TOKEN_KEY, nextToken);
+    
+    // Also set cookie for middleware to detect authentication
+    if (typeof document !== 'undefined') {
+      document.cookie = `auth-token=${nextToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    }
+    
     console.log('Session persisted, user and token set');
   };
 

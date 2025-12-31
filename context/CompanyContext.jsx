@@ -22,7 +22,7 @@ const safeLocalStorage = {
       return null;
     }
     try {
-      return safeLocalStorage.getItem(key);
+      return localStorage.getItem(key);
     } catch (error) {
       console.error('safeLocalStorage.getItem error:', error);
       return null;
@@ -33,7 +33,7 @@ const safeLocalStorage = {
       return;
     }
     try {
-      safeLocalStorage.setItem(key, value);
+      localStorage.setItem(key, value);
     } catch (error) {
       console.error('safeLocalStorage.setItem error:', error);
     }

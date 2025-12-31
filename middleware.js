@@ -39,7 +39,12 @@ export function middleware(request) {
   }
   
   // If not authenticated and trying to access protected route
-  if (!token && !isPublicRoute && pathname !== '/') {
+  // Only redirect if it's clearly a protected route (dashboard, projects, etc.)
+  // Let client-side auth checks handle the actual verification
+  const protectedRoutePatterns = ['/dashboard', '/projects', '/tasks', '/teams', '/documents', '/analytics', '/settings'];
+  const isProtectedRoute = protectedRoutePatterns.some(pattern => pathname.startsWith(pattern));
+  
+  if (!token && isProtectedRoute && !isPublicRoute && pathname !== '/') {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
