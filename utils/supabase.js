@@ -25,16 +25,16 @@ const initSupabase = () => {
   try {
     const { createClient } = require('@supabase/supabase-js');
     
-    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-    const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     // Check which variables are missing and provide specific error
     const missingVars = [];
     if (!supabaseUrl) {
-      missingVars.push('REACT_APP_SUPABASE_URL');
+      missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
     }
     if (!supabaseAnonKey) {
-      missingVars.push('REACT_APP_SUPABASE_ANON_KEY');
+      missingVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
     }
     
     if (missingVars.length > 0) {

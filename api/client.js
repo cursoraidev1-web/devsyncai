@@ -1,7 +1,7 @@
-// Base URL from environment variable (REACT_APP_API_URL should include /api/v1)
-// If not set in development, use relative URL to leverage proxy in package.json
-// In production, set REACT_APP_API_URL to your backend URL
-const ENV_BASE_URL = process.env.REACT_APP_API_URL || '';
+// Base URL from environment variable (NEXT_PUBLIC_API_URL should include /api/v1)
+// If not set in development, use relative URL to leverage proxy in next.config.js
+// In production, set NEXT_PUBLIC_API_URL to your backend URL
+const ENV_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 let BASE_URL;
 
 if (ENV_BASE_URL) {
@@ -24,16 +24,41 @@ const shouldTriggerUpgrade = (message) => {
   return lower.includes('plan limit reached') || lower.includes('upgrade');
 };
 
+// Safe localStorage access (handles SSR and Edge Runtime)
+const safeLocalStorage = {
+  getItem: (key) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('localStorage.getItem error:', error);
+      return null;
+    }
+  },
+  removeItem: (key) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error('localStorage.removeItem error:', error);
+    }
+  }
+};
+
 const getAuthHeader = () => {
   if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem('zyndrx_token');
+  const token = safeLocalStorage.getItem('zyndrx_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 const handle401 = () => {
   // Clear token and user data
-  localStorage.removeItem('zyndrx_token');
-  localStorage.removeItem('zyndrx_user');
+  safeLocalStorage.removeItem('zyndrx_token');
+  safeLocalStorage.removeItem('zyndrx_user');
   // Redirect to login if we're in the browser
   if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
     window.location.href = '/login';
