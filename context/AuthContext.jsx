@@ -123,21 +123,44 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const persistSession = (nextUser, nextToken) => {
+    console.log('Persisting session:', { user: nextUser, hasToken: !!nextToken });
     setUser(nextUser);
     setToken(nextToken);
     safeLocalStorage.setItem(USER_KEY, JSON.stringify(nextUser));
     safeLocalStorage.setItem(TOKEN_KEY, nextToken);
+    console.log('Session persisted, user and token set');
   };
 
   const login = async (email, password) => {
     const response = await authApi.login({ email, password });
+    console.log('Login response:', response);
+    
     // Handle spec format: { success, data: { user, token }, message }
     const data = response?.data || response;
-    const { token: apiToken, user: apiUser, require2fa } = data || {};
+    console.log('Extracted data:', data);
+    
+    const { token: apiToken, user: apiUser, require2fa, companies, currentCompany } = data || {};
+    
     if (require2fa) {
       return { require2fa: true, email };
     }
+    
+    if (!apiToken || !apiUser) {
+      console.error('Invalid login response - missing token or user');
+      throw new Error('Invalid login response');
+    }
+    
+    console.log('Persisting session:', { user: apiUser, hasToken: !!apiToken });
     persistSession(apiUser, apiToken);
+    
+    // Store company info if provided
+    if (companies && companies.length > 0) {
+      safeLocalStorage.setItem('zyndrx_companies', JSON.stringify(companies));
+    }
+    if (currentCompany) {
+      safeLocalStorage.setItem('zyndrx_company', currentCompany.id);
+    }
+    
     return apiUser;
   };
 

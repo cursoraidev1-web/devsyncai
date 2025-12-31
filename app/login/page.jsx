@@ -59,15 +59,25 @@ const Login = () => {
     setShowResendVerification(false);
     
     try {
+      console.log('Attempting login...');
       const result = await login(formData.email, formData.password);
+      console.log('Login result:', result);
+      
       if (result?.require2fa) {
         toast.info('Please enter your 2FA code');
-        router.push('/verify-2fa', { state: { email: result.email || formData.email } });
+        router.push('/verify-2fa?email=' + encodeURIComponent(result.email || formData.email));
         return;
       }
+      
+      console.log('Login successful, navigating to dashboard...');
       toast.success('Welcome back!');
-      router.push('/dashboard');
+      
+      // Small delay to ensure state updates
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
     } catch (err) {
+      console.error('Login error:', err);
       const errorInfo = handleApiError(err);
       
       // Handle account lockout (HTTP 423)
