@@ -15,6 +15,31 @@ export const useCompany = () => {
 const COMPANY_KEY = 'zyndrx_company';
 const COMPANIES_KEY = 'zyndrx_companies';
 
+// Safe localStorage access (handles SSR and Edge Runtime)
+const safeLocalStorage = {
+  getItem: (key) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+    try {
+      return safeLocalStorage.getItem(key);
+    } catch (error) {
+      console.error('safeLocalStorage.getItem error:', error);
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      safeLocalStorage.setItem(key, value);
+    } catch (error) {
+      console.error('safeLocalStorage.setItem error:', error);
+    }
+  }
+};
+
 export const CompanyProvider = ({ children }) => {
   const { token, user } = useAuth();
   const [currentCompany, setCurrentCompany] = useState(null);
@@ -37,14 +62,14 @@ export const CompanyProvider = ({ children }) => {
       setCompanies(companiesList);
 
       // Load saved company preference or use first company
-      const savedCompanyId = localStorage.getItem(COMPANY_KEY);
+      const savedCompanyId = safeLocalStorage.getItem(COMPANY_KEY);
       if (savedCompanyId && companiesList.find(c => c.id === savedCompanyId)) {
         const savedCompany = companiesList.find(c => c.id === savedCompanyId);
         setCurrentCompany(savedCompany);
       } else if (companiesList.length > 0) {
         // Use first company as default
         setCurrentCompany(companiesList[0]);
-        localStorage.setItem(COMPANY_KEY, companiesList[0].id);
+        safeLocalStorage.setItem(COMPANY_KEY, companiesList[0].id);
       } else {
         setCurrentCompany(null);
       }
@@ -68,11 +93,11 @@ export const CompanyProvider = ({ children }) => {
       const company = data?.company || companies.find(c => c.id === companyId);
       if (company) {
         setCurrentCompany(company);
-        localStorage.setItem(COMPANY_KEY, company.id);
+        safeLocalStorage.setItem(COMPANY_KEY, company.id);
         
         // If token is refreshed, update it
         if (data?.token) {
-          localStorage.setItem('zyndrx_token', data.token);
+          safeLocalStorage.setItem('zyndrx_token', data.token);
         }
 
         // Reload window to refresh all data with new company context

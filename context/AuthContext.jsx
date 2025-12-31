@@ -14,6 +14,41 @@ export const useAuth = () => {
 const TOKEN_KEY = 'zyndrx_token';
 const USER_KEY = 'zyndrx_user';
 
+// Safe localStorage access (handles SSR and Edge Runtime)
+const safeLocalStorage = {
+  getItem: (key) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return null;
+    }
+    try {
+      return safeLocalStorage.getItem(key);
+    } catch (error) {
+      console.error('safeLocalStorage.getItem error:', error);
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      safeLocalStorage.setItem(key, value);
+    } catch (error) {
+      console.error('safeLocalStorage.setItem error:', error);
+    }
+  },
+  removeItem: (key) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+    try {
+      safeLocalStorage.removeItem(key);
+    } catch (error) {
+      console.error('safeLocalStorage.removeItem error:', error);
+    }
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -23,8 +58,8 @@ export const AuthProvider = ({ children }) => {
   const clearSession = useCallback(() => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(TOKEN_KEY);
+    safeLocalStorage.removeItem(USER_KEY);
+    safeLocalStorage.removeItem(TOKEN_KEY);
   }, []);
 
   // Fetch current user on mount if token exists
@@ -36,7 +71,7 @@ export const AuthProvider = ({ children }) => {
       const apiUser = response?.data || response;
       if (apiUser) {
         setUser(apiUser);
-        localStorage.setItem(USER_KEY, JSON.stringify(apiUser));
+        safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
       }
       return apiUser;
     } catch (error) {
@@ -50,33 +85,48 @@ export const AuthProvider = ({ children }) => {
   }, [token, clearSession]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem(USER_KEY);
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-      // Fetch fresh user data from API
-      const fetchUser = async () => {
-        const response = await authApi.getCurrentUser();
-        // Handle spec format: { success, data: { user }, message }
-        const apiUser = response?.data || response;
-        if (apiUser) {
-          setUser(apiUser);
-          localStorage.setItem(USER_KEY, JSON.stringify(apiUser));
+    try {
+      const storedUser = safeLocalStorage.getItem(USER_KEY);
+      const storedToken = safeLocalStorage.getItem(TOKEN_KEY);
+      
+      if (storedUser && storedUser !== 'undefined' && storedToken) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setToken(storedToken);
+          
+          // Fetch fresh user data from API
+          const fetchUser = async () => {
+            const response = await authApi.getCurrentUser();
+            // Handle spec format: { success, data: { user }, message }
+            const apiUser = response?.data || response;
+            if (apiUser) {
+              setUser(apiUser);
+              safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
+            }
+          };
+          fetchUser().catch(() => {
+            // Silently fail on initial load
+          });
+        } catch (parseError) {
+          console.error('Failed to parse stored user data:', parseError);
+          // Clear invalid data
+          safeLocalStorage.removeItem(USER_KEY);
+          safeLocalStorage.removeItem(TOKEN_KEY);
         }
-      };
-      fetchUser().catch(() => {
-        // Silently fail on initial load
-      });
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
     }
+    
     setLoading(false);
   }, []);
 
   const persistSession = (nextUser, nextToken) => {
     setUser(nextUser);
     setToken(nextToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-    localStorage.setItem(TOKEN_KEY, nextToken);
+    safeLocalStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    safeLocalStorage.setItem(TOKEN_KEY, nextToken);
   };
 
   const login = async (email, password) => {
@@ -114,10 +164,10 @@ export const AuthProvider = ({ children }) => {
       
       // Store companies and current company if provided
       if (companies) {
-        localStorage.setItem('zyndrx_companies', JSON.stringify(companies));
+        safeLocalStorage.setItem('zyndrx_companies', JSON.stringify(companies));
       }
       if (currentCompany) {
-        localStorage.setItem('zyndrx_company', currentCompany.id);
+        safeLocalStorage.setItem('zyndrx_company', currentCompany.id);
       }
       
       persistSession(apiUser, apiToken);
@@ -194,12 +244,12 @@ export const AuthProvider = ({ children }) => {
       if (apiUser && apiToken) {
         // Store companies and current company if provided
         if (companies) {
-          localStorage.setItem('zyndrx_companies', JSON.stringify(companies));
+          safeLocalStorage.setItem('zyndrx_companies', JSON.stringify(companies));
         }
         if (currentCompany) {
-          localStorage.setItem('zyndrx_company', currentCompany.id);
+          safeLocalStorage.setItem('zyndrx_company', currentCompany.id);
         } else if (companyId) {
-          localStorage.setItem('zyndrx_company', companyId);
+          safeLocalStorage.setItem('zyndrx_company', companyId);
         }
         
         persistSession(apiUser, apiToken);
@@ -230,7 +280,7 @@ export const AuthProvider = ({ children }) => {
       const updatedUser = response?.data?.user || response?.data || response;
       if (updatedUser) {
         setUser(updatedUser);
-        localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        safeLocalStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
       }
       return response; // Return full response so component can handle it
     } catch (error) {
@@ -290,7 +340,7 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updates) => {
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
-    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    safeLocalStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
   };
 
   const value = {
