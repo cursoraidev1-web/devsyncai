@@ -6,8 +6,8 @@ export const runtime = 'edge';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 ;
-import { useApp } from '../../../../context/AppContext';
-import { fetchHandoffs } from '../../../../api/handoffs';
+import { useApp } from '../../../context/AppContext';
+import { fetchHandoffs } from '../../../api/handoffs';
 import { 
   FileText, 
   CheckCircle, 
@@ -17,7 +17,7 @@ import {
   Clock,
   ArrowRight
 } from 'lucide-react';
-import '../../../../styles/pages/Dashboard.css';
+import '../../../styles/pages/Dashboard.css';
 
 const PMDashboard = () => {
   const router = useRouter();

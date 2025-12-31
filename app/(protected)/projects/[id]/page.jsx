@@ -17,8 +17,8 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { useApp } from '../../../../context/AppContext';
-import { getProject } from '../../../../api/projects';
+import { useApp } from '../../../context/AppContext';
+import { getProject } from '../../../api/projects';
 import '../../../styles/pages/ProjectDetail.css';
 
 const ProjectDetail = () => {

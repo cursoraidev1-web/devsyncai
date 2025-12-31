@@ -6,9 +6,9 @@ export const runtime = 'edge';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 ;
-import { useApp } from '../../../context/AppContext';
-import { useAuth } from '../../../context/AuthContext';
-import { getCICDMetrics } from '../../../api/cicd';
+import { useApp } from '../../../../context/AppContext';
+import { useAuth } from '../../../../context/AuthContext';
+import { getCICDMetrics } from '../../../../api/cicd';
 import { 
   Bug, 
   CheckCircle, 
@@ -18,8 +18,8 @@ import {
   XCircle,
   ArrowRight
 } from 'lucide-react';
-import PulsingLoader from '../../../components/PulsingLoader';
-import '../../../styles/pages/Dashboard.css';
+import PulsingLoader from '../../../../components/PulsingLoader';
+import '../../../../styles/pages/Dashboard.css';
 
 const QADashboard = () => {
   const router = useRouter();
