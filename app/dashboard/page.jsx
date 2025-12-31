@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 
+// Use Edge Runtime to avoid Vercel function limits
+export const runtime = 'edge';
+
 export default function Dashboard() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();

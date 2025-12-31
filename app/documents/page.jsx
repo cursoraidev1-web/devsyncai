@@ -1,5 +1,8 @@
 'use client';
 
+// Use Edge Runtime to avoid Vercel function limits
+export const runtime = 'edge';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { deleteDocument, getDownloadUrl } from '../../api/documents';

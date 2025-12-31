@@ -1,5 +1,8 @@
 'use client';
 
+// Use Edge Runtime to avoid Vercel function limits
+export const runtime = 'edge';
+
 /**
  * Unified OAuth Callback Handler for Supabase Auth
  * 

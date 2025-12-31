@@ -1,5 +1,8 @@
 'use client';
 
+// Use Edge Runtime to avoid Vercel function limits
+export const runtime = 'edge';
+
 import React, { useState } from 'react';
 import { Send, MessageSquare, Star, Bug, Lightbulb, AlertCircle } from 'lucide-react';
 import { submitFeedback } from '../../api/feedback';

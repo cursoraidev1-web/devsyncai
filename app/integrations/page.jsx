@@ -1,5 +1,8 @@
 'use client';
 
+// Use Edge Runtime to avoid Vercel function limits
+export const runtime = 'edge';
+
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
 import { fetchIntegrations, connectIntegration, disconnectIntegration } from '../../api/integrations';
