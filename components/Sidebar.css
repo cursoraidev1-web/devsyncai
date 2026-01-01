@@ -11,6 +11,7 @@
   transition: transform 0.3s ease;
   z-index: 100;
   overflow-y: auto;
+  pointer-events: auto;
 }
 
 .sidebar.closed {
@@ -91,6 +92,13 @@
   font-weight: 500;
   border-radius: 8px;
   position: relative;
+  cursor: pointer;
+  pointer-events: auto;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
 }
 
 .nav-item:hover {

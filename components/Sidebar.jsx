@@ -16,15 +16,18 @@ import {
   Headphones,
   MessageSquare,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import Modal from './ui/Modal';
+import PWAInstallModal from './PWAInstallModal';
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen }) => {
   const { user, logout, logoutLoading } = useAuth();
   const pathname = usePathname();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
 
   // Define access levels for different roles
@@ -68,6 +71,13 @@ const Sidebar = ({ isOpen }) => {
     { path: '/settings', icon: Settings, label: 'Settings', access: 'all' },
     { path: '/support', icon: Headphones, label: 'Support & Help', access: 'all' },
     { path: '/feedback', icon: MessageSquare, label: 'Feedback', access: 'all' },
+    { 
+      type: 'button', 
+      icon: Download, 
+      label: 'Install App', 
+      access: 'all',
+      onClick: () => setShowInstallModal(true)
+    },
   ];
 
   const canAccess = (itemAccess) => {
@@ -147,8 +157,23 @@ const Sidebar = ({ isOpen }) => {
             {settingsItems.map((item) => {
               if (!canAccess(item.access)) return null;
               const Icon = item.icon;
-              const isActive = pathname.startsWith(item.path);
               
+              // Handle button type items (like Install App)
+              if (item.type === 'button') {
+                return (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    className="nav-item"
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              }
+              
+              // Regular link items
+              const isActive = pathname.startsWith(item.path);
               return (
                 <Link
                   key={item.path}
@@ -187,6 +212,12 @@ const Sidebar = ({ isOpen }) => {
           </div>
         </div>
       </aside>
+
+      {/* PWA Install Modal */}
+      <PWAInstallModal 
+        isOpen={showInstallModal} 
+        onClose={() => setShowInstallModal(false)} 
+      />
 
       {/* Logout Modal */}
       <Modal

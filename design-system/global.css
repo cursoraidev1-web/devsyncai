@@ -23,9 +23,9 @@
   --color-success: #38A169;
   --color-info: #3182CE;
   
-  --color-sidebar-bg: #0B1020;
-  --color-sidebar-active: #1D2336;
-  --color-sidebar-text: #A0AEC0;
+  --color-sidebar-bg: #FFFFFF;
+  --color-sidebar-active: #F0F2F5;
+  --color-sidebar-text: #4A5568;
   
   /* Spacing */
   --spacing-xs: 4px;
