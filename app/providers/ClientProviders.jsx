@@ -58,9 +58,15 @@ export default function ClientProviders({ children }) {
     setIsMounted(true);
   }, []);
 
-  // During SSR/prerender, render children without providers
+  // During SSR/prerender, render children without providers to prevent build errors
+  // After client mount, render with providers
+  // Use suppressHydrationWarning to handle the expected mismatch
   if (!isMounted) {
-    return <>{children}</>;
+    return (
+      <div suppressHydrationWarning>
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -69,4 +75,3 @@ export default function ClientProviders({ children }) {
     </ErrorBoundary>
   );
 }
-
