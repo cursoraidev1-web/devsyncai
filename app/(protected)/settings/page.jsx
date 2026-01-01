@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 ;
 import { useAuth } from '../../../context/AuthContext';
 import { usePlan } from '../../../context/PlanContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { cancelSubscription } from '../../../api/subscription';
 import { toast } from 'react-toastify';
 import { 
@@ -31,11 +32,15 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
+import { Modal } from '../../../components/ui';
+import PasswordInput from '../../../components/PasswordInput';
+import { validatePassword } from '../../../utils/passwordValidation';
 import '../../../styles/pages/Settings.css';
 
 const Settings = () => {
   const router = useRouter();
-  const { user, updateUser, updateProfile, setup2FA, enable2FA } = useAuth();
+  const { user, updateUser, updateProfile, setup2FA, enable2FA, changePassword, getActiveSessions } = useAuth();
+  const { theme, updateTheme } = useTheme();
   const { 
     subscription, 
     limits, 
@@ -52,6 +57,9 @@ const Settings = () => {
   const [twoFactorData, setTwoFactorData] = useState(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(user?.twoFactorEnabled || false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const handleCancelSubscription = async () => {
     if (!window.confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your billing period.')) {
@@ -108,6 +116,74 @@ const Settings = () => {
       setTwoFactorEnabled(user.twoFactorEnabled);
     }
   }, [user?.twoFactorEnabled]);
+
+  // Load active sessions when security tab is active
+  useEffect(() => {
+    if (activeTab === 'security') {
+      loadActiveSessions();
+    }
+  }, [activeTab]);
+
+  const loadActiveSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const sessions = await getActiveSessions();
+      setActiveSessions(sessions);
+    } catch (error) {
+      console.error('Failed to load active sessions:', error);
+      setActiveSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // Change password form state
+  const [changePasswordData, setChangePasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    
+    if (!changePasswordData.currentPassword || !changePasswordData.newPassword || !changePasswordData.confirmPassword) {
+      setPasswordError('Please fill in all fields');
+      return;
+    }
+
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    // Validate new password
+    const passwordValidation = validatePassword(changePasswordData.newPassword);
+    if (!passwordValidation.valid) {
+      const errorMsg = passwordValidation.errors?.[0] || 'Password does not meet requirements';
+      setPasswordError(errorMsg);
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await changePassword(changePasswordData.currentPassword, changePasswordData.newPassword);
+      toast.success('Password changed successfully');
+      setShowChangePasswordModal(false);
+      setChangePasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to change password';
+      setPasswordError(errorMessage);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -457,8 +533,12 @@ const Settings = () => {
                     </div>
                     <select
                       className="preference-select"
-                      value={preferences.theme}
-                      onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
+                      value={theme || preferences.theme}
+                      onChange={async (e) => {
+                        const newTheme = e.target.value;
+                        setPreferences({ ...preferences, theme: newTheme });
+                        await updateTheme(newTheme);
+                      }}
                     >
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>
@@ -503,7 +583,10 @@ const Settings = () => {
                     <div className="security-label">Change Password</div>
                     <div className="security-description">Update your password regularly for better security</div>
                   </div>
-                  <button className="btn btn-outline">
+                  <button 
+                    className="btn btn-outline"
+                    onClick={() => setShowChangePasswordModal(true)}
+                  >
                     <Lock size={18} />
                     Change Password
                   </button>
@@ -527,19 +610,38 @@ const Settings = () => {
 
               <div className="security-section">
                 <h3>Active Sessions</h3>
-                <div className="sessions-list">
-                  <div className="session-item">
-                    <div className="session-icon">
-                      <Monitor size={24} />
-                    </div>
-                    <div className="session-info">
-                      <div className="session-device">Chrome on Windows</div>
-                      <div className="session-location">New York, USA • Current Session</div>
-                      <div className="session-time">Last active: Just now</div>
-                    </div>
-                    <span className="badge badge-success">Active</span>
+                {sessionsLoading ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#718096' }}>
+                    Loading sessions...
                   </div>
-                </div>
+                ) : activeSessions.length > 0 ? (
+                  <div className="sessions-list">
+                    {activeSessions.map((session) => (
+                      <div key={session.id} className="session-item">
+                        <div className="session-icon">
+                          <Monitor size={24} />
+                        </div>
+                        <div className="session-info">
+                          <div className="session-device">{session.device}</div>
+                          <div className="session-location">
+                            {session.location}
+                            {session.isCurrent && ' • Current Session'}
+                          </div>
+                          <div className="session-time">
+                            Last active: {new Date(session.lastActive).toLocaleString()}
+                          </div>
+                        </div>
+                        <span className={`badge ${session.isCurrent ? 'badge-success' : 'badge-secondary'}`}>
+                          {session.isCurrent ? 'Active' : 'Recent'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#718096' }}>
+                    No active sessions found
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -754,6 +856,115 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <Modal
+        isOpen={showChangePasswordModal}
+        onClose={() => {
+          if (!changingPassword) {
+            setShowChangePasswordModal(false);
+            setChangePasswordData({
+              currentPassword: '',
+              newPassword: '',
+              confirmPassword: ''
+            });
+            setPasswordError('');
+          }
+        }}
+        title="Change Password"
+        subtitle="Enter your current password and choose a new one"
+        size="md"
+        footer={
+          <>
+            <button
+              className="modal-btn-cancel"
+              onClick={() => {
+                if (!changingPassword) {
+                  setShowChangePasswordModal(false);
+                  setChangePasswordData({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                  });
+                  setPasswordError('');
+                }
+              }}
+              disabled={changingPassword}
+            >
+              Cancel
+            </button>
+            <button
+              className="modal-btn-primary"
+              onClick={handleChangePassword}
+              disabled={changingPassword || !changePasswordData.currentPassword || !changePasswordData.newPassword || !changePasswordData.confirmPassword}
+            >
+              {changingPassword ? 'Changing...' : 'Change Password'}
+            </button>
+          </>
+        }
+      >
+        <div className="change-password-form">
+          {passwordError && (
+            <div style={{
+              padding: '12px',
+              background: '#fee2e2',
+              color: '#991b1b',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              fontSize: '14px'
+            }}>
+              {passwordError}
+            </div>
+          )}
+
+          <div className="input-group" style={{ marginBottom: '20px' }}>
+            <label htmlFor="current-password">Current Password</label>
+            <PasswordInput
+              value={changePasswordData.currentPassword}
+              onChange={(value) => {
+                setChangePasswordData({ ...changePasswordData, currentPassword: value });
+                setPasswordError('');
+              }}
+              placeholder="Enter your current password"
+              showRequirements={false}
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div className="input-group" style={{ marginBottom: '20px' }}>
+            <label htmlFor="new-password">New Password</label>
+            <PasswordInput
+              value={changePasswordData.newPassword}
+              onChange={(value) => {
+                setChangePasswordData({ ...changePasswordData, newPassword: value });
+                setPasswordError('');
+              }}
+              placeholder="Enter your new password"
+              showRequirements={true}
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="confirm-password">Confirm New Password</label>
+            <PasswordInput
+              value={changePasswordData.confirmPassword}
+              onChange={(value) => {
+                setChangePasswordData({ ...changePasswordData, confirmPassword: value });
+                setPasswordError('');
+              }}
+              placeholder="Confirm your new password"
+              showRequirements={false}
+              disabled={changingPassword}
+            />
+            {changePasswordData.confirmPassword && changePasswordData.newPassword !== changePasswordData.confirmPassword && (
+              <div style={{ marginTop: '8px', color: '#dc2626', fontSize: '13px' }}>
+                Passwords do not match
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

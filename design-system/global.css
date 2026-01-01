@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Colors */
+  /* Colors - Light Mode (Default) */
   --color-primary: #8409BD;
   --color-primary-hover: #6B0898;
   --color-primary-soft: #F3E5F5;
@@ -58,6 +58,41 @@
   --header-height: 64px;
 }
 
+/* Dark Mode */
+[data-theme="dark"],
+.dark {
+  --color-primary: #A855F7;
+  --color-primary-hover: #9333EA;
+  --color-primary-soft: #3B2A50;
+  
+  --color-background: #0B1020;
+  --color-surface: #1A1F36;
+  --color-surface-alt: #252B42;
+  
+  --color-border: #2D3748;
+  --color-divider: #2D3748;
+  
+  --color-text-primary: #F7FAFC;
+  --color-text-secondary: #CBD5E0;
+  --color-text-muted: #A0AEC0;
+  
+  --color-error: #FC8181;
+  --color-warning: #F6AD55;
+  --color-success: #68D391;
+  --color-info: #63B3ED;
+  
+  --color-sidebar-bg: #0A0E1A;
+  --color-sidebar-active: #1D2336;
+  --color-sidebar-text: #CBD5E0;
+  
+  /* Dark mode shadows are more subtle */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -72,6 +107,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Scrollbar Styling */

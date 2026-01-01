@@ -182,24 +182,8 @@ const Teams = () => {
         title="Create New Team"
         subtitle="Set up a new team for your organization."
         size="md"
-        footer={
-          <>
-            <button 
-              className="modal-btn-cancel"
-              onClick={() => setShowCreateModal(false)}
-            >
-              Cancel
-            </button>
-            <button 
-              className="modal-btn-primary"
-              onClick={() => setShowCreateModal(false)}
-            >
-              Create Team
-            </button>
-          </>
-        }
       >
-        <CreateTeamForm />
+        <CreateTeamForm onClose={() => setShowCreateModal(false)} />
       </Modal>
 
       {/* Add Team Members Modal */}
@@ -232,22 +216,63 @@ const Teams = () => {
   );
 };
 
-const CreateTeamForm = () => {
+const CreateTeamForm = ({ onClose }) => {
+  const { createTeam, loadTeams } = useApp();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    members: []
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    setError(''); // Clear error on change
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || formData.name.trim().length < 3) {
+      setError('Team name must be at least 3 characters');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      await createTeam({
+        name: formData.name.trim(),
+        description: formData.description?.trim() || undefined,
+      });
+      await loadTeams(); // Refresh teams list
+      onClose();
+      // Reset form
+      setFormData({ name: '', description: '' });
+    } catch (err) {
+      setError(err?.message || 'Failed to create team. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="create-team-form">
+    <form onSubmit={handleSubmit} className="create-team-form">
+      {error && (
+        <div style={{ 
+          padding: '12px', 
+          background: '#fee2e2', 
+          color: '#991b1b', 
+          borderRadius: '8px', 
+          marginBottom: '16px',
+          fontSize: '14px'
+        }}>
+          {error}
+        </div>
+      )}
       <div className="form-group">
         <label htmlFor="team-name">Team Name *</label>
         <input
@@ -258,6 +283,8 @@ const CreateTeamForm = () => {
           value={formData.name}
           onChange={handleChange}
           required
+          disabled={isSubmitting}
+          minLength={3}
         />
       </div>
 
@@ -270,45 +297,28 @@ const CreateTeamForm = () => {
           rows={4}
           value={formData.description}
           onChange={handleChange}
+          disabled={isSubmitting}
         />
       </div>
 
-      <div className="form-group">
-        <label htmlFor="team-members">Initial Members</label>
-        <div className="members-input">
-          {formData.members.map((member, idx) => (
-            <span key={idx} className="member-chip">
-              {member}
-              <button 
-                type="button"
-                onClick={() => {
-                  setFormData({
-                    ...formData,
-                    members: formData.members.filter((_, i) => i !== idx)
-                  });
-                }}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-          <input
-            type="text"
-            placeholder="Invite via Email..."
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && e.target.value) {
-                e.preventDefault();
-                setFormData({
-                  ...formData,
-                  members: [...formData.members, e.target.value]
-                });
-                e.target.value = '';
-              }
-            }}
-          />
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
+        <button 
+          type="button"
+          className="modal-btn-cancel"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          className="modal-btn-primary"
+          disabled={isSubmitting || !formData.name || formData.name.trim().length < 3}
+        >
+          {isSubmitting ? 'Creating...' : 'Create Team'}
+        </button>
       </div>
-    </div>
+    </form>
   );
 };
 

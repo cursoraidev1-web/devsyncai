@@ -58,6 +58,10 @@ export const getCurrentUser = () => api.get('/auth/me');
 
 export const updateProfile = (updates) => api.put('/auth/profile', updates);
 
+export const changePassword = (payload) => api.post('/auth/change-password', payload);
+
+export const getActiveSessions = () => api.get('/auth/sessions');
+
 export const logout = () => api.post('/auth/logout');
 
 export const setup2FA = () => api.post('/auth/2fa/setup');

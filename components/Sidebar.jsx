@@ -169,7 +169,15 @@ const Sidebar = ({ isOpen }) => {
             onClick={() => setShowLogoutModal(true)}
           >
             <div className="user-profile-avatar">
-              {userInitials}
+              {user?.avatar || user?.avatarUrl || user?.avatar_url ? (
+                <img 
+                  src={user?.avatar || user?.avatarUrl || user?.avatar_url} 
+                  alt={user?.name || 'User'} 
+                  className="user-profile-avatar-img"
+                />
+              ) : (
+                userInitials
+              )}
             </div>
             <div className="user-profile-info">
               <div className="user-profile-name">{user?.name || 'User'}</div>
@@ -216,7 +224,17 @@ const Sidebar = ({ isOpen }) => {
             You're about to log out of your ZynDrx workspace.
           </p>
           <div className="logout-user-info">
-            <div className="logout-user-avatar">{userInitials}</div>
+            <div className="logout-user-avatar">
+              {user?.avatar || user?.avatarUrl || user?.avatar_url ? (
+                <img 
+                  src={user?.avatar || user?.avatarUrl || user?.avatar_url} 
+                  alt={user?.name || 'User'} 
+                  className="logout-user-avatar-img"
+                />
+              ) : (
+                userInitials
+              )}
+            </div>
             <div>
               <div className="logout-user-name">{user?.name || 'User'}</div>
               <div className="logout-user-email">{user?.email || 'user@example.com'}</div>

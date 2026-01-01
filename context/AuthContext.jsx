@@ -388,6 +388,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const response = await authApi.changePassword({ currentPassword, newPassword });
+      return response;
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      throw error;
+    }
+  };
+
+  const getActiveSessions = async () => {
+    try {
+      const response = await authApi.getActiveSessions();
+      const sessionsData = response?.data || (Array.isArray(response) ? response : []);
+      return Array.isArray(sessionsData) ? sessionsData : [];
+    } catch (error) {
+      console.error('Failed to fetch active sessions:', error);
+      throw error;
+    }
+  };
+
   const setup2FA = async () => {
     try {
       return await authApi.setup2FA();
@@ -456,6 +477,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     updateProfile,
+    changePassword,
+    getActiveSessions,
     getCurrentUser,
     setup2FA,
     enable2FA,

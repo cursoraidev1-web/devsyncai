@@ -98,13 +98,13 @@ const Header = ({ toggleSidebar }) => {
               setShowNotifications(false);
             }}
           >
-            <img src={user?.avatar} alt={user?.name} className="user-avatar-small" />
+            <img src={user?.avatar || user?.avatarUrl || user?.avatar_url} alt={user?.name} className="user-avatar-small" />
           </button>
 
           {showUserMenu && (
             <div className="dropdown-menu user-dropdown">
               <div className="user-menu-header">
-                <img src={user?.avatar} alt={user?.name} className="user-avatar-large" />
+                <img src={user?.avatar || user?.avatarUrl || user?.avatar_url} alt={user?.name} className="user-avatar-large" />
                 <div>
                   <div className="user-menu-name">{user?.name}</div>
                   <div className="user-menu-email">{user?.email}</div>

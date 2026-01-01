@@ -4,48 +4,23 @@
   "description": "Project Management & Development Coordination Platform",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "logo512.png",
-      "type": "image/png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#4f46e5",
+  "theme_color": "#8409BD",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["productivity", "business"],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Tasks",
-      "short_name": "Tasks",
-      "description": "View your tasks",
-      "url": "/tasks",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Projects",
-      "short_name": "Projects",
-      "description": "View your projects",
-      "url": "/projects",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
-    }
-  ]
+  "categories": ["productivity", "business"]
 }
-
-
-

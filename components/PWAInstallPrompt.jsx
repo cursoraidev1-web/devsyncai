@@ -6,6 +6,7 @@ const PWAInstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
   const promptFiredRef = useRef(false);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ const PWAInstallPrompt = () => {
     };
 
     if (checkInstalled()) {
+      console.log('[PWA] App is already installed');
       return; // Already installed, don't show prompt
     }
 
@@ -38,14 +40,32 @@ const PWAInstallPrompt = () => {
 
     // Don't show if dismissed less than 7 days ago
     if (dismissed && daysSinceDismissed < 7) {
+      console.log('[PWA] Install prompt was dismissed recently');
       return;
     }
+
+    // Debug: Check PWA criteria
+    const checkPWACriteria = () => {
+      const checks = {
+        https: window.location.protocol === 'https:' || window.location.hostname === 'localhost',
+        manifest: document.querySelector('link[rel="manifest"]') !== null,
+        serviceWorker: 'serviceWorker' in navigator,
+      };
+      
+      console.log('[PWA] Criteria check:', checks);
+      setDebugInfo(JSON.stringify(checks, null, 2));
+      
+      return Object.values(checks).every(v => v === true);
+    };
+
+    checkPWACriteria();
 
     // Listen for beforeinstallprompt event (Chrome/Edge/Firefox)
     // This is the ONLY way to show install prompt - no fallbacks
     let timeoutId = null;
     
     const handler = (e) => {
+      console.log('[PWA] beforeinstallprompt event fired!');
       e.preventDefault();
       promptFiredRef.current = true;
       setDeferredPrompt(e);
@@ -67,10 +87,24 @@ const PWAInstallPrompt = () => {
 
     window.addEventListener('beforeinstallprompt', handler);
 
+    // Debug: Log if event doesn't fire after 5 seconds
+    const debugTimeout = setTimeout(() => {
+      if (!promptFiredRef.current) {
+        console.warn('[PWA] beforeinstallprompt event did not fire after 5 seconds');
+        console.warn('[PWA] This usually means the PWA does not meet install criteria:');
+        console.warn('[PWA] 1. Must have HTTPS (or localhost)');
+        console.warn('[PWA] 2. Must have a valid manifest.json');
+        console.warn('[PWA] 3. Must have a service worker registered');
+        console.warn('[PWA] 4. Must have at least one icon (192x192 or larger PNG)');
+        console.warn('[PWA] Check browser console for service worker registration status');
+      }
+    }, 5000);
+
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      clearTimeout(debugTimeout);
       window.removeEventListener('beforeinstallprompt', handler);
     };
   }, []); // Empty dependency array - only run once on mount
@@ -78,6 +112,7 @@ const PWAInstallPrompt = () => {
   const handleInstall = async () => {
     if (!deferredPrompt) {
       // If no deferred prompt, don't show anything - just dismiss
+      console.warn('[PWA] No deferred prompt available');
       handleDismiss();
       return;
     }
@@ -88,19 +123,19 @@ const PWAInstallPrompt = () => {
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
+        console.log('[PWA] User accepted the install prompt');
         // Hide prompt after successful installation
         setShowPrompt(false);
         setIsInstalled(true);
       } else {
-        console.log('User dismissed the install prompt');
+        console.log('[PWA] User dismissed the install prompt');
       }
       
       // Clear the deferred prompt
       setDeferredPrompt(null);
       setShowPrompt(false);
     } catch (error) {
-      console.error('Error showing install prompt:', error);
+      console.error('[PWA] Error showing install prompt:', error);
       handleDismiss();
     }
   };
@@ -157,4 +192,3 @@ const PWAInstallPrompt = () => {
 };
 
 export default PWAInstallPrompt;
-

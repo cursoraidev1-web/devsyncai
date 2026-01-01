@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { fetchNotifications, markNotificationRead as apiMarkNotificationRead, markAllNotificationsRead as apiMarkAllNotificationsRead } from '../api/notifications';
 import { fetchProjects as apiFetchProjects, createProject as apiCreateProject } from '../api/projects';
 import { fetchTasks, fetchTasksByProject, updateTask as apiUpdateTask, createTask as apiCreateTask, deleteTask as apiDeleteTask } from '../api/tasks';
@@ -550,9 +550,16 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (token && currentCompany) {
-      loadNotifications();
-      loadProjects();
-      loadAllTasks(); // Always load all tasks by default
+      // PERF-001 FIX: Execute API calls in parallel for faster initial load
+      Promise.all([
+        loadNotifications(),
+        loadProjects(),
+        loadAllTasks()
+      ]).catch(error => {
+        console.error('Failed to load initial data:', error);
+      });
+      
+      // Poll for notifications every minute
       const interval = setInterval(() => loadNotifications(), 60000);
       return () => clearInterval(interval);
     } else {
@@ -563,7 +570,8 @@ export const AppProvider = ({ children }) => {
     }
   }, [token, currentCompany, loadNotifications, loadProjects, loadAllTasks]);
 
-  const value = {
+  // PERF-003 FIX: Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     notifications,
     notificationsLoading,
     addNotification: (notification) =>
@@ -608,7 +616,44 @@ export const AppProvider = ({ children }) => {
     upgradeMessage,
     openUpgradeModal,
     closeUpgradeModal,
-  };
+  }), [
+    notifications,
+    notificationsLoading,
+    projects,
+    projectsLoading,
+    tasks,
+    tasksLoading,
+    documents,
+    teams,
+    teamsLoading,
+    teamMembers,
+    teamMembersLoading,
+    upgradeModalOpen,
+    upgradeMessage,
+    markNotificationRead,
+    markAllNotificationsRead,
+    loadProjects,
+    createProject,
+    loadTasks,
+    loadAllTasks,
+    getTasksByProject,
+    addTask,
+    updateTask,
+    deleteTask,
+    loadDocuments,
+    createDocument,
+    loadTeams,
+    createTeam,
+    updateTeam,
+    deleteTeam,
+    loadTeamMembers,
+    addTeamMember,
+    removeTeamMember,
+    loadAnalytics,
+    sendInvite,
+    openUpgradeModal,
+    closeUpgradeModal,
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

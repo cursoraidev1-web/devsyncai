@@ -4,13 +4,15 @@
 export const runtime = 'edge';
 
 import React from 'react';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from '../context/AuthContext';
 import { CompanyProvider } from '../context/CompanyContext';
 import { PlanProvider } from '../context/PlanContext';
 import { AppProvider, useApp } from '../context/AppContext';
+import { ThemeProvider } from '../context/ThemeContext';
+import ThemeAwareToast from '../components/ThemeAwareToast';
 import PWAInstallPrompt from '../components/PWAInstallPrompt';
+import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 import ErrorBoundary from '../components/ErrorBoundary';
 import UpgradeModal from '../components/UpgradeModal';
 import OfflineIndicator from '../components/OfflineIndicator';
@@ -34,21 +36,11 @@ function GlobalUI() {
 function RootLayoutContent({ children }) {
   return (
     <>
+      <ServiceWorkerRegistration />
       <GlobalUI />
       {children}
       <OfflineIndicator />
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+      <ThemeAwareToast />
     </>
   );
 }
@@ -67,19 +59,23 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Zyndrx" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
         <title>Zyndrx Platform</title>
       </head>
       <body>
         <ErrorBoundary>
-          <AuthProvider>
-            <CompanyProvider>
-              <PlanProvider>
-                <AppProvider>
-                  <RootLayoutContent>{children}</RootLayoutContent>
-                </AppProvider>
-              </PlanProvider>
-            </CompanyProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <CompanyProvider>
+                <PlanProvider>
+                  <AppProvider>
+                    <RootLayoutContent>{children}</RootLayoutContent>
+                  </AppProvider>
+                </PlanProvider>
+              </CompanyProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

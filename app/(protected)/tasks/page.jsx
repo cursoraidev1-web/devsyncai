@@ -38,6 +38,7 @@ const TaskTracker = () => {
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false); // EDGE-001 FIX: Prevent race conditions
+  const [validationErrors, setValidationErrors] = useState({});
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -141,6 +142,9 @@ const TaskTracker = () => {
       return;
     }
 
+    // Clear previous validation errors
+    setValidationErrors({});
+
     // EDGE-003 FIX: Check if projects exist
     if (projects.length === 0) {
       toast.error('Please create a project first');
@@ -150,18 +154,41 @@ const TaskTracker = () => {
     }
 
     if (!selectedProjectId) {
-      toast.error('Please select a project first');
+      setValidationErrors({ project: 'Please select a project' });
+      toast.error('Please select a project');
       return;
     }
 
-    // SEC-003 FIX: Validate input lengths
-    const validation = validateFields({
-      title: { value: newTask.title, type: 'taskTitle', required: true },
-      description: { value: newTask.description, type: 'taskDescription', required: false },
-    });
+    // SEC-003 FIX: Validate input lengths and required fields
+    const errors = {};
+    
+    // Validate title
+    if (!newTask.title || !newTask.title.trim()) {
+      errors.title = 'Task title is required';
+    } else if (newTask.title.length > INPUT_LIMITS.taskTitle) {
+      errors.title = `Title must be less than ${INPUT_LIMITS.taskTitle} characters`;
+    }
 
-    if (!validation.valid) {
-      const firstError = Object.values(validation.errors)[0];
+    // Validate description
+    if (newTask.description && newTask.description.length > INPUT_LIMITS.taskDescription) {
+      errors.description = `Description must be less than ${INPUT_LIMITS.taskDescription} characters`;
+    }
+
+    // Validate due date format if provided
+    if (newTask.dueDate) {
+      const date = new Date(newTask.dueDate);
+      if (isNaN(date.getTime())) {
+        errors.dueDate = 'Please enter a valid date';
+      } else if (date < new Date(new Date().setHours(0, 0, 0, 0))) {
+        // Allow today's date, just warn if past date
+        // You can uncomment this if you want to prevent past dates:
+        // errors.dueDate = 'Due date cannot be in the past';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      const firstError = Object.values(errors)[0];
       toast.error(firstError);
       return;
     }
@@ -178,6 +205,7 @@ const TaskTracker = () => {
       toast.success('Task created successfully');
       
       setShowNewTaskModal(false);
+      setValidationErrors({});
       setNewTask({
         title: '',
         description: '',
@@ -187,6 +215,7 @@ const TaskTracker = () => {
         dueDate: '',
         tags: []
       });
+      setSelectedProjectId('');
     } catch (error) {
       const errorInfo = handleApiError(error);
       toast.error(errorInfo.message || 'Failed to create task. Please try again.');
@@ -462,154 +491,199 @@ const TaskTracker = () => {
 
       {/* New Task Modal */}
       {showNewTaskModal && (
-        <div className="modal-overlay" onClick={() => setShowNewTaskModal(false)}>
+        <div className="modal-overlay" onClick={() => {
+          setShowNewTaskModal(false);
+          setValidationErrors({});
+        }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>Create New Task</h2>
             
-            <div className="input-group">
-              <label htmlFor="task-title">Task Title *</label>
-              <input
-                id="task-title"
-                type="text"
-                placeholder="E.g., Implement user authentication"
-                value={newTask.title}
-                onChange={(e) => {
-                  // SEC-003 FIX: Enforce length limit
-                  const value = e.target.value;
-                  if (value.length <= INPUT_LIMITS.taskTitle) {
-                    setNewTask({ ...newTask, title: value });
-                  }
-                }}
-                maxLength={INPUT_LIMITS.taskTitle}
-                required
-              />
-              <small style={{ color: '#718096', fontSize: '12px' }}>
-                {newTask.title.length}/{INPUT_LIMITS.taskTitle} characters
-              </small>
-            </div>
-
-            <div className="input-group">
-              <label htmlFor="task-description">Description</label>
-              <textarea
-                id="task-description"
-                placeholder="Describe the task..."
-                value={newTask.description}
-                onChange={(e) => {
-                  // SEC-003 FIX: Enforce length limit
-                  const value = e.target.value;
-                  if (value.length <= INPUT_LIMITS.taskDescription) {
-                    setNewTask({ ...newTask, description: value });
-                  }
-                }}
-                maxLength={INPUT_LIMITS.taskDescription}
-                rows={4}
-              />
-              <small style={{ color: '#718096', fontSize: '12px' }}>
-                {newTask.description.length}/{INPUT_LIMITS.taskDescription} characters
-              </small>
-            </div>
-
-            <div className="input-group">
-              <label htmlFor="task-project">Project *</label>
-              <select
-                id="task-project"
-                value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                required
-                disabled={projects.length === 0}
-              >
-                {projects.length === 0 ? (
-                  <option value="">No projects available - Create one first</option>
-                ) : (
-                  <>
-                    <option value="">Select a project...</option>
-                    {projects.map(project => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-              {projects.length === 0 && (
-                <button 
-                  type="button"
-                  className="btn btn-outline" 
-                  style={{ marginTop: '8px', width: '100%' }}
-                  onClick={() => {
-                    setShowNewTaskModal(false);
-                    router.push('/projects');
+            <div className="modal-body">
+              <div className="input-group">
+                <label htmlFor="task-title">Task Title *</label>
+                <input
+                  id="task-title"
+                  type="text"
+                  placeholder="E.g., Implement user authentication"
+                  value={newTask.title}
+                  onChange={(e) => {
+                    // SEC-003 FIX: Enforce length limit
+                    const value = e.target.value;
+                    if (value.length <= INPUT_LIMITS.taskTitle) {
+                      setNewTask({ ...newTask, title: value });
+                      // Clear error when user starts typing
+                      if (validationErrors.title) {
+                        setValidationErrors({ ...validationErrors, title: '' });
+                      }
+                    }
                   }}
-                >
-                  Create Your First Project
-                </button>
-              )}
-            </div>
-
-            <div className="form-grid">
-              <div className="input-group">
-                <label htmlFor="task-status">Status</label>
-                <select
-                  id="task-status"
-                  value={newTask.status}
-                  onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-                >
-                  {columns.map(col => (
-                    <option key={col.id} value={col.id}>{col.title}</option>
-                  ))}
-                </select>
+                  maxLength={INPUT_LIMITS.taskTitle}
+                  required
+                  className={validationErrors.title ? 'input-error' : ''}
+                />
+                <small style={{ color: '#718096', fontSize: '12px' }}>
+                  {newTask.title.length}/{INPUT_LIMITS.taskTitle} characters
+                </small>
+                {validationErrors.title && (
+                  <span className="error-message">{validationErrors.title}</span>
+                )}
               </div>
 
               <div className="input-group">
-                <label htmlFor="task-priority">Priority</label>
-                <select
-                  id="task-priority"
-                  value={newTask.priority}
-                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
+                <label htmlFor="task-description">Description</label>
+                <textarea
+                  id="task-description"
+                  placeholder="Describe the task..."
+                  value={newTask.description}
+                  onChange={(e) => {
+                    // SEC-003 FIX: Enforce length limit
+                    const value = e.target.value;
+                    if (value.length <= INPUT_LIMITS.taskDescription) {
+                      setNewTask({ ...newTask, description: value });
+                      // Clear error when user starts typing
+                      if (validationErrors.description) {
+                        setValidationErrors({ ...validationErrors, description: '' });
+                      }
+                    }
+                  }}
+                  maxLength={INPUT_LIMITS.taskDescription}
+                  rows={4}
+                  className={validationErrors.description ? 'input-error' : ''}
+                />
+                <small style={{ color: '#718096', fontSize: '12px' }}>
+                  {newTask.description.length}/{INPUT_LIMITS.taskDescription} characters
+                </small>
+                {validationErrors.description && (
+                  <span className="error-message">{validationErrors.description}</span>
+                )}
               </div>
-            </div>
 
-            <div className="form-grid">
               <div className="input-group">
-                <label htmlFor="task-assignee">Assignee</label>
+                <label htmlFor="task-project">Project *</label>
                 <select
-                  id="task-assignee"
-                  value={newTask.assignee_id}
-                  onChange={(e) => setNewTask({ ...newTask, assignee_id: e.target.value })}
+                  id="task-project"
+                  value={selectedProjectId}
+                  onChange={(e) => {
+                    setSelectedProjectId(e.target.value);
+                    // Clear error when user selects a project
+                    if (validationErrors.project) {
+                      setValidationErrors({ ...validationErrors, project: '' });
+                    }
+                  }}
+                  required
+                  disabled={projects.length === 0}
+                  className={validationErrors.project ? 'input-error' : ''}
                 >
-                  <option value="">Unassigned</option>
-                  {loadingUsers ? (
-                    <option disabled>Loading users...</option>
+                  {projects.length === 0 ? (
+                    <option value="">No projects available - Create one first</option>
                   ) : (
-                    availableUsers.map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} {user.email ? `(${user.email})` : ''}
-                      </option>
-                    ))
+                    <>
+                      <option value="">Select a project...</option>
+                      {projects.map(project => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </>
                   )}
                 </select>
+                {validationErrors.project && (
+                  <span className="error-message">{validationErrors.project}</span>
+                )}
+                {projects.length === 0 && (
+                  <button 
+                    type="button"
+                    className="btn btn-outline" 
+                    style={{ marginTop: '8px', width: '100%' }}
+                    onClick={() => {
+                      setShowNewTaskModal(false);
+                      setValidationErrors({});
+                      router.push('/projects');
+                    }}
+                  >
+                    Create Your First Project
+                  </button>
+                )}
               </div>
 
-              <div className="input-group">
-                <label htmlFor="task-due">Due Date</label>
-                <input
-                  id="task-due"
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                />
+              <div className="form-grid">
+                <div className="input-group">
+                  <label htmlFor="task-status">Status</label>
+                  <select
+                    id="task-status"
+                    value={newTask.status}
+                    onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
+                  >
+                    {columns.map(col => (
+                      <option key={col.id} value={col.id}>{col.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="task-priority">Priority</label>
+                  <select
+                    id="task-priority"
+                    value={newTask.priority}
+                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-grid">
+                <div className="input-group">
+                  <label htmlFor="task-assignee">Assignee</label>
+                  <select
+                    id="task-assignee"
+                    value={newTask.assignee_id}
+                    onChange={(e) => setNewTask({ ...newTask, assignee_id: e.target.value })}
+                  >
+                    <option value="">Unassigned</option>
+                    {loadingUsers ? (
+                      <option disabled>Loading users...</option>
+                    ) : (
+                      availableUsers.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} {user.email ? `(${user.email})` : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="task-due">Due Date</label>
+                  <input
+                    id="task-due"
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => {
+                      setNewTask({ ...newTask, dueDate: e.target.value });
+                      // Clear error when user selects a date
+                      if (validationErrors.dueDate) {
+                        setValidationErrors({ ...validationErrors, dueDate: '' });
+                      }
+                    }}
+                    className={validationErrors.dueDate ? 'input-error' : ''}
+                  />
+                  {validationErrors.dueDate && (
+                    <span className="error-message">{validationErrors.dueDate}</span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="modal-actions">
               <button 
                 className="btn btn-outline" 
-                onClick={() => setShowNewTaskModal(false)}
+                onClick={() => {
+                  setShowNewTaskModal(false);
+                  setValidationErrors({});
+                }}
                 disabled={creatingTask}
               >
                 Cancel
