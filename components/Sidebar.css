@@ -1,7 +1,7 @@
 .sidebar {
   width: 260px;
-  background: white;
-  border-right: 1px solid #E4E7EB;
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -27,7 +27,7 @@
 
 .sidebar-header {
   padding: 20px 16px;
-  border-bottom: 1px solid #E4E7EB;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .sidebar-brand {
@@ -53,7 +53,7 @@
 .sidebar-logo-text {
   font-size: 18px;
   font-weight: 700;
-  color: #1A1F36;
+  color: var(--color-sidebar-text);
   letter-spacing: -0.01em;
 }
 
@@ -70,11 +70,12 @@
 .sidebar-section-label {
   font-size: 11px;
   font-weight: 600;
-  color: #718096;
+  color: var(--color-sidebar-text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0 16px 8px;
   margin-bottom: 4px;
+  opacity: 0.7;
 }
 
 .nav-item {
@@ -83,7 +84,7 @@
   gap: 12px;
   padding: 10px 16px;
   margin: 2px 8px;
-  color: #4A5568;
+  color: var(--color-sidebar-text);
   text-decoration: none;
   transition: all 0.2s ease;
   font-size: 14px;
@@ -93,12 +94,12 @@
 }
 
 .nav-item:hover {
-  background-color: #F9FAFB;
-  color: #1A1F36;
+  background-color: var(--color-sidebar-active);
+  color: var(--color-sidebar-text);
 }
 
 .nav-item.active {
-  background-color: #EEF0FF;
+  background-color: var(--color-sidebar-active);
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -123,7 +124,7 @@
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid #E4E7EB;
+  border-top: 1px solid var(--color-border);
   margin-top: auto;
 }
 
@@ -138,7 +139,7 @@
 }
 
 .user-profile-card:hover {
-  background-color: #F9FAFB;
+  background-color: var(--color-sidebar-active);
 }
 
 .user-profile-avatar {
@@ -170,7 +171,7 @@
 .user-profile-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1A1F36;
+  color: var(--color-sidebar-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -178,15 +179,17 @@
 
 .user-profile-email {
   font-size: 12px;
-  color: #718096;
+  color: var(--color-sidebar-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  opacity: 0.7;
 }
 
 .user-profile-arrow {
-  color: #718096;
+  color: var(--color-sidebar-text);
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 /* Logout Modal Styles */
@@ -198,7 +201,7 @@
 
 .logout-modal-description {
   font-size: 14px;
-  color: #4A5568;
+  color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.5;
 }
@@ -208,7 +211,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: #F9FAFB;
+  background: var(--color-surface-alt);
   border-radius: 8px;
 }
 
@@ -237,13 +240,13 @@
 .logout-user-name {
   font-size: 15px;
   font-weight: 600;
-  color: #1A1F36;
+  color: var(--color-text-primary);
   margin-bottom: 4px;
 }
 
 .logout-user-email {
   font-size: 13px;
-  color: #718096;
+  color: var(--color-text-secondary);
 }
 
 .logout-remember-device {
@@ -251,7 +254,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #1A1F36;
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
@@ -264,8 +267,8 @@
 
 .modal-btn-cancel {
   padding: 10px 20px;
-  background: #E2E8F0;
-  color: #1A1F36;
+  background: var(--color-surface-alt);
+  color: var(--color-text-primary);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -275,7 +278,7 @@
 }
 
 .modal-btn-cancel:hover {
-  background: #CBD5E0;
+  background: var(--color-border);
 }
 
 .modal-btn-danger {

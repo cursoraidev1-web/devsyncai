@@ -91,15 +91,29 @@ const CompanySwitcher = () => {
       // The switchCompany in createCompany will reload the page automatically
     } catch (error) {
       console.error('Failed to create workspace:', error);
+      console.error('Error object:', {
+        message: error?.message,
+        status: error?.status,
+        data: error?.data,
+        response: error?.response
+      });
+      
       // Extract error message from various formats
-      let errorMessage = 'Failed to create workspace';
-      if (error?.response?.data) {
-        errorMessage = error.response.data.error || error.response.data.message || errorMessage;
-      } else if (error?.data) {
-        errorMessage = error.data.error || error.data.message || errorMessage;
-      } else if (error?.message) {
+      let errorMessage = 'Failed to create workspace. Please try again.';
+      
+      // Priority: error.message (already formatted by CompanyContext) > error.data.error > error.response.data.error
+      if (error?.message) {
         errorMessage = error.message;
+      } else if (error?.data?.error) {
+        errorMessage = error.data.error;
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
       }
+      
       toast.error(errorMessage);
     } finally {
       setCreating(false);

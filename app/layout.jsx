@@ -4,6 +4,8 @@ import ClientProviders from './providers/ClientProviders';
 import '../design-system/global.css';
 import '../styles/index.css';
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>

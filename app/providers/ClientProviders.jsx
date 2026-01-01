@@ -1,8 +1,6 @@
 'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+// Note: Removed 'edge' runtime and 'force-dynamic' to allow proper client-side rendering
 
 import React from 'react';
 import { AuthProvider } from '../../context/AuthContext';
@@ -32,9 +30,14 @@ function GlobalUI() {
 }
 
 function ProvidersContent({ children }) {
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ClientProviders.jsx:35',message:'ProvidersContent rendering',data:{hasWindow:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }
+  // #endregion
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider>
         <CompanyProvider>
           <PlanProvider>
             <AppProvider>
@@ -46,23 +49,20 @@ function ProvidersContent({ children }) {
             </AppProvider>
           </PlanProvider>
         </CompanyProvider>
-      </AuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
 export default function ClientProviders({ children }) {
-  // Use synchronous check for client-side rendering
-  // During SSR/prerender: typeof window === 'undefined', render without providers (prevents build error)
-  // On client: typeof window !== 'undefined', render with providers (prevents runtime error)
-  const isClient = typeof window !== 'undefined';
-
-  if (!isClient) {
-    // During SSR/prerender, render children without providers
-    return <>{children}</>;
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ClientProviders.jsx:59',message:'ClientProviders render - always rendering providers',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
   }
+  // #endregion
 
-  // On client, always render with providers
+  // Always render providers - client components should maintain consistent structure
+  // The providers themselves handle SSR safety internally
   return (
     <ErrorBoundary>
       <ProvidersContent>{children}</ProvidersContent>

@@ -1,7 +1,7 @@
 .layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--color-background);
   position: relative;
 }
 
@@ -43,6 +43,7 @@
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  background-color: var(--color-background);
 }
 
 @media (max-width: 768px) {

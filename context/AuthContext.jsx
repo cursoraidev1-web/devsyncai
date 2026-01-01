@@ -5,7 +5,17 @@ const AuthContext = createContext(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.jsx:8',message:'useAuth called',data:{hasContext:!!context,contextType:context?typeof context:'null'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }
+  // #endregion
   if (!context) {
+    // #region agent log
+    if (typeof window !== 'undefined') {
+      fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.jsx:12',message:'useAuth ERROR - no context',data:{hasContext:false,stack:new Error().stack?.split('\n').slice(0,5).join('|')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    }
+    // #endregion
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -50,6 +60,11 @@ const safeLocalStorage = {
 };
 
 export const AuthProvider = ({ children }) => {
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.jsx:55',message:'AuthProvider render start',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  }
+  // #endregion
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,18 +82,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  /**
-   * Fetches current user data from API
-   * Used to refresh user data or validate session
-   * @returns {Promise<Object|null>} User object or null if fetch fails
-   */
   const getCurrentUser = useCallback(async () => {
     if (!token) return null;
     try {
       const response = await authApi.getCurrentUser();
       const apiUser = response?.data || response;
       
-      // EDGE-002 FIX: Validate user data
       if (apiUser && apiUser.id) {
         setUser(apiUser);
         safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
@@ -87,7 +96,6 @@ export const AuthProvider = ({ children }) => {
       
       return null;
     } catch (error) {
-      // If 401, clear session (token is invalid)
       if (error.status === 401 || error?.response?.status === 401) {
         clearSession();
       }
@@ -96,35 +104,22 @@ export const AuthProvider = ({ children }) => {
   }, [token, clearSession]);
 
   useEffect(() => {
-    /**
-     * Initialize authentication state from localStorage
-     * EDGE-002 FIX: Handles null users and invalid tokens gracefully
-     * JOURNEY-001 FIX: Validates token and clears invalid sessions
-     */
     const initializeAuth = async () => {
       try {
-        const storedUser = safeLocalStorage.getItem(USER_KEY);
-        const storedToken = safeLocalStorage.getItem(TOKEN_KEY);
+        const savedToken = safeLocalStorage.getItem(TOKEN_KEY);
+        const savedUser = safeLocalStorage.getItem(USER_KEY);
         
-        if (storedUser && storedUser !== 'undefined' && storedToken) {
+        if (savedToken && savedUser) {
           try {
-            const parsedUser = JSON.parse(storedUser);
-            
-            // EDGE-002 FIX: Validate parsed user object
-            if (!parsedUser || typeof parsedUser !== 'object' || !parsedUser.id) {
-              throw new Error('Invalid user data structure');
-            }
-            
+            const parsedUser = JSON.parse(savedUser);
+            setToken(savedToken);
             setUser(parsedUser);
-            setToken(storedToken);
             
-            // Fetch fresh user data from API to validate token
             const fetchUser = async () => {
               try {
                 const response = await authApi.getCurrentUser();
                 const apiUser = response?.data || response;
                 
-                // EDGE-002 FIX: Validate API response
                 if (!apiUser || !apiUser.id) {
                   throw new Error('Invalid user data from API');
                 }
@@ -132,18 +127,15 @@ export const AuthProvider = ({ children }) => {
                 setUser(apiUser);
                 safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
               } catch (fetchError) {
-                // JOURNEY-001 FIX: If token is invalid (401), clear session
                 if (fetchError?.status === 401 || fetchError?.response?.status === 401) {
                   clearSession();
                   if (typeof window !== 'undefined') {
                     window.location.href = '/login';
                   }
                 }
-                // For other errors, keep existing user data but log silently
               }
             };
             
-            // Set timeout to prevent indefinite loading
             const timeoutId = setTimeout(() => {
               if (loading) {
                 setLoading(false);
@@ -153,12 +145,10 @@ export const AuthProvider = ({ children }) => {
             await fetchUser();
             clearTimeout(timeoutId);
           } catch (parseError) {
-            // Clear invalid data
             clearSession();
           }
         }
       } catch (error) {
-        // Clear any corrupted data
         clearSession();
       } finally {
         setLoading(false);
@@ -168,325 +158,183 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  /**
-   * Persists user session to state and storage
-   * @param {Object} nextUser - User object to persist
-   * @param {string} nextToken - Auth token to persist
-   * @throws {Error} If user or token is invalid
-   */
-  const persistSession = (nextUser, nextToken) => {
-    // EDGE-002 FIX: Validate user and token before persisting
-    if (!nextUser || typeof nextUser !== 'object' || !nextUser.id) {
-      throw new Error('Invalid user data: user object is required with an id');
-    }
+  const persistSession = useCallback((userData, tokenData) => {
+    setUser(userData);
+    setToken(tokenData);
+    safeLocalStorage.setItem(USER_KEY, JSON.stringify(userData));
+    safeLocalStorage.setItem(TOKEN_KEY, tokenData);
     
-    if (!nextToken || typeof nextToken !== 'string' || nextToken.trim().length === 0) {
-      throw new Error('Invalid token: token must be a non-empty string');
-    }
-    
-    setUser(nextUser);
-    setToken(nextToken);
-    safeLocalStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-    safeLocalStorage.setItem(TOKEN_KEY, nextToken);
-    
-    // Also set cookie for middleware to detect authentication
+    // Also set cookie
     if (typeof document !== 'undefined') {
-      document.cookie = `auth-token=${nextToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      document.cookie = `auth-token=${tokenData}; path=/; max-age=${7 * 24 * 60 * 60}`;
     }
-  };
+  }, []);
 
-  /**
-   * Authenticates user with email and password
-   * @param {string} email - User email
-   * @param {string} password - User password
-   * @returns {Promise<Object|{require2fa: boolean, email: string}>} User object or 2FA requirement
-   * @throws {Error} If login fails or response is invalid
-   */
-  const login = async (email, password) => {
-    const response = await authApi.login({ email, password });
-    
-    // Handle spec format: { success, data: { user, token }, message }
-    const data = response?.data || response;
-    const { token: apiToken, user: apiUser, require2fa, companies, currentCompany } = data || {};
-    
-    if (require2fa) {
-      return { require2fa: true, email };
-    }
-    
-    // EDGE-002 FIX: Validate response before persisting
-    if (!apiToken || !apiUser) {
-      throw new Error('Invalid login response: missing token or user data');
-    }
-    
-    // Additional validation: ensure user has required fields
-    if (!apiUser.id || !apiUser.email) {
-      throw new Error('Invalid user data: missing required fields');
-    }
-    
-    persistSession(apiUser, apiToken);
-    
-    // Store company info if provided
-    if (companies && companies.length > 0) {
-      safeLocalStorage.setItem('zyndrx_companies', JSON.stringify(companies));
-    }
-    if (currentCompany) {
-      safeLocalStorage.setItem('zyndrx_company', currentCompany.id);
-    }
-    
-    return apiUser;
-  };
-
-  /**
-   * Registers a new user
-   * @param {Object} payload - Registration data
-   * @returns {Promise<Object|null>} User object if auto-login succeeds, null otherwise
-   * @throws {Error} If registration fails
-   */
-  const register = async (payload) => {
+  const login = useCallback(async (email, password) => {
     try {
-      const response = await authApi.register(payload);
-      
-      // Handle spec format: { success, data: { user, token, companies, currentCompany }, message }
+      const response = await authApi.login({ email, password });
       const data = response?.data || response;
-      const { token: apiToken, user: apiUser, companies, currentCompany } = data || {};
-      
-      // EDGE-002 FIX: Validate response
-      if (!apiUser || !apiToken) {
-        // Registration might have succeeded but auto-login failed
-        // Return null to allow manual login
-        return null;
-      }
-      
-      // Validate user object
-      if (!apiUser.id || !apiUser.email) {
-        throw new Error('Invalid user data received from registration');
-      }
-      
-      // Store companies and current company if provided
-      if (companies) {
-        safeLocalStorage.setItem('zyndrx_companies', JSON.stringify(companies));
-      }
-      if (currentCompany) {
-        safeLocalStorage.setItem('zyndrx_company', currentCompany.id);
-      }
-      
-      persistSession(apiUser, apiToken);
-      return apiUser;
-    } catch (error) {
-      // Re-throw the error so the component can handle it
-      throw error;
-    }
-  };
-
-  const googleLogin = async (accessToken) => {
-    const response = await authApi.googleLogin(accessToken);
-    // Handle spec format: { success, data: { user, token }, message }
-    const data = response?.data || response;
-    const { token: apiToken, user: apiUser, require2fa } = data || {};
-    if (require2fa) {
-      return { require2fa: true, email: apiUser?.email };
-    }
-    if (apiUser && apiToken) {
-      persistSession(apiUser, apiToken);
-    }
-    return apiUser;
-  };
-
-  const googleLoginWithCode = async (code, redirectUri) => {
-    const response = await authApi.googleLoginWithCode(code, redirectUri);
-    // Handle spec format: { success, data: { user, token }, message }
-    const data = response?.data || response;
-    const { token: apiToken, user: apiUser, require2fa } = data || {};
-    if (require2fa) {
-      return { require2fa: true, email: apiUser?.email };
-    }
-    if (apiUser && apiToken) {
-      persistSession(apiUser, apiToken);
-    }
-    return apiUser;
-  };
-
-  const githubLogin = async (accessToken) => {
-    const data = await authApi.githubLogin({ accessToken });
-    const { token: apiToken, user: apiUser, require2fa } = data || {};
-    if (require2fa) {
-      return { require2fa: true, email: apiUser?.email };
-    }
-    if (apiUser && apiToken) {
-      persistSession(apiUser, apiToken);
-    }
-    return apiUser;
-  };
-
-  /**
-   * Sync Supabase session with backend
-   * This is called after Supabase OAuth completes
-   * Exchanges Supabase access token for backend JWT token
-   * @param {Object} session - Supabase session object
-   * @param {string} companyName - Optional company name for new signups
-   * @returns {Promise} User object or { require2fa: true, email: string } if 2FA required
-   */
-  const syncSupabaseSession = async (session, companyName = null) => {
-    try {
-      const response = await authApi.syncSupabaseSession(session, companyName);
-      // Handle spec format: { success, data: { user, token, companies, currentCompany }, message }
-      // Or 2FA format: { success, data: { require2fa: true, email: string } }
-      const data = response?.data || response;
-      
-      // Check if 2FA is required
-      if (data?.require2fa) {
-        return { require2fa: true, email: data.email };
-      }
-      
-      const { token: apiToken, user: apiUser, companies, currentCompany, companyId } = data || {};
+      const apiUser = data?.user || data;
+      const apiToken = data?.token || data?.accessToken;
       
       if (apiUser && apiToken) {
-        // Store companies and current company if provided
-        if (companies) {
-          safeLocalStorage.setItem('zyndrx_companies', JSON.stringify(companies));
-        }
-        if (currentCompany) {
-          safeLocalStorage.setItem('zyndrx_company', currentCompany.id);
-        } else if (companyId) {
-          safeLocalStorage.setItem('zyndrx_company', companyId);
-        }
-        
         persistSession(apiUser, apiToken);
+        return apiUser;
       }
       
-      return apiUser;
+      throw new Error('Invalid response from server');
     } catch (error) {
-      console.error('Failed to sync Supabase session:', error);
       throw error;
     }
-  };
+  }, [persistSession]);
 
-  const requestPasswordReset = async (email) => {
-    return authApi.forgotPassword({ email });
-  };
+  const register = useCallback(async (payload) => {
+    try {
+      const response = await authApi.register(payload);
+      const data = response?.data || response;
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }, []);
 
-  const resetPassword = async ({ token: resetToken, password, accessToken }) => {
-    return authApi.resetPassword({ 
-      accessToken: accessToken || resetToken, 
-      password 
-    });
-  };
+  const googleLogin = useCallback(async (accessToken) => {
+    try {
+      const response = await authApi.googleLogin(accessToken);
+      const data = response?.data || response;
+      const apiUser = data?.user || data;
+      const apiToken = data?.token || data?.accessToken;
+      
+      if (apiUser && apiToken) {
+        persistSession(apiUser, apiToken);
+        return apiUser;
+      }
+      
+      throw new Error('Invalid response from server');
+    } catch (error) {
+      throw error;
+    }
+  }, [persistSession]);
 
-  const updateProfile = async (updates) => {
+  const githubLogin = useCallback(async (payload) => {
+    try {
+      const response = await authApi.githubLogin(payload);
+      const data = response?.data || response;
+      const apiUser = data?.user || data;
+      const apiToken = data?.token || data?.accessToken;
+      
+      if (apiUser && apiToken) {
+        persistSession(apiUser, apiToken);
+        return apiUser;
+      }
+      
+      throw new Error('Invalid response from server');
+    } catch (error) {
+      throw error;
+    }
+  }, [persistSession]);
+
+  const logout = useCallback(async () => {
+    setLogoutLoading(true);
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      clearSession();
+      setLogoutLoading(false);
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+  }, [clearSession]);
+
+  const updateUser = useCallback((updates) => {
+    const updatedUser = { ...user, ...updates };
+    if (updates.is2FAEnabled !== undefined) {
+      updatedUser.is2FAEnabled = updates.is2FAEnabled;
+    }
+    if (updates.themePreference !== undefined) {
+      updatedUser.themePreference = updates.themePreference;
+    }
+    setUser(updatedUser);
+    safeLocalStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+  }, [user]);
+
+  const updateProfile = useCallback(async (updates) => {
     try {
       const response = await authApi.updateProfile(updates);
-      // Handle response format: { success: true, data: { user } } or direct user object
       const updatedUser = response?.data?.user || response?.data || response;
       if (updatedUser) {
-        setUser(updatedUser);
-        safeLocalStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        updateUser(updatedUser);
       }
-      return response; // Return full response so component can handle it
+      return response;
     } catch (error) {
       console.error('Failed to update profile:', error);
       throw error;
     }
-  };
+  }, [updateUser]);
 
-  const changePassword = async (currentPassword, newPassword) => {
+  const changePassword = useCallback(async (currentPassword, newPassword, confirmPassword) => {
     try {
-      const response = await authApi.changePassword({ currentPassword, newPassword });
-      return response;
+      return await authApi.changePassword({ currentPassword, newPassword, confirmPassword });
     } catch (error) {
       console.error('Failed to change password:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const getActiveSessions = async () => {
+  const getActiveSessions = useCallback(async () => {
     try {
-      const response = await authApi.getActiveSessions();
-      const sessionsData = response?.data || (Array.isArray(response) ? response : []);
-      return Array.isArray(sessionsData) ? sessionsData : [];
+      return await authApi.getActiveSessions();
     } catch (error) {
       console.error('Failed to fetch active sessions:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const setup2FA = async () => {
+  const setup2FA = useCallback(async () => {
     try {
       return await authApi.setup2FA();
     } catch (error) {
       console.error('Failed to setup 2FA:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const enable2FA = async (token) => {
+  const enable2FA = useCallback(async (token) => {
     try {
       return await authApi.enable2FA(token);
     } catch (error) {
       console.error('Failed to enable 2FA:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const verify2FA = async (email, token) => {
-    try {
-      const data = await authApi.verify2FA(email, token);
-      const { token: apiToken, user: apiUser } = data || {};
-      if (apiUser && apiToken) {
-        persistSession(apiUser, apiToken);
-      }
-      return apiUser;
-    } catch (error) {
-      console.error('Failed to verify 2FA:', error);
-      throw error;
-    }
-  };
-
-  const logout = useCallback(async () => {
-    setLogoutLoading(true);
-    try {
-      // Call logout API before clearing session
-      if (token) {
-        await authApi.logout();
-      }
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-      // Continue with logout even if API call fails
-    } finally {
-      clearSession();
-      setLogoutLoading(false);
-    }
-  }, [token, clearSession]);
-
-  const updateUser = (updates) => {
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    safeLocalStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-  };
+  const isAuthenticated = !!token && !!user;
 
   const value = {
     user,
     token,
+    loading,
+    isAuthenticated,
+    logout,
+    logoutLoading,
     login,
     register,
     googleLogin,
-    googleLoginWithCode,
     githubLogin,
-    syncSupabaseSession,
-    requestPasswordReset,
-    resetPassword,
-    logout,
     updateUser,
     updateProfile,
     changePassword,
     getActiveSessions,
-    getCurrentUser,
     setup2FA,
     enable2FA,
-    verify2FA,
-    loading,
-    logoutLoading,
-    isAuthenticated: !!user && !!token
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

@@ -41,7 +41,17 @@ const safeLocalStorage = {
 };
 
 export const CompanyProvider = ({ children }) => {
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CompanyContext.jsx:44',message:'CompanyProvider render start',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }
+  // #endregion
   const { token, user } = useAuth();
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CompanyContext.jsx:47',message:'CompanyProvider after useAuth',data:{hasToken:!!token,hasUser:!!user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }
+  // #endregion
   const [currentCompany, setCurrentCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +73,17 @@ export const CompanyProvider = ({ children }) => {
 
       // Load saved company preference or use first company
       const savedCompanyId = safeLocalStorage.getItem(COMPANY_KEY);
-      if (savedCompanyId && companiesList.find(c => c.id === savedCompanyId)) {
+      if (savedCompanyId) {
         const savedCompany = companiesList.find(c => c.id === savedCompanyId);
-        setCurrentCompany(savedCompany);
-      } else if (companiesList.length > 0) {
-        // Use first company as default
+        if (savedCompany) {
+          setCurrentCompany(savedCompany);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Use first company if available
+      if (companiesList.length > 0) {
         setCurrentCompany(companiesList[0]);
         safeLocalStorage.setItem(COMPANY_KEY, companiesList[0].id);
       } else {
@@ -75,41 +91,34 @@ export const CompanyProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to load companies:', error);
-      setCompanies([]);
       setCurrentCompany(null);
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  // Switch to a different company
-  const switchCompany = useCallback(async (companyId) => {
-    if (!token) return;
+  useEffect(() => {
+    loadCompanies();
+  }, [loadCompanies]);
 
+  const switchCompany = useCallback(async (companyId) => {
     try {
       const response = await apiSwitchCompany(companyId);
       const data = response?.data || response;
+      const company = data?.company || data;
       
-      const company = data?.company || companies.find(c => c.id === companyId);
       if (company) {
         setCurrentCompany(company);
         safeLocalStorage.setItem(COMPANY_KEY, company.id);
-        
-        // If token is refreshed, update it
-        if (data?.token) {
-          safeLocalStorage.setItem('zyndrx_token', data.token);
-        }
-
-        // Reload window to refresh all data with new company context
-        window.location.reload();
       }
+      return company;
     } catch (error) {
       console.error('Failed to switch company:', error);
       throw error;
     }
-  }, [token, companies]);
+  }, []);
 
-  // Create a new company/workspace
   const createCompany = useCallback(async (companyData) => {
     if (!token) {
       throw new Error('You must be logged in to create a workspace');
@@ -120,10 +129,8 @@ export const CompanyProvider = ({ children }) => {
       const response = await apiCreateCompany(companyData);
       console.log('Create company API response:', response);
       
-      // Handle response format: { success: true, data: { company: {...} } } or { success: true, data: {...} } or direct company object
+      // Response format from backend: { success: true, data: <company>, message: "..." }
       const data = response?.data || response;
-      
-      // Extract company from various response formats
       const newCompany = data?.company || data;
       
       if (!newCompany || !newCompany.id) {
@@ -133,10 +140,7 @@ export const CompanyProvider = ({ children }) => {
       
       console.log('Company created successfully:', newCompany);
       
-      // Add to companies list
       setCompanies(prev => [...prev, newCompany]);
-      
-      // Switch to the new company (this will reload the page)
       await switchCompany(newCompany.id);
       
       return newCompany;
@@ -148,15 +152,26 @@ export const CompanyProvider = ({ children }) => {
         response: error?.response,
         data: error?.data
       });
-      // Re-throw to let component handle it
-      throw error;
+      
+      // Extract more specific error message
+      let errorMessage = error?.message || 'Failed to create workspace. Please try again.';
+      
+      // Check if error.data contains the backend error response
+      if (error?.data) {
+        if (error.data.error) {
+          errorMessage = error.data.error;
+        } else if (error.data.message) {
+          errorMessage = error.data.message;
+        }
+      }
+      
+      // Create a new error with the extracted message to ensure it's properly formatted
+      const formattedError = new Error(errorMessage);
+      formattedError.status = error?.status;
+      formattedError.data = error?.data;
+      throw formattedError;
     }
   }, [token, switchCompany]);
-
-  // Load companies when token changes
-  useEffect(() => {
-    loadCompanies();
-  }, [loadCompanies]);
 
   const value = {
     currentCompany,
@@ -164,11 +179,12 @@ export const CompanyProvider = ({ children }) => {
     loading,
     switchCompany,
     createCompany,
-    reloadCompanies: loadCompanies,
+    loadCompanies,
   };
 
-  return <CompanyContext.Provider value={value}>{children}</CompanyContext.Provider>;
+  return (
+    <CompanyContext.Provider value={value}>
+      {children}
+    </CompanyContext.Provider>
+  );
 };
-
-
-
