@@ -73,12 +73,6 @@ const handleResponse = async (res) => {
   // Check if response has success: false even with 200 status
   if (data && typeof data === 'object' && data.success === false) {
     const errorMessage = data.error || data.message || 'Request failed';
-    console.error('API Error (success: false):', {
-      status: res.status,
-      message: errorMessage,
-      path: res.url,
-      data
-    });
     
     const error = new Error(errorMessage);
     error.status = res.status || 400;
@@ -104,14 +98,6 @@ const handleResponse = async (res) => {
         message = data.errors.join(', ');
       }
     }
-    
-    // Log error for debugging
-    console.error('API Error:', {
-      status: res.status,
-      message,
-      path: res.url,
-      data
-    });
     
     if (upgradeHandler && shouldTriggerUpgrade(message)) {
       upgradeHandler(message);
@@ -157,7 +143,6 @@ export const apiRequest = async (path, { method = 'GET', body, headers = {}, aut
     return handleResponse(res);
   } catch (error) {
     // Handle network errors
-    console.error('Network Error:', error);
     throw new Error('Network error. Please check your connection and try again.');
   }
 };

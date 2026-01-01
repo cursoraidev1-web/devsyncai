@@ -15,8 +15,61 @@ export const getHandoff = (id) => {
   });
 };
 
+/**
+ * Creates a new handoff with proper data normalization
+ * @param {Object} payload - Handoff payload from form
+ * @returns {Promise<Object>} Created handoff
+ */
 export const createHandoff = (payload) => {
-  return api.post('/handoffs', payload).then(response => {
+  const handoffPayload = { ...payload };
+  
+  // Ensure required fields
+  if (!handoffPayload.title || handoffPayload.title.trim() === '') {
+    throw new Error('Handoff title is required');
+  }
+  if (!handoffPayload.to_user_id || handoffPayload.to_user_id === '') {
+    throw new Error('Recipient is required');
+  }
+  if (!handoffPayload.project_id || handoffPayload.project_id === '') {
+    throw new Error('Project is required');
+  }
+  
+  // Normalize dates
+  if (handoffPayload.due_date) {
+    if (handoffPayload.due_date === '' || handoffPayload.due_date === null) {
+      delete handoffPayload.due_date;
+    } else if (handoffPayload.due_date instanceof Date) {
+      handoffPayload.due_date = handoffPayload.due_date.toISOString();
+    } else if (typeof handoffPayload.due_date === 'string' && handoffPayload.due_date.trim() !== '') {
+      const dueDate = new Date(handoffPayload.due_date);
+      if (!isNaN(dueDate.getTime())) {
+        handoffPayload.due_date = dueDate.toISOString();
+      } else {
+        delete handoffPayload.due_date;
+      }
+    }
+  }
+  
+  // Remove empty string values
+  const cleanPayload = {};
+  for (const [key, value] of Object.entries(handoffPayload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value;
+    }
+  }
+  
+  // Ensure required fields are still present
+  if (!cleanPayload.title) {
+    throw new Error('Handoff title is required');
+  }
+  if (!cleanPayload.to_user_id) {
+    throw new Error('Recipient is required');
+  }
+  if (!cleanPayload.project_id) {
+    throw new Error('Project is required');
+  }
+  
+  return api.post('/handoffs', cleanPayload).then(response => {
     return response?.data || response;
   });
 };

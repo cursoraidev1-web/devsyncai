@@ -15,34 +15,117 @@ export const getProject = (id) => {
   });
 };
 
+/**
+ * Creates a new project with proper data normalization
+ * @param {Object} payload - Project payload from form
+ * @returns {Promise<Object>} Created project
+ */
 export const createProject = (payload) => {
-  // Ensure dates are in ISO format
   const projectPayload = { ...payload };
-  if (projectPayload.start_date && !(projectPayload.start_date instanceof Date)) {
-    const startDate = new Date(projectPayload.start_date);
-    projectPayload.start_date = startDate.toISOString();
+  
+  // Ensure required fields
+  if (!projectPayload.name || projectPayload.name.trim() === '') {
+    throw new Error('Project name is required');
   }
-  if (projectPayload.end_date && !(projectPayload.end_date instanceof Date)) {
-    const endDate = new Date(projectPayload.end_date);
-    projectPayload.end_date = endDate.toISOString();
+  
+  // Normalize dates - convert to ISO format or remove if empty
+  if (projectPayload.start_date) {
+    if (projectPayload.start_date instanceof Date) {
+      projectPayload.start_date = projectPayload.start_date.toISOString();
+    } else if (typeof projectPayload.start_date === 'string' && projectPayload.start_date.trim() !== '') {
+      const startDate = new Date(projectPayload.start_date);
+      if (!isNaN(startDate.getTime())) {
+        projectPayload.start_date = startDate.toISOString();
+      } else {
+        delete projectPayload.start_date; // Invalid date, remove it
+      }
+    } else {
+      delete projectPayload.start_date; // Empty or invalid
+    }
   }
-  return api.post('/projects', projectPayload).then(response => {
+  
+  if (projectPayload.end_date) {
+    if (projectPayload.end_date instanceof Date) {
+      projectPayload.end_date = projectPayload.end_date.toISOString();
+    } else if (typeof projectPayload.end_date === 'string' && projectPayload.end_date.trim() !== '') {
+      const endDate = new Date(projectPayload.end_date);
+      if (!isNaN(endDate.getTime())) {
+        projectPayload.end_date = endDate.toISOString();
+      } else {
+        delete projectPayload.end_date; // Invalid date, remove it
+      }
+    } else {
+      delete projectPayload.end_date; // Empty or invalid
+    }
+  }
+  
+  // Remove empty string values (backend expects undefined, not empty strings)
+  const cleanPayload = {};
+  for (const [key, value] of Object.entries(projectPayload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value;
+    }
+  }
+  
+  // Ensure required fields are still present
+  if (!cleanPayload.name) {
+    throw new Error('Project name is required');
+  }
+  
+  return api.post('/projects', cleanPayload).then(response => {
     return response?.data || response;
   });
 };
 
+/**
+ * Updates a project with proper data normalization
+ * @param {string} id - Project ID
+ * @param {Object} updates - Update payload
+ * @returns {Promise<Object>} Updated project
+ */
 export const updateProject = (id, updates) => {
-  // Ensure dates are in ISO format if provided
   const projectPayload = { ...updates };
-  if (projectPayload.start_date && !(projectPayload.start_date instanceof Date)) {
-    const startDate = new Date(projectPayload.start_date);
-    projectPayload.start_date = startDate.toISOString();
+  
+  // Normalize dates - convert to ISO format or remove if empty
+  if (projectPayload.start_date !== undefined) {
+    if (projectPayload.start_date === '' || projectPayload.start_date === null) {
+      delete projectPayload.start_date;
+    } else if (projectPayload.start_date instanceof Date) {
+      projectPayload.start_date = projectPayload.start_date.toISOString();
+    } else if (typeof projectPayload.start_date === 'string' && projectPayload.start_date.trim() !== '') {
+      const startDate = new Date(projectPayload.start_date);
+      if (!isNaN(startDate.getTime())) {
+        projectPayload.start_date = startDate.toISOString();
+      } else {
+        delete projectPayload.start_date;
+      }
+    }
   }
-  if (projectPayload.end_date && !(projectPayload.end_date instanceof Date)) {
-    const endDate = new Date(projectPayload.end_date);
-    projectPayload.end_date = endDate.toISOString();
+  
+  if (projectPayload.end_date !== undefined) {
+    if (projectPayload.end_date === '' || projectPayload.end_date === null) {
+      delete projectPayload.end_date;
+    } else if (projectPayload.end_date instanceof Date) {
+      projectPayload.end_date = projectPayload.end_date.toISOString();
+    } else if (typeof projectPayload.end_date === 'string' && projectPayload.end_date.trim() !== '') {
+      const endDate = new Date(projectPayload.end_date);
+      if (!isNaN(endDate.getTime())) {
+        projectPayload.end_date = endDate.toISOString();
+      } else {
+        delete projectPayload.end_date;
+      }
+    }
   }
-  return api.patch(`/projects/${id}`, projectPayload).then(response => {
+  
+  // Remove empty string values
+  const cleanPayload = {};
+  for (const [key, value] of Object.entries(projectPayload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value;
+    }
+  }
+  
+  return api.patch(`/projects/${id}`, cleanPayload).then(response => {
     return response?.data || response;
   });
 };

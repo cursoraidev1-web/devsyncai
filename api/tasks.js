@@ -48,13 +48,49 @@ export const updateTaskStatus = (taskId, status) => {
   return api.patch(`/tasks/${taskId}`, { status: normalizedStatus });
 };
 
+/**
+ * Updates a task with proper data normalization
+ * @param {string|number} taskId - Task ID
+ * @param {Object} updates - Update payload
+ * @returns {Promise<Object>} Updated task
+ */
 export const updateTask = (taskId, updates) => {
-  // Normalize status if provided
   const normalizedUpdates = { ...updates };
-  if (updates.status) {
-    normalizedUpdates.status = normalizeStatusToBackend(updates.status);
+  
+  // Normalize status if provided
+  if (normalizedUpdates.status) {
+    normalizedUpdates.status = normalizeStatusToBackend(normalizedUpdates.status);
   }
-  return api.patch(`/tasks/${taskId}`, normalizedUpdates).then(response => {
+  
+  // Map frontend field names to backend field names
+  if (normalizedUpdates.dueDate !== undefined) {
+    if (normalizedUpdates.dueDate === '' || normalizedUpdates.dueDate === null) {
+      delete normalizedUpdates.due_date;
+    } else {
+      normalizedUpdates.due_date = normalizedUpdates.dueDate;
+    }
+    delete normalizedUpdates.dueDate;
+  }
+  
+  // CRITICAL FIX: Normalize assignee_id - empty string should be undefined
+  if (normalizedUpdates.assignee_id === '' || normalizedUpdates.assignee_id === null) {
+    delete normalizedUpdates.assignee_id;
+  }
+  
+  // Normalize project_id if provided (should be UUID, not empty string)
+  if (normalizedUpdates.project_id === '' || normalizedUpdates.project_id === null) {
+    delete normalizedUpdates.project_id;
+  }
+  
+  // Remove empty string values
+  const cleanPayload = {};
+  for (const [key, value] of Object.entries(normalizedUpdates)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value;
+    }
+  }
+  
+  return api.patch(`/tasks/${taskId}`, cleanPayload).then(response => {
     // Handle response structure: { success: true, data: {...}, message: "..." } or direct task object
     const task = response?.data || response;
     return {
@@ -64,16 +100,21 @@ export const updateTask = (taskId, updates) => {
   });
 };
 
+/**
+ * Creates a new task with proper data normalization
+ * @param {Object} payload - Task payload from form
+ * @returns {Promise<Object>} Created task
+ */
 export const createTask = (payload) => {
   // Normalize status if provided
   const normalizedPayload = { ...payload };
   
   // Ensure required fields are present
-  if (!normalizedPayload.title) {
+  if (!normalizedPayload.title || normalizedPayload.title.trim() === '') {
     throw new Error('Task title is required');
   }
   
-  if (!normalizedPayload.project_id) {
+  if (!normalizedPayload.project_id || normalizedPayload.project_id === '') {
     throw new Error('Project ID is required');
   }
   
@@ -91,17 +132,22 @@ export const createTask = (payload) => {
   }
   
   // Remove assignee if it's a role string (backend expects assignee_id, not assignee)
-  // User selection is now implemented - assignee_id is set from user picker
   if (normalizedPayload.assignee && !normalizedPayload.assignee_id) {
-    // Backend expects assignee_id (user UUID), not assignee (role string)
     delete normalizedPayload.assignee;
   }
   
-  // Ensure tags is properly formatted (array or null)
+  // CRITICAL FIX: Normalize assignee_id - empty string should be undefined
+  if (normalizedPayload.assignee_id === '' || normalizedPayload.assignee_id === null) {
+    delete normalizedPayload.assignee_id; // Don't send empty/null assignee_id
+  }
+  
+  // Ensure tags is properly formatted (array or empty array)
   if (normalizedPayload.tags) {
     if (!Array.isArray(normalizedPayload.tags)) {
       normalizedPayload.tags = [normalizedPayload.tags];
     }
+    // Remove empty tags
+    normalizedPayload.tags = normalizedPayload.tags.filter(tag => tag && tag.trim() !== '');
   } else {
     normalizedPayload.tags = [];
   }
@@ -111,7 +157,23 @@ export const createTask = (payload) => {
     normalizedPayload.priority = 'medium';
   }
   
-  return api.post('/tasks', normalizedPayload).then(response => {
+  // Remove any undefined or null values to prevent validation errors
+  const cleanPayload = {};
+  for (const [key, value] of Object.entries(normalizedPayload)) {
+    if (value !== undefined && value !== null && value !== '') {
+      cleanPayload[key] = value;
+    }
+  }
+  
+  // Ensure required fields are still present after cleaning
+  if (!cleanPayload.title) {
+    throw new Error('Task title is required');
+  }
+  if (!cleanPayload.project_id) {
+    throw new Error('Project ID is required');
+  }
+  
+  return api.post('/tasks', cleanPayload).then(response => {
     // Handle response structure: { success: true, data: {...}, message: "..." } or direct task object
     const task = response?.data || response;
     return {

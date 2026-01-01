@@ -217,7 +217,6 @@ export const AppProvider = ({ children }) => {
       });
       setTasksByProject(tasksByProjectMap);
     } catch (error) {
-      console.error('Failed to fetch all tasks', error);
       setTasks([]);
       setTasksByProject(new Map());
     } finally {
