@@ -52,21 +52,15 @@ function ProvidersContent({ children }) {
 }
 
 export default function ClientProviders({ children }) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // Check if we're on the client side (synchronous check)
+  // During SSR/prerender: typeof window === 'undefined', so render without providers
+  // On client first render: typeof window !== 'undefined', so render with providers
+  const isClient = typeof window !== 'undefined';
 
   // During SSR/prerender, render children without providers to prevent build errors
-  // After client mount, render with providers
-  // Use suppressHydrationWarning to handle the expected mismatch
-  if (!isMounted) {
-    return (
-      <div suppressHydrationWarning>
-        {children}
-      </div>
-    );
+  // On client, always render with providers to prevent runtime errors
+  if (!isClient) {
+    return <>{children}</>;
   }
 
   return (
