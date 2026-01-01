@@ -15,7 +15,7 @@ import {
 import { fetchActivity } from '../../../api/activity';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
-import '../../styles/pages/Activity.css';
+import '../../../styles/pages/Activity.css';
 
 const Activity = () => {
   const [activeTab, setActiveTab] = useState('activity');

@@ -17,7 +17,7 @@ import {
   MessageSquare,
   User
 } from 'lucide-react';
-import '../../styles/pages/Notifications.css';
+import '../../../styles/pages/Notifications.css';
 
 const Notifications = () => {
   const { notifications, notificationsLoading, markNotificationRead, markAllNotificationsRead } = useApp();

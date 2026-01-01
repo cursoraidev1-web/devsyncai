@@ -16,7 +16,7 @@ import { Modal } from '../../../components/ui';
 import { Select } from '../../../components/ui';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
-import '../../styles/pages/HandoffSystem.css';
+import '../../../styles/pages/HandoffSystem.css';
 
 const HandoffSystem = () => {
   const router = useRouter();

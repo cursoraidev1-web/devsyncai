@@ -20,7 +20,7 @@ import {
 import { fetchPipelines, fetchDeployments, fetchCommits, getCICDMetrics } from '../../../api/cicd';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
-import '../../styles/pages/CICDIntegration.css';
+import '../../../styles/pages/CICDIntegration.css';
 
 const CICDIntegration = () => {
   const [activeTab, setActiveTab] = useState('pipelines');

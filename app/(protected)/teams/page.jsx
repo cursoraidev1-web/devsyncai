@@ -9,7 +9,7 @@ import { usePlan } from '../../../context/PlanContext';
 import { Plus, Search, Filter, Users, Mail, Phone, MoreVertical, UserPlus } from 'lucide-react';
 import { Modal } from '../../../components/ui';
 import PulsingLoader from '../../../components/PulsingLoader';
-import '../../styles/pages/Teams.css';
+import '../../../styles/pages/Teams.css';
 
 const Teams = () => {
   const { teams, teamsLoading, loadTeams, createTeam, teamMembers, loadTeamMembers, openUpgradeModal } = useApp();

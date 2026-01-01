@@ -13,7 +13,7 @@ import { usePlan } from '../../../context/PlanContext';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
 import { CardSkeleton } from '../../../components/SkeletonLoader';
-import '../../styles/pages/Projects.css';
+import '../../../styles/pages/Projects.css';
 
 const Projects = () => {
   const router = useRouter();

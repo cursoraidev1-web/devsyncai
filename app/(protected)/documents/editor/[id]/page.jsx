@@ -23,7 +23,7 @@ import {
   Eye
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import '../../../../styles/pages/DocumentationEditor.css';
+import '../../../../../styles/pages/DocumentationEditor.css';
 
 const DocumentationEditor = () => {
   const params = useParams(); const id = params.id;

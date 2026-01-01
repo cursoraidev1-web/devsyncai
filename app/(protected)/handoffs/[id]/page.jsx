@@ -20,11 +20,11 @@ import {
   Tag,
   ArrowRightLeft
 } from 'lucide-react';
-import { getHandoff, getHandoffComments, addHandoffComment, approveHandoff, rejectHandoff } from '../../../api/handoffs';
-import { Modal } from '../../../components/ui';
+import { getHandoff, getHandoffComments, addHandoffComment, approveHandoff, rejectHandoff } from '../../../../api/handoffs';
+import { Modal } from '../../../../components/ui';
 import { toast } from 'react-toastify';
-import PulsingLoader from '../../../components/PulsingLoader';
-import '../../../styles/pages/HandoffDetails.css';
+import PulsingLoader from '../../../../components/PulsingLoader';
+import '../../../../styles/pages/HandoffDetails.css';
 
 const HandoffDetails = () => {
   const params = useParams(); const id = params.id;

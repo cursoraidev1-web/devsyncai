@@ -6,9 +6,9 @@ export const runtime = 'edge';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 ;
-import { useApp } from '../../../context/AppContext';
-import { useAuth } from '../../../context/AuthContext';
-import { fetchCommits, getCICDMetrics } from '../../../api/cicd';
+import { useApp } from '../../../../context/AppContext';
+import { useAuth } from '../../../../context/AuthContext';
+import { fetchCommits, getCICDMetrics } from '../../../../api/cicd';
 import { 
   Code, 
   GitBranch, 

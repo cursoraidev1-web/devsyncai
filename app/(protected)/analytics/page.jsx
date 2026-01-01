@@ -17,7 +17,7 @@ import {
   Calendar
 } from 'lucide-react';
 import PulsingLoader from '../../../components/PulsingLoader';
-import '../../styles/pages/Analytics.css';
+import '../../../styles/pages/Analytics.css';
 
 const Analytics = () => {
   const { loadAnalytics, projects } = useApp();

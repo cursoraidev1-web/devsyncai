@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Send, MessageSquare, Star, Bug, Lightbulb, AlertCircle } from 'lucide-react';
 import { submitFeedback } from '../../../api/feedback';
 import { toast } from 'react-toastify';
-import '../../styles/pages/Feedback.css';
+import '../../../styles/pages/Feedback.css';
 
 const Feedback = () => {
   const [formData, setFormData] = useState({

@@ -6,7 +6,7 @@ export const runtime = 'edge';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 ;
-import { fetchDeployments, fetchPipelines, getCICDMetrics } from '../../../api/cicd';
+import { fetchDeployments, fetchPipelines, getCICDMetrics } from '../../../../api/cicd';
 import { 
   Server, 
   Activity, 
@@ -17,7 +17,7 @@ import {
   XCircle,
   ArrowRight
 } from 'lucide-react';
-import PulsingLoader from '../../../components/PulsingLoader';
+import PulsingLoader from '../../../../components/PulsingLoader';
 import '../../../../styles/pages/Dashboard.css';
 
 const DevOpsDashboard = () => {

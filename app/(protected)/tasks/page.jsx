@@ -3,7 +3,8 @@
 // Use Edge Runtime to avoid Vercel function limits
 export const runtime = 'edge';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '../../../context/AppContext';
 import { getTeamMembers } from '../../../api/teams';
 import { 
@@ -20,10 +21,14 @@ import {
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import '../../styles/pages/TaskTracker.css';
+import { validateFields, INPUT_LIMITS } from '../../../utils/inputValidation';
+import { handleApiError } from '../../../utils/errorHandler';
+import '../../../styles/pages/TaskTracker.css';
 
 const TaskTracker = () => {
+  const router = useRouter();
   const { tasks, tasksLoading, addTask, updateTask, deleteTask, getTasksByProject, loadAllTasks, projects, teams } = useApp();
+  const updatingTasks = useRef(new Set()); // EDGE-005 FIX: Track tasks being updated to prevent race conditions
   const [view, setView] = useState('board'); // 'board' or 'list'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -32,6 +37,7 @@ const TaskTracker = () => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [availableUsers, setAvailableUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [creatingTask, setCreatingTask] = useState(false); // EDGE-001 FIX: Prevent race conditions
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -123,19 +129,54 @@ const TaskTracker = () => {
     return matchesSearch && matchesPriority;
   });
 
+  /**
+   * Creates a new task with validation and race condition protection
+   * EDGE-001 FIX: Prevents double-submission with loading state
+   * SEC-003 FIX: Validates input length before submission
+   * UX-001 FIX: Shows loading state and success toast
+   */
   const handleCreateTask = async () => {
-    if (!newTask.title) return;
-    
+    // EDGE-001 FIX: Prevent race condition - return if already creating
+    if (creatingTask) {
+      return;
+    }
+
+    // EDGE-003 FIX: Check if projects exist
+    if (projects.length === 0) {
+      toast.error('Please create a project first');
+      setShowNewTaskModal(false);
+      router.push('/projects');
+      return;
+    }
+
     if (!selectedProjectId) {
       toast.error('Please select a project first');
       return;
     }
+
+    // SEC-003 FIX: Validate input lengths
+    const validation = validateFields({
+      title: { value: newTask.title, type: 'taskTitle', required: true },
+      description: { value: newTask.description, type: 'taskDescription', required: false },
+    });
+
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
+
+    setCreatingTask(true);
 
     try {
       await addTask({
         ...newTask,
         project_id: selectedProjectId
       });
+      
+      // UX-003 FIX: Show success toast
+      toast.success('Task created successfully');
+      
       setShowNewTaskModal(false);
       setNewTask({
         title: '',
@@ -147,9 +188,10 @@ const TaskTracker = () => {
         tags: []
       });
     } catch (error) {
-      console.error('Failed to create task:', error);
-      const errorMessage = error?.message || 'Failed to create task. Please try again.';
-      toast.error(errorMessage);
+      const errorInfo = handleApiError(error);
+      toast.error(errorInfo.message || 'Failed to create task. Please try again.');
+    } finally {
+      setCreatingTask(false);
     }
   };
 
@@ -161,17 +203,34 @@ const TaskTracker = () => {
     e.preventDefault();
   };
 
+  /**
+   * Handles task status update via drag and drop
+   * EDGE-005 FIX: Prevents race conditions by tracking updates
+   * @param {DragEvent} e - Drag event
+   * @param {string} newStatus - New status for the task
+   */
   const handleDrop = async (e, newStatus) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     const task = tasks.find(t => t.id === taskId || t.id === parseInt(taskId));
-    if (task) {
-      try {
-        await updateTask(task.id, { status: newStatus });
-      } catch (error) {
-        console.error('Failed to update task:', error);
-        toast.error('Failed to update task. Please try again.');
-      }
+    
+    if (!task) return;
+    
+    // EDGE-005 FIX: Prevent concurrent updates to same task
+    if (updatingTasks.current.has(task.id)) {
+      return; // Already updating this task
+    }
+    
+    updatingTasks.current.add(task.id);
+    
+    try {
+      await updateTask(task.id, { status: newStatus });
+      toast.success('Task status updated');
+    } catch (error) {
+      const errorInfo = handleApiError(error);
+      toast.error(errorInfo.message || 'Failed to update task. Please try again.');
+    } finally {
+      updatingTasks.current.delete(task.id);
     }
   };
 
@@ -193,7 +252,18 @@ const TaskTracker = () => {
           <h1>Task & Feature Tracker</h1>
           <p className="page-subtitle">Manage tasks across your projects</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowNewTaskModal(true)}>
+        <button 
+          className="btn btn-primary" 
+          onClick={() => {
+            // EDGE-003 FIX: Check if projects exist before opening modal
+            if (projects.length === 0) {
+              toast.error('Please create a project first');
+              router.push('/projects');
+              return;
+            }
+            setShowNewTaskModal(true);
+          }}
+        >
           <Plus size={18} />
           New Task
         </button>
@@ -343,8 +413,23 @@ const TaskTracker = () => {
                 <div className="list-col col-status">
                   <select
                     value={task.status}
-                    onChange={(e) => updateTask(task.id, { status: e.target.value })}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value;
+                      // EDGE-005 FIX: Prevent concurrent updates
+                      if (updatingTasks.current.has(task.id)) return;
+                      updatingTasks.current.add(task.id);
+                      try {
+                        await updateTask(task.id, { status: newStatus });
+                        toast.success('Task status updated');
+                      } catch (error) {
+                        const errorInfo = handleApiError(error);
+                        toast.error(errorInfo.message || 'Failed to update task');
+                      } finally {
+                        updatingTasks.current.delete(task.id);
+                      }
+                    }}
                     className="status-select"
+                    disabled={updatingTasks.current.has(task.id)}
                   >
                     {columns.map(col => (
                       <option key={col.id} value={col.id}>{col.title}</option>
@@ -382,14 +467,25 @@ const TaskTracker = () => {
             <h2>Create New Task</h2>
             
             <div className="input-group">
-              <label htmlFor="task-title">Task Title</label>
+              <label htmlFor="task-title">Task Title *</label>
               <input
                 id="task-title"
                 type="text"
                 placeholder="E.g., Implement user authentication"
                 value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                onChange={(e) => {
+                  // SEC-003 FIX: Enforce length limit
+                  const value = e.target.value;
+                  if (value.length <= INPUT_LIMITS.taskTitle) {
+                    setNewTask({ ...newTask, title: value });
+                  }
+                }}
+                maxLength={INPUT_LIMITS.taskTitle}
+                required
               />
+              <small style={{ color: '#718096', fontSize: '12px' }}>
+                {newTask.title.length}/{INPUT_LIMITS.taskTitle} characters
+              </small>
             </div>
 
             <div className="input-group">
@@ -398,9 +494,19 @@ const TaskTracker = () => {
                 id="task-description"
                 placeholder="Describe the task..."
                 value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                onChange={(e) => {
+                  // SEC-003 FIX: Enforce length limit
+                  const value = e.target.value;
+                  if (value.length <= INPUT_LIMITS.taskDescription) {
+                    setNewTask({ ...newTask, description: value });
+                  }
+                }}
+                maxLength={INPUT_LIMITS.taskDescription}
                 rows={4}
               />
+              <small style={{ color: '#718096', fontSize: '12px' }}>
+                {newTask.description.length}/{INPUT_LIMITS.taskDescription} characters
+              </small>
             </div>
 
             <div className="input-group">
@@ -410,9 +516,10 @@ const TaskTracker = () => {
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
                 required
+                disabled={projects.length === 0}
               >
                 {projects.length === 0 ? (
-                  <option value="">No projects available</option>
+                  <option value="">No projects available - Create one first</option>
                 ) : (
                   <>
                     <option value="">Select a project...</option>
@@ -424,6 +531,19 @@ const TaskTracker = () => {
                   </>
                 )}
               </select>
+              {projects.length === 0 && (
+                <button 
+                  type="button"
+                  className="btn btn-outline" 
+                  style={{ marginTop: '8px', width: '100%' }}
+                  onClick={() => {
+                    setShowNewTaskModal(false);
+                    router.push('/projects');
+                  }}
+                >
+                  Create Your First Project
+                </button>
+              )}
             </div>
 
             <div className="form-grid">
@@ -487,12 +607,29 @@ const TaskTracker = () => {
             </div>
 
             <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setShowNewTaskModal(false)}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setShowNewTaskModal(false)}
+                disabled={creatingTask}
+              >
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleCreateTask}>
-                <Plus size={18} />
-                Create Task
+              <button 
+                className="btn btn-primary" 
+                onClick={handleCreateTask}
+                disabled={creatingTask || !newTask.title.trim() || !selectedProjectId || projects.length === 0}
+              >
+                {creatingTask ? (
+                  <>
+                    <LoadingSpinner size={18} />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} />
+                    Create Task
+                  </>
+                )}
               </button>
             </div>
           </div>

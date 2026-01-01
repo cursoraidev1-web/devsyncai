@@ -16,7 +16,7 @@ import {
   ArrowRight,
   Search
 } from 'lucide-react';
-import '../../styles/pages/SupportHelp.css';
+import '../../../styles/pages/SupportHelp.css';
 
 const SupportHelp = () => {
   const [searchQuery, setSearchQuery] = useState('');

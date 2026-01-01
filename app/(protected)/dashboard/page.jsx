@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 
 // Use Edge Runtime to avoid Vercel function limits
 export const runtime = 'edge';
@@ -12,11 +12,8 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    console.log('Dashboard effect:', { loading, isAuthenticated, user });
-    
     if (!loading) {
       if (!isAuthenticated) {
-        console.log('Not authenticated, redirecting to login');
         router.push('/login');
         return;
       }
@@ -32,7 +29,6 @@ export default function Dashboard() {
       };
 
       const route = dashboardRoutes[user?.role] || '/dashboard/developer';
-      console.log('Routing to dashboard:', { role: user?.role, route });
       router.push(route);
     }
   }, [user, isAuthenticated, loading, router]);

@@ -30,7 +30,7 @@ import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui';
 import PulsingLoader from '../../../components/PulsingLoader';
 import { CardSkeleton } from '../../../components/SkeletonLoader';
-import '../../styles/pages/DocumentStore.css';
+import '../../../styles/pages/DocumentStore.css';
 
 const DocumentStore = () => {
   const { documents, loadDocuments, projects } = useApp();

@@ -31,7 +31,7 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
-import '../../styles/pages/Settings.css';
+import '../../../styles/pages/Settings.css';
 
 const Settings = () => {
   const router = useRouter();

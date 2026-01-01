@@ -30,11 +30,22 @@ const Login = () => {
   const [lockoutTime, setLockoutTime] = useState(null);
   const [showResendVerification, setShowResendVerification] = useState(false);
 
+  /**
+   * Handles input changes with sanitization and length validation
+   * SEC-003 FIX: Adds input length validation
+   */
   const handleChange = (e) => {
-    const sanitizedValue = sanitizeInput(e.target.value);
+    const { name, value } = e.target;
+    
+    // SEC-003 FIX: Validate email length
+    if (name === 'email' && value.length > 255) {
+      return; // Prevent input beyond limit
+    }
+    
+    const sanitizedValue = sanitizeInput(value);
     setFormData({
       ...formData,
-      [e.target.name]: sanitizedValue
+      [name]: sanitizedValue
     });
     setError('');
     setLockoutTime(null);
@@ -66,9 +77,7 @@ const Login = () => {
     setShowResendVerification(false);
     
     try {
-      console.log('Attempting login...');
       const result = await login(email, password);
-      console.log('Login result:', result);
       
       if (result?.require2fa) {
         toast.info('Please enter your 2FA code');
@@ -76,7 +85,6 @@ const Login = () => {
         return;
       }
       
-      console.log('Login successful, navigating to dashboard...');
       toast.success('Welcome back!');
       
       // Use window.location for more reliable redirect
@@ -85,7 +93,6 @@ const Login = () => {
         window.location.href = '/dashboard';
       }, 200);
     } catch (err) {
-      console.error('Login error:', err);
       const errorInfo = handleApiError(err);
       
       // Handle account lockout (HTTP 423)
@@ -195,6 +202,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Enter your email"
                 className="login-input"
+                maxLength={255}
                 required
               />
             </div>

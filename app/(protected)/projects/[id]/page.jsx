@@ -5,7 +5,6 @@ export const runtime = 'edge';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-;
 import { 
   ArrowLeft, 
   Calendar, 
@@ -17,33 +16,87 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
-import { getProject } from '../../../api/projects';
-import '../../../styles/pages/ProjectDetail.css';
+import { toast } from 'react-toastify';
+import { useApp } from '../../../../context/AppContext';
+import { getProject } from '../../../../api/projects';
+import { handleApiError } from '../../../../utils/errorHandler';
+import '../../../../styles/pages/ProjectDetail.css';
 
+/**
+ * Project Detail Page Component
+ * Displays detailed information about a specific project.
+ * 
+ * Security: Implements client-side ownership validation to prevent IDOR attacks.
+ * If a project is not in the user's projects list, access is denied.
+ * 
+ * @component
+ */
 const ProjectDetail = () => {
-  const params = useParams(); const id = params.id;
+  const params = useParams();
+  const id = params.id;
   const router = useRouter();
   const { projects, tasks } = useApp();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
+    /**
+     * Loads project data with security validation
+     * First checks if project exists in user's context (ownership validation)
+     * Only fetches from API if project is in user's list
+     */
     const loadProjectData = async () => {
       setLoading(true);
+      setError(null);
+      setAccessDenied(false);
+
       try {
-        // First try to get from context
+        // SEC-001 FIX: Client-side ownership validation to prevent IDOR
+        // Check if project exists in user's projects list first
         const projectFromContext = projects.find(p => p.id === id);
+        
         if (projectFromContext) {
+          // Project is in user's context, safe to display
           setProject(projectFromContext);
+        } else if (projects.length > 0) {
+          // User has projects but this one is not in the list
+          // This indicates either:
+          // 1. Project doesn't exist
+          // 2. User doesn't have access (IDOR protection)
+          setAccessDenied(true);
+          setError('You do not have access to this project or it does not exist.');
+          toast.error('Access denied. This project is not available in your workspace.');
         } else {
-          // If not in context, fetch from API
-          const response = await getProject(id);
-          const projectData = response?.data || response;
-          setProject(projectData);
+          // No projects loaded yet, try to fetch (might be loading)
+          // But still validate on backend
+          try {
+            const response = await getProject(id);
+            const projectData = response?.data || response;
+            
+            // Additional validation: if we get a project but it's not in context,
+            // it might be a race condition or access issue
+            if (projectData) {
+              setProject(projectData);
+            } else {
+              setError('Project not found');
+            }
+          } catch (fetchError) {
+            const errorInfo = handleApiError(fetchError);
+            if (errorInfo.type === 'NOT_FOUND' || errorInfo.type === 'FORBIDDEN') {
+              setAccessDenied(true);
+              setError(errorInfo.message || 'You do not have access to this project.');
+            } else {
+              setError(errorInfo.message || 'Failed to load project');
+              toast.error(errorInfo.message || 'Failed to load project');
+            }
+          }
         }
       } catch (error) {
-        console.error('Failed to load project:', error);
+        const errorInfo = handleApiError(error);
+        setError(errorInfo.message || 'An unexpected error occurred');
+        toast.error(errorInfo.message || 'Failed to load project');
       } finally {
         setLoading(false);
       }
@@ -51,6 +104,9 @@ const ProjectDetail = () => {
 
     if (id) {
       loadProjectData();
+    } else {
+      setLoading(false);
+      setError('Invalid project ID');
     }
   }, [id, projects]);
 
@@ -110,19 +166,42 @@ const ProjectDetail = () => {
     );
   }
 
-  if (!project) {
+  // UX-004 FIX: Use router.back() for better navigation context
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/projects');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="project-detail-page">
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div>Loading project...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessDenied || !project) {
     return (
       <div className="project-detail-page">
         <div className="project-detail-header">
-          <button className="back-btn" onClick={() => router.push('/projects')}>
+          <button className="back-btn" onClick={handleBack}>
             <ArrowLeft size={18} />
-            Back to Projects
+            Back
           </button>
         </div>
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <FileText size={48} style={{ color: '#718096', marginBottom: '16px' }} />
-          <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>Project not found</h3>
-          <p style={{ color: '#718096', marginBottom: '24px' }}>The project you're looking for doesn't exist or has been removed.</p>
+          <AlertCircle size={48} style={{ color: '#EF4444', marginBottom: '16px' }} />
+          <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>
+            {accessDenied ? 'Access Denied' : 'Project not found'}
+          </h3>
+          <p style={{ color: '#718096', marginBottom: '24px' }}>
+            {error || 'The project you\'re looking for doesn\'t exist or you don\'t have access to it.'}
+          </p>
           <button className="btn btn-primary" onClick={() => router.push('/projects')}>
             Go to Projects
           </button>
@@ -134,9 +213,9 @@ const ProjectDetail = () => {
   return (
     <div className="project-detail-page">
       <div className="project-detail-header">
-        <button className="back-btn" onClick={() => router.push('/projects')}>
+        <button className="back-btn" onClick={handleBack}>
           <ArrowLeft size={18} />
-          Back to Projects
+          Back
         </button>
         <div className="project-actions">
           <button className="btn btn-outline">

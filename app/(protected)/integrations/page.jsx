@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
 import { fetchIntegrations, connectIntegration, disconnectIntegration } from '../../../api/integrations';
 import { toast } from 'react-toastify';
-import '../../styles/pages/Integrations.css';
+import '../../../styles/pages/Integrations.css';
 
 const Integrations = () => {
   const [searchQuery, setSearchQuery] = useState('');

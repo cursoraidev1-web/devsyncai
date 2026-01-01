@@ -67,22 +67,28 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch current user on mount if token exists
+  /**
+   * Fetches current user data from API
+   * Used to refresh user data or validate session
+   * @returns {Promise<Object|null>} User object or null if fetch fails
+   */
   const getCurrentUser = useCallback(async () => {
     if (!token) return null;
     try {
       const response = await authApi.getCurrentUser();
-      // Handle spec format: { success, data: { user }, message }
       const apiUser = response?.data || response;
-      if (apiUser) {
+      
+      // EDGE-002 FIX: Validate user data
+      if (apiUser && apiUser.id) {
         setUser(apiUser);
         safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
+        return apiUser;
       }
-      return apiUser;
+      
+      return null;
     } catch (error) {
-      console.error('Failed to fetch current user:', error);
-      // If 401, clear session
-      if (error.status === 401) {
+      // If 401, clear session (token is invalid)
+      if (error.status === 401 || error?.response?.status === 401) {
         clearSession();
       }
       return null;
@@ -90,45 +96,94 @@ export const AuthProvider = ({ children }) => {
   }, [token, clearSession]);
 
   useEffect(() => {
-    try {
-      const storedUser = safeLocalStorage.getItem(USER_KEY);
-      const storedToken = safeLocalStorage.getItem(TOKEN_KEY);
-      
-      if (storedUser && storedUser !== 'undefined' && storedToken) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          setToken(storedToken);
-          
-          // Fetch fresh user data from API
-          const fetchUser = async () => {
-            const response = await authApi.getCurrentUser();
-            // Handle spec format: { success, data: { user }, message }
-            const apiUser = response?.data || response;
-            if (apiUser) {
-              setUser(apiUser);
-              safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
+    /**
+     * Initialize authentication state from localStorage
+     * EDGE-002 FIX: Handles null users and invalid tokens gracefully
+     * JOURNEY-001 FIX: Validates token and clears invalid sessions
+     */
+    const initializeAuth = async () => {
+      try {
+        const storedUser = safeLocalStorage.getItem(USER_KEY);
+        const storedToken = safeLocalStorage.getItem(TOKEN_KEY);
+        
+        if (storedUser && storedUser !== 'undefined' && storedToken) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            
+            // EDGE-002 FIX: Validate parsed user object
+            if (!parsedUser || typeof parsedUser !== 'object' || !parsedUser.id) {
+              throw new Error('Invalid user data structure');
             }
-          };
-          fetchUser().catch(() => {
-            // Silently fail on initial load
-          });
-        } catch (parseError) {
-          console.error('Failed to parse stored user data:', parseError);
-          // Clear invalid data
-          safeLocalStorage.removeItem(USER_KEY);
-          safeLocalStorage.removeItem(TOKEN_KEY);
+            
+            setUser(parsedUser);
+            setToken(storedToken);
+            
+            // Fetch fresh user data from API to validate token
+            const fetchUser = async () => {
+              try {
+                const response = await authApi.getCurrentUser();
+                const apiUser = response?.data || response;
+                
+                // EDGE-002 FIX: Validate API response
+                if (!apiUser || !apiUser.id) {
+                  throw new Error('Invalid user data from API');
+                }
+                
+                setUser(apiUser);
+                safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
+              } catch (fetchError) {
+                // JOURNEY-001 FIX: If token is invalid (401), clear session
+                if (fetchError?.status === 401 || fetchError?.response?.status === 401) {
+                  clearSession();
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/login';
+                  }
+                }
+                // For other errors, keep existing user data but log silently
+              }
+            };
+            
+            // Set timeout to prevent indefinite loading
+            const timeoutId = setTimeout(() => {
+              if (loading) {
+                setLoading(false);
+              }
+            }, 5000);
+            
+            await fetchUser();
+            clearTimeout(timeoutId);
+          } catch (parseError) {
+            // Clear invalid data
+            clearSession();
+          }
         }
+      } catch (error) {
+        // Clear any corrupted data
+        clearSession();
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error accessing localStorage:', error);
-    }
-    
-    setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
+  /**
+   * Persists user session to state and storage
+   * @param {Object} nextUser - User object to persist
+   * @param {string} nextToken - Auth token to persist
+   * @throws {Error} If user or token is invalid
+   */
   const persistSession = (nextUser, nextToken) => {
-    console.log('Persisting session:', { user: nextUser, hasToken: !!nextToken });
+    // EDGE-002 FIX: Validate user and token before persisting
+    if (!nextUser || typeof nextUser !== 'object' || !nextUser.id) {
+      throw new Error('Invalid user data: user object is required with an id');
+    }
+    
+    if (!nextToken || typeof nextToken !== 'string' || nextToken.trim().length === 0) {
+      throw new Error('Invalid token: token must be a non-empty string');
+    }
+    
     setUser(nextUser);
     setToken(nextToken);
     safeLocalStorage.setItem(USER_KEY, JSON.stringify(nextUser));
@@ -138,30 +193,36 @@ export const AuthProvider = ({ children }) => {
     if (typeof document !== 'undefined') {
       document.cookie = `auth-token=${nextToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
     }
-    
-    console.log('Session persisted, user and token set');
   };
 
+  /**
+   * Authenticates user with email and password
+   * @param {string} email - User email
+   * @param {string} password - User password
+   * @returns {Promise<Object|{require2fa: boolean, email: string}>} User object or 2FA requirement
+   * @throws {Error} If login fails or response is invalid
+   */
   const login = async (email, password) => {
     const response = await authApi.login({ email, password });
-    console.log('Login response:', response);
     
     // Handle spec format: { success, data: { user, token }, message }
     const data = response?.data || response;
-    console.log('Extracted data:', data);
-    
     const { token: apiToken, user: apiUser, require2fa, companies, currentCompany } = data || {};
     
     if (require2fa) {
       return { require2fa: true, email };
     }
     
+    // EDGE-002 FIX: Validate response before persisting
     if (!apiToken || !apiUser) {
-      console.error('Invalid login response - missing token or user');
-      throw new Error('Invalid login response');
+      throw new Error('Invalid login response: missing token or user data');
     }
     
-    console.log('Persisting session:', { user: apiUser, hasToken: !!apiToken });
+    // Additional validation: ensure user has required fields
+    if (!apiUser.id || !apiUser.email) {
+      throw new Error('Invalid user data: missing required fields');
+    }
+    
     persistSession(apiUser, apiToken);
     
     // Store company info if provided
@@ -175,25 +236,30 @@ export const AuthProvider = ({ children }) => {
     return apiUser;
   };
 
+  /**
+   * Registers a new user
+   * @param {Object} payload - Registration data
+   * @returns {Promise<Object|null>} User object if auto-login succeeds, null otherwise
+   * @throws {Error} If registration fails
+   */
   const register = async (payload) => {
     try {
-      console.log('Registering with payload:', { ...payload, password: '***' });
       const response = await authApi.register(payload);
-      console.log('Registration API response:', response);
       
       // Handle spec format: { success, data: { user, token, companies, currentCompany }, message }
-      // Or direct format: { user, token }
       const data = response?.data || response;
-      console.log('Extracted data:', data);
-      
       const { token: apiToken, user: apiUser, companies, currentCompany } = data || {};
-      console.log('Extracted user and token:', { hasUser: !!apiUser, hasToken: !!apiToken });
       
+      // EDGE-002 FIX: Validate response
       if (!apiUser || !apiToken) {
-        console.error('Registration response missing user or token:', { response, data });
-        // Don't throw error - registration might have succeeded, just can't auto-login
-        // User can manually log in
+        // Registration might have succeeded but auto-login failed
+        // Return null to allow manual login
         return null;
+      }
+      
+      // Validate user object
+      if (!apiUser.id || !apiUser.email) {
+        throw new Error('Invalid user data received from registration');
       }
       
       // Store companies and current company if provided
@@ -207,7 +273,6 @@ export const AuthProvider = ({ children }) => {
       persistSession(apiUser, apiToken);
       return apiUser;
     } catch (error) {
-      console.error('Registration error:', error);
       // Re-throw the error so the component can handle it
       throw error;
     }
