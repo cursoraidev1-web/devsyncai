@@ -11,6 +11,14 @@ import { usePlan } from '../../../context/PlanContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { cancelSubscription } from '../../../api/subscription';
 import { toast } from 'react-toastify';
+import { subscribeToPush, unsubscribeFromPush, getVapidPublicKey } from '../../../api/push';
+import {
+  isPushSupported,
+  requestNotificationPermission,
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+  getCurrentSubscription,
+} from '../../../utils/pushNotifications';
 import { 
   User, 
   Bell, 
@@ -117,6 +125,29 @@ const Settings = () => {
     }
   }, [user?.twoFactorEnabled]);
 
+  // Check push notification support and current subscription status
+  useEffect(() => {
+    const checkPushSupport = async () => {
+      const supported = isPushSupported();
+      setPushSupported(supported);
+
+      if (supported) {
+        try {
+          const subscription = await getCurrentSubscription();
+          setNotifications(prev => ({
+            ...prev,
+            push: subscription !== null
+          }));
+        } catch (error) {
+          console.error('Error checking push subscription:', error);
+        }
+      }
+      setPushInitialized(true);
+    };
+
+    checkPushSupport();
+  }, []);
+
   // Load active sessions when security tab is active
   useEffect(() => {
     if (activeTab === 'security') {
@@ -187,13 +218,15 @@ const Settings = () => {
 
   const [notifications, setNotifications] = useState({
     email: true,
-    push: true,
+    push: false, // Default to false, will check on mount
     taskAssigned: true,
     taskCompleted: true,
     mentions: true,
     deployments: true,
     weeklyReport: false
   });
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushInitialized, setPushInitialized] = useState(false);
 
   const [preferences, setPreferences] = useState({
     theme: 'light',
@@ -274,9 +307,53 @@ const Settings = () => {
     }
   };
 
-  const handleSaveNotifications = () => {
-    // Save notification preferences
-    toast.success('Notification settings updated!');
+  const handleSaveNotifications = async () => {
+    try {
+      // If push notifications are enabled, subscribe
+      if (notifications.push && pushSupported) {
+        // Request permission first
+        const permissionGranted = await requestNotificationPermission();
+        
+        if (!permissionGranted) {
+          setNotifications(prev => ({ ...prev, push: false }));
+          toast.error('Notification permission denied');
+          return;
+        }
+
+        // Get VAPID public key from backend
+        const { data: vapidResponse } = await getVapidPublicKey();
+        
+        if (!vapidResponse?.publicKey) {
+          toast.error('Push notifications are not configured on the server');
+          setNotifications(prev => ({ ...prev, push: false }));
+          return;
+        }
+
+        // Subscribe to push notifications
+        const subscription = await subscribeToPushNotifications(vapidResponse.publicKey);
+        
+        // Send subscription to backend
+        await subscribeToPush(subscription);
+        
+        toast.success('Push notifications enabled!');
+      } else if (!notifications.push) {
+        // If disabled, unsubscribe
+        const endpoint = await unsubscribeFromPushNotifications();
+        
+        if (endpoint) {
+          await unsubscribeFromPush({ endpoint });
+        } else {
+          // If no local subscription, try to unsubscribe all
+          await unsubscribeFromPush({ endpoint: '' });
+        }
+        
+        toast.success('Push notifications disabled');
+      }
+    } catch (error) {
+      console.error('Failed to update push notifications:', error);
+      setNotifications(prev => ({ ...prev, push: false }));
+      toast.error(error.message || 'Failed to update notification settings');
+    }
   };
 
   const handleSavePreferences = () => {
@@ -503,13 +580,20 @@ const Settings = () => {
                       </div>
                       <div>
                         <div className="toggle-label">Push Notifications</div>
-                        <div className="toggle-description">Receive push notifications in-app</div>
+                        <div className="toggle-description">
+                          {!pushSupported 
+                            ? 'Push notifications are not supported in this browser'
+                            : pushInitialized
+                            ? 'Receive push notifications in-app'
+                            : 'Checking push notification support...'}
+                        </div>
                       </div>
                     </div>
                     <label className="toggle-switch">
                       <input
                         type="checkbox"
                         checked={notifications.push}
+                        disabled={!pushSupported || !pushInitialized}
                         onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
                       />
                       <span className="toggle-slider"></span>

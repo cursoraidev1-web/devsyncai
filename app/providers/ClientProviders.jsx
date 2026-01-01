@@ -4,7 +4,7 @@
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider } from '../../context/AuthContext';
 import { CompanyProvider } from '../../context/CompanyContext';
 import { PlanProvider } from '../../context/PlanContext';
@@ -31,24 +31,41 @@ function GlobalUI() {
   );
 }
 
+function ProvidersContent({ children }) {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <CompanyProvider>
+          <PlanProvider>
+            <AppProvider>
+              <ServiceWorkerRegistration />
+              <GlobalUI />
+              {children}
+              <OfflineIndicator />
+              <ThemeAwareToast />
+            </AppProvider>
+          </PlanProvider>
+        </CompanyProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
 export default function ClientProviders({ children }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // During SSR/prerender, render children without providers
+  if (!isMounted) {
+    return <>{children}</>;
+  }
+
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <CompanyProvider>
-            <PlanProvider>
-              <AppProvider>
-                <ServiceWorkerRegistration />
-                <GlobalUI />
-                {children}
-                <OfflineIndicator />
-                <ThemeAwareToast />
-              </AppProvider>
-            </PlanProvider>
-          </CompanyProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <ProvidersContent>{children}</ProvidersContent>
     </ErrorBoundary>
   );
 }
