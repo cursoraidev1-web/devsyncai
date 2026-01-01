@@ -1,8 +1,3 @@
-'use client';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
-
 import React from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import ClientProviders from './providers/ClientProviders';
