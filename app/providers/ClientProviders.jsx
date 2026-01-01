@@ -4,7 +4,7 @@
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { AuthProvider } from '../../context/AuthContext';
 import { CompanyProvider } from '../../context/CompanyContext';
 import { PlanProvider } from '../../context/PlanContext';
@@ -52,17 +52,17 @@ function ProvidersContent({ children }) {
 }
 
 export default function ClientProviders({ children }) {
-  // Check if we're on the client side (synchronous check)
-  // During SSR/prerender: typeof window === 'undefined', so render without providers
-  // On client first render: typeof window !== 'undefined', so render with providers
+  // Use synchronous check for client-side rendering
+  // During SSR/prerender: typeof window === 'undefined', render without providers (prevents build error)
+  // On client: typeof window !== 'undefined', render with providers (prevents runtime error)
   const isClient = typeof window !== 'undefined';
 
-  // During SSR/prerender, render children without providers to prevent build errors
-  // On client, always render with providers to prevent runtime errors
   if (!isClient) {
+    // During SSR/prerender, render children without providers
     return <>{children}</>;
   }
 
+  // On client, always render with providers
   return (
     <ErrorBoundary>
       <ProvidersContent>{children}</ProvidersContent>

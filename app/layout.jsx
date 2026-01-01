@@ -6,7 +6,7 @@ import '../styles/index.css';
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" />
         <title>Zyndrx Platform</title>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
