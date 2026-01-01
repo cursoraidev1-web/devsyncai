@@ -162,9 +162,10 @@ const Sidebar = ({ isOpen }) => {
               if (item.type === 'button') {
                 return (
                   <button
-                    key={item.label}
+                    key={item.label || 'install-app'}
                     onClick={item.onClick}
                     className="nav-item"
+                    type="button"
                   >
                     <Icon size={18} />
                     <span>{item.label}</span>

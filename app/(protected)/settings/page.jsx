@@ -276,13 +276,36 @@ const Settings = () => {
         language: formData.language
       };
 
-      // If avatar file is selected, upload it first
-      // Note: This assumes the backend accepts avatar uploads
-      // You may need to implement avatar upload separately
+      // If avatar file is selected, upload it to Supabase Storage first
       if (avatarFile) {
-        // For now, we'll create a data URL and send it
-        // In production, you'd upload to Supabase Storage first
-        updates.avatarUrl = avatarPreview;
+        try {
+          // Upload to Supabase Storage
+          const { uploadFile } = await import('../../../utils/supabase');
+          const userId = user?.id;
+          if (!userId) {
+            toast.error('User ID not found');
+            setSaving(false);
+            return;
+          }
+          
+          const timestamp = Date.now();
+          const fileExtension = avatarFile.name.split('.').pop();
+          const filePath = `${userId}/${timestamp}.${fileExtension}`;
+          
+          const { url } = await uploadFile(
+            avatarFile,
+            'avatars',
+            filePath,
+            { contentType: avatarFile.type }
+          );
+          
+          updates.avatarUrl = url;
+        } catch (uploadError) {
+          console.error('Avatar upload error:', uploadError);
+          toast.error('Failed to upload avatar image: ' + (uploadError.message || 'Unknown error'));
+          setSaving(false);
+          return;
+        }
       }
 
       const response = await updateProfile(updates);
