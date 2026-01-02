@@ -16,3 +16,4 @@ export const getVapidPublicKey = () => {
   return api.get('/push/vapid-public-key');
 };
 
+

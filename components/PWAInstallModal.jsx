@@ -216,3 +216,4 @@ const PWAInstallModal = ({ isOpen, onClose }) => {
 
 export default PWAInstallModal;
 
+
