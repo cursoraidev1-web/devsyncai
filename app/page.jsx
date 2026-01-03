@@ -6,6 +6,7 @@ export const runtime = 'edge';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import AppPreloader from '../components/AppPreloader';
 
 export default function Home() {
   const router = useRouter();
@@ -22,16 +23,7 @@ export default function Home() {
   }, [isAuthenticated, loading, router]);
 
   if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
-        Loading...
-      </div>
-    );
+    return <AppPreloader message="Loading Zyndrx..." />;
   }
 
   return null;

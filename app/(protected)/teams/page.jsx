@@ -3,20 +3,26 @@
 // Use Edge Runtime to avoid Vercel function limits
 export const runtime = 'edge';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { usePlan } from '../../../context/PlanContext';
-import { Plus, Search, Filter, Users, Mail, Phone, MoreVertical, UserPlus } from 'lucide-react';
+import { Plus, Search, Filter, Users, Mail, Phone, MoreVertical, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Modal } from '../../../components/ui';
 import PulsingLoader from '../../../components/PulsingLoader';
+import { toast } from 'react-toastify';
 import '../../../styles/pages/Teams.css';
 
 const Teams = () => {
-  const { teams, teamsLoading, loadTeams, createTeam, teamMembers, loadTeamMembers, openUpgradeModal } = useApp();
+  const { teams, teamsLoading, loadTeams, createTeam, updateTeam, deleteTeam, teamMembers, loadTeamMembers, openUpgradeModal } = useApp();
   const { canCreate, getRemaining, limits, usage } = usePlan();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [teamToEdit, setTeamToEdit] = useState(null);
+  const [teamToDelete, setTeamToDelete] = useState(null);
+  const dropdownRefs = useRef({});
 
   useEffect(() => {
     loadTeams();
@@ -35,6 +41,46 @@ const Teams = () => {
     }
     setShowAddMemberModal(true);
   };
+
+  const handleEditTeam = (team) => {
+    setTeamToEdit(team);
+    setShowEditModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const handleDeleteTeam = async (team) => {
+    if (window.confirm(`Are you sure you want to delete "${team.name}"? This action cannot be undone.`)) {
+      try {
+        await deleteTeam(team.id);
+        toast.success('Team deleted successfully');
+        setOpenDropdownId(null);
+      } catch (error) {
+        toast.error(error?.message || 'Failed to delete team');
+      }
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!openDropdownId) return;
+
+    const handleClickOutside = (event) => {
+      const dropdownRef = dropdownRefs.current[openDropdownId];
+      if (dropdownRef && !dropdownRef.contains(event.target)) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    // Delay to avoid immediate closure on button click
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownId]);
 
   return (
     <div className="teams-page">
@@ -81,9 +127,50 @@ const Teams = () => {
                   <div key={team.id} className="team-card">
                     <div className="team-card-header">
                       <div className="team-avatar">{team.avatar}</div>
-                      <button className="team-more-btn">
-                        <MoreVertical size={18} />
-                      </button>
+                      <div 
+                        ref={(el) => {
+                          if (el) dropdownRefs.current[team.id] = el;
+                        }}
+                        style={{ position: 'relative' }}
+                      >
+                        <button 
+                          className="team-more-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setOpenDropdownId(openDropdownId === team.id ? null : team.id);
+                          }}
+                          type="button"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        {openDropdownId === team.id && (
+                          <div className="team-dropdown-menu">
+                            <button
+                              type="button"
+                              className="team-dropdown-item"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTeam(team);
+                              }}
+                            >
+                              <Edit size={16} />
+                              <span>Edit Team</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="team-dropdown-item team-dropdown-item-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTeam(team);
+                              }}
+                            >
+                              <Trash2 size={16} />
+                              <span>Delete Team</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <h3 className="team-name">{team.name}</h3>
                     <p className="team-description">{team.description}</p>
@@ -186,6 +273,28 @@ const Teams = () => {
         <CreateTeamForm onClose={() => setShowCreateModal(false)} />
       </Modal>
 
+      {/* Edit Team Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setTeamToEdit(null);
+        }}
+        title="Edit Team"
+        subtitle="Update team information."
+        size="md"
+      >
+        {teamToEdit && (
+          <EditTeamForm 
+            team={teamToEdit}
+            onClose={() => {
+              setShowEditModal(false);
+              setTeamToEdit(null);
+            }} 
+          />
+        )}
+      </Modal>
+
       {/* Add Team Members Modal */}
       <Modal
         isOpen={showAddMemberModal}
@@ -213,6 +322,112 @@ const Teams = () => {
         <AddTeamMembersForm />
       </Modal>
     </div>
+  );
+};
+
+const EditTeamForm = ({ team, onClose }) => {
+  const { updateTeam, loadTeams } = useApp();
+  const [formData, setFormData] = useState({
+    name: team?.name || '',
+    description: team?.description || '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || formData.name.trim().length < 3) {
+      setError('Team name must be at least 3 characters');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      await updateTeam(team.id, {
+        name: formData.name.trim(),
+        description: formData.description?.trim() || undefined,
+      });
+      await loadTeams();
+      toast.success('Team updated successfully');
+      onClose();
+    } catch (err) {
+      setError(err?.message || 'Failed to update team. Please try again.');
+      toast.error(err?.message || 'Failed to update team');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="create-team-form">
+      {error && (
+        <div style={{ 
+          padding: '12px', 
+          background: '#fee2e2', 
+          color: '#991b1b', 
+          borderRadius: '8px', 
+          marginBottom: '16px',
+          fontSize: '14px'
+        }}>
+          {error}
+        </div>
+      )}
+      <div className="form-group">
+        <label htmlFor="edit-team-name">Team Name *</label>
+        <input
+          type="text"
+          id="edit-team-name"
+          name="name"
+          placeholder="e.g., Engineering Team"
+          value={formData.name}
+          onChange={handleChange}
+          required
+          disabled={isSubmitting}
+          minLength={3}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="edit-team-description">Description</label>
+        <textarea
+          id="edit-team-description"
+          name="description"
+          placeholder="Add a description for this team..."
+          rows={4}
+          value={formData.description}
+          onChange={handleChange}
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
+        <button 
+          type="button"
+          className="modal-btn-cancel"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          className="modal-btn-primary"
+          disabled={isSubmitting || !formData.name || formData.name.trim().length < 3}
+        >
+          {isSubmitting ? 'Updating...' : 'Update Team'}
+        </button>
+      </div>
+    </form>
   );
 };
 

@@ -134,8 +134,18 @@ export const deleteProject = (id) => {
   return api.delete(`/projects/${id}`);
 };
 
+/**
+ * Invite user to project
+ * @deprecated Use inviteToProject from teams.js instead
+ * This function redirects to the correct endpoint
+ */
 export const inviteToProject = (projectId, payload) => {
-  return api.post(`/projects/${projectId}/invite`, payload).then(response => {
+  // Backend endpoint is /teams/invite, not /projects/:id/invite
+  // Import from teams.js instead or use this redirect
+  return api.post('/teams/invite', {
+    projectId,
+    ...payload
+  }).then(response => {
     return response?.data || response;
   });
 };

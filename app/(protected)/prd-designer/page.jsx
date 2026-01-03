@@ -13,14 +13,19 @@ import {
   CheckCircle,
   Users,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Download
 } from 'lucide-react';
 import { fetchPRDs, createPRD as apiCreatePRD, updatePRD as apiUpdatePRD, deletePRD as apiDeletePRD, approvePRD as apiApprovePRD } from '../../../api/prds';
+import { useApp } from '../../../context/AppContext';
+import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
 import '../../../styles/pages/PRDDesigner.css';
 
 const PRDDesigner = () => {
+  const { projects } = useApp();
+  const { user } = useAuth();
   const [prds, setPrds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPrd, setSelectedPrd] = useState(null);
@@ -45,6 +50,7 @@ const PRDDesigner = () => {
 
   const [newPrd, setNewPrd] = useState({
     title: '',
+    project_id: projects?.[0]?.id || '',
     version: '1.0',
     sections: []
   });
@@ -55,10 +61,16 @@ const PRDDesigner = () => {
       return;
     }
     
+    if (!newPrd.project_id) {
+      toast.error('Please select a project');
+      return;
+    }
+    
     try {
       const prdData = {
-        ...newPrd,
-        status: 'draft',
+        project_id: newPrd.project_id,
+        title: newPrd.title,
+        version: parseFloat(newPrd.version) || 1,
         sections: [
           { title: 'Overview', content: '' },
           { title: 'Goals & Objectives', content: '' },
@@ -69,15 +81,16 @@ const PRDDesigner = () => {
       };
       
       const prd = await apiCreatePRD(prdData);
-      setPrds([...prds, prd]);
+      setPrds([prd, ...prds]);
       setSelectedPrd(prd);
       setShowNewPrdModal(false);
-      setNewPrd({ title: '', version: '1.0', sections: [] });
+      setNewPrd({ title: '', project_id: projects?.[0]?.id || '', version: '1.0', sections: [] });
       setIsEditing(true);
       toast.success('PRD created successfully');
     } catch (error) {
       console.error('Failed to create PRD:', error);
-      toast.error('Failed to create PRD');
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to create PRD';
+      toast.error(errorMessage);
     }
   };
 
@@ -85,13 +98,56 @@ const PRDDesigner = () => {
     if (!selectedPrd) return;
     
     try {
-      const updated = await apiUpdatePRD(selectedPrd.id, selectedPrd);
+      const updated = await apiUpdatePRD(selectedPrd.id, {
+        title: selectedPrd.title,
+        sections: selectedPrd.sections
+      });
       setPrds(prds.map(prd => prd.id === selectedPrd.id ? updated : prd));
+      setSelectedPrd(updated);
       setIsEditing(false);
       toast.success('PRD updated successfully');
     } catch (error) {
       console.error('Failed to update PRD:', error);
-      toast.error('Failed to update PRD');
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to update PRD';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleExportPRD = () => {
+    if (!selectedPrd) return;
+    
+    try {
+      // Create markdown content
+      let markdown = `# ${selectedPrd.title}\n\n`;
+      markdown += `**Version:** ${selectedPrd.version}\n`;
+      markdown += `**Status:** ${selectedPrd.status}\n`;
+      markdown += `**Author:** ${selectedPrd.author}\n`;
+      markdown += `**Last Updated:** ${selectedPrd.lastUpdated}\n\n`;
+      markdown += `---\n\n`;
+      
+      // Add sections
+      if (selectedPrd.sections && selectedPrd.sections.length > 0) {
+        selectedPrd.sections.forEach(section => {
+          markdown += `## ${section.title}\n\n`;
+          markdown += `${section.content || '_No content_'}\n\n`;
+        });
+      }
+      
+      // Create blob and download
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedPrd.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_v${selectedPrd.version}.md`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('PRD exported successfully');
+    } catch (error) {
+      console.error('Failed to export PRD:', error);
+      toast.error('Failed to export PRD');
     }
   };
 
@@ -224,11 +280,15 @@ const PRDDesigner = () => {
                 <div className="prd-actions">
                   {!isEditing ? (
                     <>
+                      <button className="btn btn-outline" onClick={handleExportPRD}>
+                        <Download size={18} />
+                        Export
+                      </button>
                       <button className="btn btn-outline" onClick={() => setIsEditing(true)}>
                         <Edit2 size={18} />
                         Edit
                       </button>
-                      {selectedPrd.status !== 'approved' && (
+                      {selectedPrd.status !== 'approved' && user?.role === 'admin' && (
                         <button 
                           className="btn btn-success" 
                           onClick={() => handleApprove(selectedPrd.id)}
@@ -261,39 +321,71 @@ const PRDDesigner = () => {
               <div className="prd-info-bar">
                 <div className="prd-info-item">
                   <Users size={16} />
-                  <span>Author: {selectedPrd.author}</span>
+                  <span>Author: {selectedPrd.author || 'Unknown'}</span>
                 </div>
                 <div className="prd-info-item">
                   <Clock size={16} />
-                  <span>Last updated: {selectedPrd.lastUpdated}</span>
+                  <span>Last updated: {selectedPrd.lastUpdated || 'Unknown'}</span>
                 </div>
-                <div className="prd-info-item">
-                  <MessageSquare size={16} />
-                  <span>{selectedPrd.assignees.length} assignees</span>
-                </div>
+                {selectedPrd.projectName && (
+                  <div className="prd-info-item">
+                    <FileText size={16} />
+                    <span>Project: {selectedPrd.projectName}</span>
+                  </div>
+                )}
               </div>
 
               <div className="prd-sections">
-                {selectedPrd.sections.map(section => (
-                  <div key={section.id} className="prd-section">
-                    <h2>{section.title}</h2>
-                    {isEditing ? (
-                      <textarea
-                        value={section.content}
-                        onChange={(e) => {
-                          const updatedSections = selectedPrd.sections.map(s =>
-                            s.id === section.id ? { ...s, content: e.target.value } : s
-                          );
-                          setSelectedPrd({ ...selectedPrd, sections: updatedSections });
-                        }}
-                        rows={6}
-                        placeholder={`Enter ${section.title.toLowerCase()} details...`}
-                      />
-                    ) : (
-                      <p>{section.content || `No ${section.title.toLowerCase()} details yet.`}</p>
-                    )}
+                {selectedPrd.sections && selectedPrd.sections.length > 0 ? (
+                  selectedPrd.sections.map((section, index) => (
+                    <div key={section.id || `section-${index}`} className="prd-section">
+                      {isEditing ? (
+                        <>
+                          <input
+                            type="text"
+                            value={section.title}
+                            onChange={(e) => {
+                              const updatedSections = selectedPrd.sections.map((s, i) =>
+                                (s.id === section.id || i === index) ? { ...s, title: e.target.value } : s
+                              );
+                              setSelectedPrd({ ...selectedPrd, sections: updatedSections });
+                            }}
+                            className="section-title-input"
+                            placeholder="Section title"
+                          />
+                          <textarea
+                            value={section.content || ''}
+                            onChange={(e) => {
+                              const updatedSections = selectedPrd.sections.map((s, i) =>
+                                (s.id === section.id || i === index) ? { ...s, content: e.target.value } : s
+                              );
+                              setSelectedPrd({ ...selectedPrd, sections: updatedSections });
+                            }}
+                            rows={6}
+                            placeholder={`Enter ${section.title?.toLowerCase() || 'section'} details...`}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <h2>{section.title}</h2>
+                          <div className="section-content">
+                            {section.content ? (
+                              <div style={{ whiteSpace: 'pre-wrap' }}>{section.content}</div>
+                            ) : (
+                              <p style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+                                No {section.title?.toLowerCase() || 'content'} details yet.
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="prd-section">
+                    <p style={{ color: '#9ca3af' }}>No sections available. Start editing to add content.</p>
                   </div>
-                ))}
+                )}
               </div>
 
               {isEditing && (
@@ -333,6 +425,22 @@ const PRDDesigner = () => {
                 value={newPrd.title}
                 onChange={(e) => setNewPrd({ ...newPrd, title: e.target.value })}
               />
+            </div>
+            <div className="input-group">
+              <label htmlFor="prd-project">Project *</label>
+              <select
+                id="prd-project"
+                value={newPrd.project_id}
+                onChange={(e) => setNewPrd({ ...newPrd, project_id: e.target.value })}
+                required
+              >
+                <option value="">Select a project</option>
+                {projects && projects.map(project => (
+                  <option key={project.id} value={project.id}>
+                    {project.name || project.title}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="input-group">
               <label htmlFor="prd-version">Version</label>

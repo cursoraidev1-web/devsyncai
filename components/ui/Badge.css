@@ -93,3 +93,24 @@
 .ds-badge--info .ds-badge__dot {
   background-color: var(--color-info);
 }
+
+/* Dark Mode Badge Variants */
+[data-theme="dark"] .ds-badge--success {
+  background-color: rgba(104, 211, 145, 0.2);
+  color: var(--color-success);
+}
+
+[data-theme="dark"] .ds-badge--warning {
+  background-color: rgba(246, 173, 85, 0.2);
+  color: var(--color-warning);
+}
+
+[data-theme="dark"] .ds-badge--error {
+  background-color: rgba(252, 129, 129, 0.2);
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .ds-badge--info {
+  background-color: rgba(99, 179, 237, 0.2);
+  color: var(--color-info);
+}

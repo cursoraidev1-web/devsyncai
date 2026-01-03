@@ -121,3 +121,66 @@
   width: 18px;
   height: 18px;
 }
+
+/* Loading State */
+.ds-button--loading {
+  pointer-events: none;
+  position: relative;
+  color: transparent !important;
+}
+
+.ds-button--loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: button-spin 0.6s linear infinite;
+}
+
+.ds-button--primary.ds-button--loading::after,
+.ds-button--destructive.ds-button--loading::after {
+  border-color: white;
+  border-top-color: transparent;
+}
+
+@keyframes button-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Dark Mode Styles */
+[data-theme="dark"] .ds-button--secondary {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .ds-button--secondary:hover:not(.ds-button--disabled) {
+  background-color: var(--color-surface);
+  border-color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .ds-button--outline {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ds-button--outline:hover:not(.ds-button--disabled) {
+  background-color: var(--color-surface-alt);
+  border-color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .ds-button--ghost:hover:not(.ds-button--disabled) {
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .ds-button:hover:not(.ds-button--disabled) {
+  box-shadow: var(--shadow-md);
+}

@@ -1,0 +1,203 @@
+.app-preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.app-preloader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  text-align: center;
+}
+
+.app-preloader-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-preloader-logo-icon {
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+.app-preloader-logo-icon svg {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+.app-preloader-spinner {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-ring:nth-child(1) {
+  animation-delay: -0.45s;
+  border-top-color: rgba(255, 255, 255, 1);
+}
+
+.spinner-ring:nth-child(2) {
+  animation-delay: -0.3s;
+  width: 80%;
+  height: 80%;
+  border-top-color: rgba(255, 255, 255, 0.7);
+}
+
+.spinner-ring:nth-child(3) {
+  animation-delay: -0.15s;
+  width: 60%;
+  height: 60%;
+  border-top-color: rgba(255, 255, 255, 0.5);
+}
+
+.app-preloader-message {
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0;
+  animation: messagePulse 2s ease-in-out infinite;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.app-preloader-dots {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.app-preloader-dots span {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.app-preloader-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.app-preloader-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.app-preloader-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes messagePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .app-preloader {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .app-preloader-content {
+    gap: 1.5rem;
+  }
+
+  .app-preloader-logo-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .app-preloader-spinner {
+    width: 56px;
+    height: 56px;
+  }
+
+  .app-preloader-message {
+    font-size: 1rem;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .app-preloader-logo-icon,
+  .spinner-ring,
+  .app-preloader-message,
+  .app-preloader-dots span {
+    animation: none;
+  }
+
+  .spinner-ring {
+    animation: spin 1s linear infinite;
+  }
+}
+
+
+

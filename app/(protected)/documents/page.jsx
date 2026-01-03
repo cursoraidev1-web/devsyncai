@@ -35,6 +35,7 @@ import '../../../styles/pages/DocumentStore.css';
 const DocumentStore = () => {
   const { documents, loadDocuments, projects } = useApp();
   const router = useRouter();
+  const [selectedProjectId, setSelectedProjectId] = useState(projects?.[0]?.id || '');
   const [view, setView] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -49,12 +50,19 @@ const DocumentStore = () => {
   const uploadAreaRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
 
+  // Update selected project when projects load
   useEffect(() => {
-    const projectId = projects?.[0]?.id;
-    if (projectId) {
-      loadDocuments(projectId).catch(console.error);
+    if (projects && projects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(projects[0].id);
     }
-  }, [projects, loadDocuments]);
+  }, [projects, selectedProjectId]);
+
+  // Load documents when project changes
+  useEffect(() => {
+    if (selectedProjectId) {
+      loadDocuments(selectedProjectId).catch(console.error);
+    }
+  }, [selectedProjectId, loadDocuments]);
 
   const documentTypes = [
     { id: 'prd', label: 'PRD', icon: FileText, color: '#4f46e5' },

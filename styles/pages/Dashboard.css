@@ -729,3 +729,97 @@
 .text-primary {
   color: var(--color-primary);
 }
+
+/* Dark Mode Styles */
+[data-theme="dark"] .activity-item {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .activity-item:hover {
+  background-color: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .activity-icon {
+  background-color: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .activity-title {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .activity-date {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .task-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .task-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .task-header h3 {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .task-description {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .task-date {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .document-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .document-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .project-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .project-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .project-name {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .project-description {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .project-meta {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .notification-item {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .notification-item:hover {
+  background: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .notification-title {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .notification-message {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .notification-time {
+  color: var(--color-text-muted);
+}

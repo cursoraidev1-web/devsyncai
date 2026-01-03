@@ -30,11 +30,6 @@ function GlobalUI() {
 }
 
 function ProvidersContent({ children }) {
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ClientProviders.jsx:35',message:'ProvidersContent rendering',data:{hasWindow:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  }
-  // #endregion
   return (
     <AuthProvider>
       <ThemeProvider>
@@ -55,12 +50,6 @@ function ProvidersContent({ children }) {
 }
 
 export default function ClientProviders({ children }) {
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7245/ingest/23c9bd4b-3ae5-459d-818e-51570c79812d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ClientProviders.jsx:59',message:'ClientProviders render - always rendering providers',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX'})}).catch(()=>{});
-  }
-  // #endregion
-
   // Always render providers - client components should maintain consistent structure
   // The providers themselves handle SSR safety internally
   return (

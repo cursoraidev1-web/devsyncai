@@ -581,3 +581,253 @@
     width: 100%;
   }
 }
+
+/* Dark Mode Styles */
+[data-theme="dark"] .tracker-header h1 {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .page-subtitle {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .tracker-controls {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .tracker-search {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .tracker-search input {
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+[data-theme="dark"] .tracker-search input::placeholder {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .filter-group {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .filter-group select {
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+[data-theme="dark"] .view-btn {
+  background: var(--color-surface-alt);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .view-btn:hover {
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .view-btn.active {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+[data-theme="dark"] .kanban-column {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .column-header {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .column-title {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .column-count {
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .column-content {
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .task-card {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .task-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .task-card-header h3 {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .task-card-description {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .task-tag {
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .task-card-footer {
+  border-top-color: var(--color-border);
+}
+
+[data-theme="dark"] .task-assignee,
+[data-theme="dark"] .task-due-date {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .task-list-view {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .task-list-header {
+  background-color: var(--color-surface-alt);
+  border-bottom-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .task-list-item {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .task-list-item:hover {
+  background-color: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .task-list-title {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .task-list-desc {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .status-select {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .status-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="dark"] .assignee-info {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border);
+}
+
+[data-theme="dark"] .modal-content h2 {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-border);
+}
+
+[data-theme="dark"] .modal-body {
+  background: var(--color-surface);
+}
+
+[data-theme="dark"] .modal-body::-webkit-scrollbar-track {
+  background: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .modal-body::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+
+[data-theme="dark"] .modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+[data-theme="dark"] .modal-actions {
+  border-top-color: var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+[data-theme="dark"] .input-group label {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .input-group input,
+[data-theme="dark"] .input-group select,
+[data-theme="dark"] .input-group textarea {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .input-group input::placeholder,
+[data-theme="dark"] .input-group textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .input-group input:focus,
+[data-theme="dark"] .input-group select:focus,
+[data-theme="dark"] .input-group textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+}
+
+[data-theme="dark"] .input-group input:disabled,
+[data-theme="dark"] .input-group select:disabled,
+[data-theme="dark"] .input-group textarea:disabled {
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .input-error {
+  border-color: var(--color-error) !important;
+}
+
+[data-theme="dark"] .input-error:focus {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(252, 129, 129, 0.2) !important;
+}
+
+[data-theme="dark"] .error-message {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .priority-icon.high {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .priority-icon.medium {
+  color: var(--color-warning);
+}
+
+[data-theme="dark"] .priority-icon.low {
+  color: var(--color-text-muted);
+}

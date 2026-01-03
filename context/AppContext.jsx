@@ -36,6 +36,7 @@ export const AppProvider = ({ children }) => {
   const [teamMembersLoading, setTeamMembersLoading] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [initialDataLoading, setInitialDataLoading] = useState(true);
 
   const openUpgradeModal = useCallback((message) => {
     setUpgradeMessage(message || 'Upgrade your plan to continue.');
@@ -550,13 +551,21 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (token && currentCompany) {
+      // Set initial loading state
+      setInitialDataLoading(true);
+      
       // PERF-001 FIX: Execute API calls in parallel for faster initial load
       Promise.all([
         loadNotifications(),
         loadProjects(),
         loadAllTasks()
-      ]).catch(error => {
+      ])
+      .then(() => {
+        setInitialDataLoading(false);
+      })
+      .catch(error => {
         console.error('Failed to load initial data:', error);
+        setInitialDataLoading(false);
       });
       
       // Poll for notifications every minute
@@ -567,6 +576,7 @@ export const AppProvider = ({ children }) => {
       setProjects([]);
       setTasks([]);
       setTasksByProject(new Map());
+      setInitialDataLoading(false);
     }
   }, [token, currentCompany, loadNotifications, loadProjects, loadAllTasks]);
 
@@ -616,6 +626,7 @@ export const AppProvider = ({ children }) => {
     upgradeMessage,
     openUpgradeModal,
     closeUpgradeModal,
+    initialDataLoading,
   }), [
     notifications,
     notificationsLoading,
@@ -653,6 +664,7 @@ export const AppProvider = ({ children }) => {
     sendInvite,
     openUpgradeModal,
     closeUpgradeModal,
+    initialDataLoading,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
