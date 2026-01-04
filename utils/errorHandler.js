@@ -9,17 +9,22 @@
 
 if (typeof window !== 'undefined') {
   // Intercept fetch requests to prevent telemetry calls
+  // Do this IMMEDIATELY before anything else can use fetch
   const originalFetch = window.fetch;
   window.fetch = function(...args) {
     const url = args[0]?.toString() || '';
     
-    // Block requests to localhost telemetry services
+    // Block requests to localhost telemetry services - be very aggressive
     if (
-      (url.includes('127.0.0.1') || url.includes('localhost')) &&
-      (url.includes('/ingest/') || url.includes(':7245'))
+      url.includes('127.0.0.1:7245') ||
+      url.includes('localhost:7245') ||
+      (url.includes('127.0.0.1') && url.includes('/ingest/')) ||
+      (url.includes('localhost') && url.includes('/ingest/')) ||
+      url.includes(':7245/ingest/')
     ) {
       // Silently reject - don't make the request at all
-      return Promise.reject(new Error('Telemetry service blocked'));
+      // Return a promise that resolves to nothing to prevent errors
+      return Promise.resolve(new Response(null, { status: 200, statusText: 'OK' }));
     }
     
     // For other requests, catch and suppress telemetry errors
@@ -29,11 +34,12 @@ if (typeof window !== 'undefined') {
       // Suppress connection refused errors for telemetry
       if (
         (errorMessage.includes('ERR_CONNECTION_REFUSED') ||
-         errorMessage.includes('Failed to fetch')) &&
-        (url.includes('127.0.0.1') || url.includes('localhost') || url.includes('/ingest/'))
+         errorMessage.includes('Failed to fetch') ||
+         errorMessage.includes('NetworkError')) &&
+        (url.includes('127.0.0.1') || url.includes('localhost') || url.includes('/ingest/') || url.includes(':7245'))
       ) {
-        // Return a rejected promise that won't trigger error handlers
-        return Promise.reject(new Error('Telemetry service unavailable'));
+        // Return a successful response to prevent error propagation
+        return Promise.resolve(new Response(null, { status: 200, statusText: 'OK' }));
       }
       
       // Re-throw other errors

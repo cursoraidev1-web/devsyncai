@@ -14,7 +14,8 @@ export const getIntegration = (id) => {
 };
 
 export const connectIntegration = (id, config = {}) => {
-  return api.post(`/integrations/${id}/connect`, config).then(response => {
+  // Support both /integrations/:id/connect and /integrations/connect
+  return api.post(`/integrations/${id}/connect`, { id, type: id, ...config }).then(response => {
     return response?.data || response;
   });
 };

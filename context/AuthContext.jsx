@@ -115,7 +115,14 @@ export const AuthProvider = ({ children }) => {
                 if (fetchError?.status === 401 || fetchError?.response?.status === 401) {
                   clearSession();
                   if (typeof window !== 'undefined') {
-                    window.location.href = '/login';
+                    // Suppress any errors during redirect (telemetry, extensions, etc.)
+                    try {
+                      window.location.href = '/login';
+                    } catch (redirectError) {
+                      // Silently ignore redirect errors (telemetry, extensions, etc.)
+                      // Force redirect using replace to avoid history issues
+                      window.location.replace('/login');
+                    }
                   }
                 }
               }

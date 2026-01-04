@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getSupabaseAuthClient } from '@/utils/supabaseAuth';
-import { initSupabase } from '@/utils/supabase';
 
 export default function SupabaseTestPage() {
   const { user, isAuthenticated, token, loading: authLoading } = useAuth();
@@ -39,10 +38,16 @@ export default function SupabaseTestPage() {
       const savedUser = typeof window !== 'undefined' ? localStorage.getItem('zyndrx_user') : null;
       
       // Use the most up-to-date auth state
-      const finalIsAuthenticated = isAuthenticated || (!!savedToken && !!savedUser);
+      // Prioritize context state, but fallback to localStorage if context hasn't loaded
+      // If context says authenticated OR we have valid credentials in localStorage, consider authenticated
+      const hasContextAuth = isAuthenticated && user && token;
+      const hasStorageAuth = !!savedToken && !!savedUser;
+      const finalIsAuthenticated = hasContextAuth || hasStorageAuth;
+      
       let finalUser = user;
       let finalToken = token;
       
+      // If context doesn't have user but localStorage does, use localStorage
       if (!finalUser && savedUser) {
         try {
           finalUser = JSON.parse(savedUser);
@@ -51,12 +56,13 @@ export default function SupabaseTestPage() {
         }
       }
       
+      // If context doesn't have token but localStorage does, use localStorage
       if (!finalToken && savedToken) {
         finalToken = savedToken;
       }
 
       // Double-check auth state after waiting
-      console.log('Auth state check:', {
+      console.log('🔍 Auth state check:', {
         isAuthenticated: finalIsAuthenticated,
         hasUser: !!finalUser,
         hasToken: !!finalToken,
@@ -66,15 +72,27 @@ export default function SupabaseTestPage() {
         fromContext: { isAuthenticated, hasUser: !!user, hasToken: !!token },
         fromStorage: { hasToken: !!savedToken, hasUser: !!savedUser }
       });
+      
+      // If we have token and user in localStorage but context says not authenticated,
+      // the context might not have loaded yet - trust localStorage in this case
+      if (!isAuthenticated && savedToken && savedUser) {
+        console.log('⚠️ Context says not authenticated but localStorage has credentials - using localStorage');
+      }
 
       // Test 1: Check Supabase client initialization
       let supabase = null;
       let authClient = null;
       
+      // Always use dynamic import to avoid module issues
       try {
-        supabase = initSupabase();
+        const supabaseUtils = await import('@/utils/supabase');
+        if (supabaseUtils.initSupabase && typeof supabaseUtils.initSupabase === 'function') {
+          supabase = supabaseUtils.initSupabase();
+        } else if (supabaseUtils.default?.initSupabase && typeof supabaseUtils.default.initSupabase === 'function') {
+          supabase = supabaseUtils.default.initSupabase();
+        }
       } catch (e) {
-        console.warn('initSupabase failed:', e);
+        console.warn('initSupabase import failed:', e);
       }
       
       try {
@@ -102,9 +120,20 @@ export default function SupabaseTestPage() {
       // or the RLS policies allowing service_role (which backend uses)
 
       // Test 2: Check authentication (both backend auth and Supabase session)
-      const { data: { session }, error: sessionError } = await client.auth.getSession();
+      let session = null;
+      let sessionError = null;
+      
+      try {
+        const sessionResult = await client.auth.getSession();
+        session = sessionResult?.data?.session || null;
+        sessionError = sessionResult?.error || null;
+      } catch (e) {
+        sessionError = e;
+        console.warn('getSession failed:', e);
+      }
       
       // Check backend auth status (use final values from above)
+      // IMPORTANT: Prioritize context state, but also check localStorage as fallback
       const backendAuth = {
         authenticated: finalIsAuthenticated,
         userId: finalUser?.id || null,
@@ -143,59 +172,60 @@ export default function SupabaseTestPage() {
       setResults(prev => ({ ...prev, auth: authResult }));
 
       // Test 3: Check if documents bucket exists
-      // Try to list buckets first, but if that fails due to permissions,
-      // try to access the bucket directly by attempting to list files
+      // Try multiple methods to verify bucket existence
       let bucketExists = false;
       let bucketIsPublic = false;
       let bucketError = null;
       
       try {
-        // First, try to list all buckets (requires admin permissions)
+        // Method 1: Try to list all buckets (requires admin permissions)
         const { data: buckets, error: listBucketsError } = await client.storage.listBuckets();
         
-        if (listBucketsError) {
-          // If listing fails, try to access the bucket directly
+        if (!listBucketsError && buckets) {
+          // Successfully listed buckets - this is the most reliable method
+          const documentsBucket = buckets.find(b => b.name === 'documents');
+          bucketExists = !!documentsBucket;
+          bucketIsPublic = documentsBucket?.public || false;
+        } else {
+          // Method 2: Try to list files in the bucket (works if bucket exists and is accessible)
           console.log('Cannot list buckets (permission issue), trying direct bucket access...');
           try {
-            // Try to list files in the documents bucket (this works if bucket exists and is accessible)
             const { data: files, error: listFilesError } = await client.storage
               .from('documents')
               .list('', { limit: 1 });
             
             if (!listFilesError) {
-              // If we can list files, the bucket exists and is accessible
+              // If we can list files, the bucket definitely exists
               bucketExists = true;
-              bucketIsPublic = true; // If we can list without auth, it's likely public
+              bucketIsPublic = true; // If we can list, it's accessible (likely public or we have permissions)
               bucketError = null;
             } else {
-              // Check if error is "bucket doesn't exist" vs "permission denied"
-              if (listFilesError.message?.includes('not found') || listFilesError.message?.includes('does not exist')) {
+              // Check if error indicates bucket doesn't exist
+              const errorMsg = listFilesError.message?.toLowerCase() || '';
+              if (errorMsg.includes('not found') || 
+                  errorMsg.includes('does not exist') || 
+                  errorMsg.includes('bucket not found')) {
                 bucketExists = false;
                 bucketError = 'Bucket does not exist';
               } else {
-                // Bucket might exist but we don't have permission
-                // Assume it exists but we can't verify
-                bucketExists = true; // Assume it exists since user says it does
-                bucketError = `Cannot verify bucket (${listFilesError.message}) - but you confirmed it exists`;
+                // Permission error - bucket might exist but we can't verify via listing
+                // We'll verify via read/upload tests below
+                bucketExists = null; // Unknown - will be determined by read/upload tests
+                bucketError = `Cannot verify via listing: ${listFilesError.message}`;
               }
             }
           } catch (directAccessError) {
+            // Error accessing bucket - will verify via read/upload tests
+            bucketExists = null; // Unknown - will be determined by read/upload tests
             bucketError = `Cannot access bucket: ${directAccessError.message}`;
-            // If user says bucket exists, trust them
-            bucketExists = true;
           }
-        } else {
-          // Successfully listed buckets
-          const documentsBucket = buckets?.find(b => b.name === 'documents');
-          bucketExists = !!documentsBucket;
-          bucketIsPublic = documentsBucket?.public || false;
         }
       } catch (err) {
         bucketError = err.message || 'Failed to check bucket';
-        // If user says bucket exists, trust them
-        bucketExists = true;
+        bucketExists = null; // Unknown - will be determined by read/upload tests
       }
       
+      // Set initial bucket status
       setResults(prev => ({
         ...prev,
         bucket: {
@@ -203,23 +233,42 @@ export default function SupabaseTestPage() {
           isPublic: bucketIsPublic,
           name: bucketExists ? 'documents' : null,
           error: bucketError,
-          note: bucketError ? 'Note: Bucket listing requires admin permissions. If bucket exists in Supabase Dashboard, this is expected.' : null
+          note: bucketError && !bucketExists ? 'Note: Bucket listing requires admin permissions. Will verify via read/upload tests.' : null
         }
       }));
 
       // Test 4: Test read permission (only if authenticated via backend or Supabase)
+      // If read succeeds, we know the bucket exists
       if (finalIsAuthenticated || session) {
         try {
           const { data: files, error: listError } = await client.storage
             .from('documents')
             .list('', { limit: 1 });
+          
+          const readSuccess = !listError;
+          
+          // If read succeeds, bucket definitely exists
+          if (readSuccess && bucketExists === null || bucketExists === false) {
+            bucketExists = true;
+            bucketIsPublic = true; // If we can read, it's accessible
+            bucketError = null;
+          }
+          
           setResults(prev => ({
             ...prev,
             readPermission: {
-              success: !listError,
+              success: readSuccess,
               error: listError?.message || null,
               statusCode: listError?.statusCode || null
-            }
+            },
+            // Update bucket status if we confirmed it exists via read test
+            bucket: readSuccess ? {
+              ...prev.bucket,
+              exists: true,
+              isPublic: true,
+              error: null,
+              note: 'Bucket verified via read test'
+            } : prev.bucket
           }));
         } catch (err) {
           setResults(prev => ({
@@ -235,6 +284,7 @@ export default function SupabaseTestPage() {
       }
 
       // Test 5: Test upload permission (only if authenticated via backend or Supabase)
+      // If upload succeeds, we know the bucket exists
       if (finalIsAuthenticated || session) {
         try {
           const testFile = new Blob(['test'], { type: 'text/plain' });
@@ -253,16 +303,38 @@ export default function SupabaseTestPage() {
               }
             }));
           } else {
+            // Upload succeeded - bucket definitely exists
+            if (bucketExists === null || bucketExists === false) {
+              bucketExists = true;
+              bucketIsPublic = true;
+              bucketError = null;
+            }
+            
             setResults(prev => ({
               ...prev,
               uploadTest: {
                 success: true,
                 path: uploadData.path,
                 message: 'Upload successful!'
+              },
+              // Update bucket status if we confirmed it exists via upload test
+              bucket: {
+                ...prev.bucket,
+                exists: true,
+                isPublic: true,
+                error: null,
+                note: prev.bucket?.note?.includes('read test') 
+                  ? 'Bucket verified via read and upload tests' 
+                  : 'Bucket verified via upload test'
               }
             }));
+            
             // Clean up test file
-            await client.storage.from('documents').remove([testPath]);
+            try {
+              await client.storage.from('documents').remove([testPath]);
+            } catch (cleanupError) {
+              console.warn('Failed to cleanup test file:', cleanupError);
+            }
           }
         } catch (err) {
           setResults(prev => ({
@@ -448,8 +520,8 @@ export default function SupabaseTestPage() {
             {/* Authentication Test */}
             <div className="border rounded-lg p-4">
               <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-                <span className={getStatusColor(results.auth?.authenticated)}>
-                  {getStatusIcon(results.auth?.authenticated)}
+                <span className={getStatusColor(results.auth?.backendAuthenticated || results.auth?.authenticated)}>
+                  {getStatusIcon(results.auth?.backendAuthenticated || results.auth?.authenticated)}
                 </span>
                 Authentication Status
               </h2>

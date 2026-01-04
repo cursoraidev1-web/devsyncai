@@ -10,6 +10,8 @@ import { Plus, Search, Filter, Users, Mail, Phone, MoreVertical, UserPlus, Edit,
 import { Modal } from '../../../components/ui';
 import PulsingLoader from '../../../components/PulsingLoader';
 import { toast } from 'react-toastify';
+import { useCompany } from '../../../context/CompanyContext';
+import { inviteUserToCompany, getCompanyMembers } from '../../../api/auth';
 import '../../../styles/pages/Teams.css';
 
 const Teams = () => {
@@ -300,26 +302,10 @@ const Teams = () => {
         isOpen={showAddMemberModal}
         onClose={() => setShowAddMemberModal(false)}
         title="Add Team Members"
-        subtitle="Invite members to join this team."
+        subtitle="Invite members to join this team or company."
         size="md"
-        footer={
-          <>
-            <button 
-              className="modal-btn-cancel"
-              onClick={() => setShowAddMemberModal(false)}
-            >
-              Cancel
-            </button>
-            <button 
-              className="modal-btn-primary"
-              onClick={() => setShowAddMemberModal(false)}
-            >
-              Add Members
-            </button>
-          </>
-        }
       >
-        <AddTeamMembersForm />
+        <AddTeamMembersForm onClose={() => setShowAddMemberModal(false)} />
       </Modal>
     </div>
   );
@@ -537,16 +523,109 @@ const CreateTeamForm = ({ onClose }) => {
   );
 };
 
-const AddTeamMembersForm = () => {
+const AddTeamMembersForm = ({ onClose }) => {
   const { sendInvite, projects, openUpgradeModal } = useApp();
   const { canCreate, limits, usage } = usePlan();
+  const { currentCompany } = useCompany();
   const [formData, setFormData] = useState({
-    members: []
+    members: [],
+    inviteType: 'project' // 'project' or 'company'
   });
   const [status, setStatus] = useState('');
+  const [inviting, setInviting] = useState(false);
+
+  const handleInvite = async () => {
+    if (formData.members.length === 0) {
+      setStatus('Please add at least one email address.');
+      return;
+    }
+
+    if (formData.inviteType === 'company' && !currentCompany?.id) {
+      setStatus('No company selected. Please switch to a company first.');
+      return;
+    }
+
+    if (formData.inviteType === 'project') {
+      const projectId = projects?.[0]?.id;
+      if (!projectId) {
+        setStatus('Please create a project before sending invites.');
+        return;
+      }
+
+      // Check team member limit
+      if (!canCreate('teamMember')) {
+        const maxLimit = limits?.maxTeamMembers === -1 ? 'unlimited' : limits?.maxTeamMembers;
+        const currentUsage = usage?.teamMembersCount || 0;
+        setStatus(`Team member limit reached (${currentUsage}/${maxLimit}). Upgrade your plan to invite more members.`);
+        openUpgradeModal(
+          `You've reached your team member limit (${currentUsage}/${maxLimit}). Upgrade your plan to invite more team members.`
+        );
+        return;
+      }
+    }
+
+    setInviting(true);
+    setStatus('');
+
+    try {
+      if (formData.inviteType === 'company') {
+        // Send company invites
+        await Promise.all(
+          formData.members.map((email) =>
+            inviteUserToCompany(currentCompany.id, { email, role: 'member' })
+          )
+        );
+        toast.success('Company invites sent successfully!');
+      } else {
+        // Send project invites
+        await Promise.all(
+          formData.members.map((email) =>
+            sendInvite({ projectId: projects[0].id, email, role: 'developer' })
+          )
+        );
+        toast.success('Project invites sent successfully!');
+      }
+      
+      setStatus('Invites sent successfully.');
+      setTimeout(() => {
+        onClose?.();
+      }, 1500);
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Unable to send invites';
+      setStatus(msg);
+      toast.error(msg);
+    } finally {
+      setInviting(false);
+    }
+  };
 
   return (
     <div className="add-members-form">
+      <div className="form-group">
+        <label htmlFor="invite-type">Invite Type</label>
+        <select
+          id="invite-type"
+          value={formData.inviteType}
+          onChange={(e) => setFormData({ ...formData, inviteType: e.target.value })}
+          style={{
+            width: '100%',
+            padding: '10px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            fontSize: '14px',
+            background: 'white',
+            marginBottom: '16px'
+          }}
+        >
+          <option value="project">Project Invite (Join a specific project)</option>
+          <option value="company">Company Invite (Join the workspace)</option>
+        </select>
+        <p className="form-help-text" style={{ marginTop: '-12px', marginBottom: '16px' }}>
+          {formData.inviteType === 'company' 
+            ? 'Invite users to join your company/workspace. They will be able to access all projects.'
+            : 'Invite users to join a specific project. They will only have access to that project.'}
+        </p>
+      </div>
       <div className="form-group">
         <label htmlFor="member-email">Email Address</label>
         <div className="members-input">
@@ -583,42 +662,24 @@ const AddTeamMembersForm = () => {
         </div>
         <p className="form-help-text">Press Enter to add each email address</p>
       </div>
-      <button
-        className="team-invite-submit"
-        onClick={async () => {
-          const projectId = projects?.[0]?.id;
-          if (!projectId) {
-            setStatus('Please create a project before sending invites.');
-            return;
-          }
-
-          // Check team member limit
-          if (!canCreate('teamMember')) {
-            const maxLimit = limits?.maxTeamMembers === -1 ? 'unlimited' : limits?.maxTeamMembers;
-            const currentUsage = usage?.teamMembersCount || 0;
-            setStatus(`Team member limit reached (${currentUsage}/${maxLimit}). Upgrade your plan to invite more members.`);
-            openUpgradeModal(
-              `You've reached your team member limit (${currentUsage}/${maxLimit}). Upgrade your plan to invite more team members.`
-            );
-            return;
-          }
-
-          try {
-            await Promise.all(
-              formData.members.map((email) =>
-                sendInvite({ projectId, email, role: 'developer' })
-              )
-            );
-            setStatus('Invites sent successfully.');
-          } catch (err) {
-            const msg = err?.message || 'Unable to send invites';
-            setStatus(msg);
-            openUpgradeModal(msg);
-          }
-        }}
-      >
-        Send Invites
-      </button>
+      <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+        <button
+          className="modal-btn-cancel"
+          onClick={onClose}
+          disabled={inviting}
+          style={{ flex: 1 }}
+        >
+          Cancel
+        </button>
+        <button
+          className="modal-btn-primary"
+          onClick={handleInvite}
+          disabled={inviting || formData.members.length === 0}
+          style={{ flex: 1 }}
+        >
+          {inviting ? 'Sending...' : 'Send Invites'}
+        </button>
+      </div>
       {status && <p className="form-help-text">{status}</p>}
     </div>
   );

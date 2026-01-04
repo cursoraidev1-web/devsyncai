@@ -34,7 +34,28 @@ const HandoffSystem = () => {
     const loadHandoffs = async () => {
       try {
         const data = await fetchHandoffs();
-        setHandoffs(Array.isArray(data) ? data : []);
+        const handoffsArray = Array.isArray(data) ? data : [];
+        // Transform handoff data to match frontend expectations
+        const transformedHandoffs = handoffsArray.map(handoff => ({
+          ...handoff,
+          // Map user fields
+          from: handoff.from_user?.full_name || handoff.from_user?.name || 'Unknown',
+          to: handoff.to_user?.full_name || handoff.to_user?.name || 'Unknown',
+          // Format dates
+          createdAt: handoff.created_at ? new Date(handoff.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }) : 'Unknown',
+          dueDate: handoff.due_date ? new Date(handoff.due_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }) : 'No due date',
+          // Ensure status is lowercase and replace underscores with hyphens
+          status: (handoff.status || 'pending').toLowerCase().replace(/_/g, '-')
+        }));
+        setHandoffs(transformedHandoffs);
       } catch (error) {
         console.error('Failed to load handoffs:', error);
         toast.error('Failed to load handoffs');
@@ -87,9 +108,13 @@ const HandoffSystem = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed':
+      case 'approved':
         return <CheckCircle size={16} className="status-icon completed" />;
       case 'in-review':
+      case 'in_review':
         return <AlertCircle size={16} className="status-icon in-review" />;
+      case 'rejected':
+        return <XCircle size={16} className="status-icon rejected" />;
       case 'pending':
         return <Clock size={16} className="status-icon pending" />;
       default:
@@ -101,6 +126,9 @@ const HandoffSystem = () => {
     const labels = {
       'pending': 'Pending',
       'in-review': 'In Review',
+      'in_review': 'In Review',
+      'approved': 'Approved',
+      'rejected': 'Rejected',
       'completed': 'Completed'
     };
     return labels[status] || status;
@@ -117,8 +145,11 @@ const HandoffSystem = () => {
 
   const filteredHandoffs = handoffs.filter(handoff => {
     const matchesSearch = handoff.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         handoff.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || handoff.status === filter;
+                         (handoff.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    // Normalize status for comparison (handle both in-review and in_review)
+    const normalizedStatus = handoff.status?.replace(/-/g, '_');
+    const normalizedFilter = filter.replace(/-/g, '_');
+    const matchesFilter = filter === 'all' || normalizedStatus === normalizedFilter || handoff.status === filter;
     return matchesSearch && matchesFilter;
   });
 
@@ -163,6 +194,18 @@ const HandoffSystem = () => {
             onClick={() => setFilter('in-review')}
           >
             In Review
+          </button>
+          <button
+            className={`handoff-filter-btn ${filter === 'approved' ? 'active' : ''}`}
+            onClick={() => setFilter('approved')}
+          >
+            Approved
+          </button>
+          <button
+            className={`handoff-filter-btn ${filter === 'rejected' ? 'active' : ''}`}
+            onClick={() => setFilter('rejected')}
+          >
+            Rejected
           </button>
           <button
             className={`handoff-filter-btn ${filter === 'completed' ? 'active' : ''}`}

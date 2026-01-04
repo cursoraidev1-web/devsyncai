@@ -90,8 +90,8 @@ export const approveHandoff = (id, comment = '') => {
   });
 };
 
-export const rejectHandoff = (id, comment = '') => {
-  return api.post(`/handoffs/${id}/reject`, { comment }).then(response => {
+export const rejectHandoff = (id, reason = '') => {
+  return api.post(`/handoffs/${id}/reject`, { reason }).then(response => {
     return response?.data || response;
   });
 };

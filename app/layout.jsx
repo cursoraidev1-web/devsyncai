@@ -32,44 +32,69 @@ export default function RootLayout({ children }) {
               (function() {
                 if (typeof window === 'undefined') return;
                 
-                // Block fetch requests to telemetry endpoints
+                // Block fetch requests to telemetry endpoints - return successful response to prevent errors
                 const originalFetch = window.fetch;
                 window.fetch = function(...args) {
                   const url = args[0]?.toString() || '';
-                  if ((url.includes('127.0.0.1') || url.includes('localhost')) && 
-                      (url.includes('/ingest/') || url.includes(':7245'))) {
-                    return Promise.reject(new Error('Blocked'));
+                  
+                  // Block telemetry endpoints - return successful response instead of rejecting
+                  if (url.includes('127.0.0.1:7245') || 
+                      url.includes('localhost:7245') ||
+                      (url.includes('127.0.0.1') && url.includes('/ingest/')) ||
+                      (url.includes('localhost') && url.includes('/ingest/')) ||
+                      url.includes(':7245/ingest/')) {
+                    // Return a successful response to prevent errors
+                    return Promise.resolve(new Response(null, { 
+                      status: 200, 
+                      statusText: 'OK',
+                      headers: { 'Content-Type': 'application/json' }
+                    }));
                   }
+                  
                   return originalFetch.apply(this, args).catch(function(err) {
-                    if (err.message && (err.message.includes('ERR_CONNECTION_REFUSED') || 
-                        err.message.includes('Failed to fetch')) && 
-                        (url.includes('127.0.0.1') || url.includes('localhost') || url.includes('/ingest/'))) {
-                      return Promise.reject(new Error('Blocked'));
+                    const errorMsg = err?.message || err?.toString() || '';
+                    // Suppress connection refused errors for telemetry
+                    if ((errorMsg.includes('ERR_CONNECTION_REFUSED') || 
+                         errorMsg.includes('Failed to fetch') ||
+                         errorMsg.includes('NetworkError')) && 
+                        (url.includes('127.0.0.1') || url.includes('localhost') || 
+                         url.includes('/ingest/') || url.includes(':7245'))) {
+                      // Return successful response instead of rejecting
+                      return Promise.resolve(new Response(null, { 
+                        status: 200, 
+                        statusText: 'OK',
+                        headers: { 'Content-Type': 'application/json' }
+                      }));
                     }
                     throw err;
                   });
                 };
                 
-                // Suppress unhandled rejections
+                // Suppress unhandled rejections for telemetry
                 window.addEventListener('unhandledrejection', function(event) {
                   const err = event.reason;
                   const msg = err?.message || err?.toString() || '';
                   const stack = err?.stack || '';
-                  if ((msg.includes('ERR_CONNECTION_REFUSED') || msg.includes('Failed to fetch') || 
-                       msg.includes('Blocked')) && 
+                  if ((msg.includes('ERR_CONNECTION_REFUSED') || 
+                       msg.includes('Failed to fetch') || 
+                       msg.includes('NetworkError')) && 
                       (stack.includes('127.0.0.1') || stack.includes('localhost') || 
-                       stack.includes('/ingest/') || msg.includes('/ingest/'))) {
+                       stack.includes('/ingest/') || msg.includes('/ingest/') || 
+                       msg.includes(':7245') || stack.includes(':7245'))) {
                     event.preventDefault();
                     event.stopPropagation();
+                    return false;
                   }
                 }, true);
                 
-                // Suppress console errors
+                // Suppress console errors for telemetry
                 const origError = console.error;
                 console.error = function(...args) {
                   const msg = args.join(' ');
-                  if (msg.includes('ERR_CONNECTION_REFUSED') && 
-                      (msg.includes('127.0.0.1') || msg.includes('/ingest/') || msg.includes(':7245'))) {
+                  if ((msg.includes('ERR_CONNECTION_REFUSED') || 
+                       msg.includes('Failed to fetch')) && 
+                      (msg.includes('127.0.0.1') || msg.includes('/ingest/') || 
+                       msg.includes(':7245'))) {
                     return;
                   }
                   origError.apply(console, args);

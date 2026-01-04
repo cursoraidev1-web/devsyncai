@@ -54,8 +54,38 @@ const HandoffDetails = () => {
           getHandoff(id),
           getHandoffComments(id)
         ]);
-        setHandoff(handoffData);
-        setComments(Array.isArray(commentsData) ? commentsData : []);
+        
+        // Transform handoff data to match frontend expectations
+        const transformedHandoff = {
+          ...handoffData,
+          // Map user fields - backend returns full_name, frontend expects name
+          from_user: handoffData.from_user ? {
+            ...handoffData.from_user,
+            name: handoffData.from_user.full_name || handoffData.from_user.name
+          } : null,
+          to_user: handoffData.to_user ? {
+            ...handoffData.to_user,
+            name: handoffData.to_user.full_name || handoffData.to_user.name
+          } : null,
+          // Format dates
+          createdAt: handoffData.created_at,
+          dueDate: handoffData.due_date,
+          // Ensure status is lowercase
+          status: (handoffData.status || 'pending').toLowerCase().replace(/_/g, '-')
+        };
+        
+        // Transform comments
+        const transformedComments = Array.isArray(commentsData) ? commentsData.map(comment => ({
+          ...comment,
+          user: comment.user ? {
+            ...comment.user,
+            name: comment.user.full_name || comment.user.name
+          } : null,
+          author: comment.user?.full_name || comment.user?.name || comment.author
+        })) : [];
+        
+        setHandoff(transformedHandoff);
+        setComments(transformedComments);
       } catch (err) {
         console.error('Failed to load handoff:', err);
         setError(err?.response?.data?.error || err?.message || 'Failed to load handoff');
@@ -71,9 +101,13 @@ const HandoffDetails = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed':
+      case 'approved':
         return <CheckCircle size={20} className="status-icon completed" />;
       case 'in-review':
+      case 'in_review':
         return <AlertCircle size={20} className="status-icon in-review" />;
+      case 'rejected':
+        return <XCircle size={20} className="status-icon rejected" />;
       case 'pending':
         return <Clock size={20} className="status-icon pending" />;
       default:
@@ -85,6 +119,9 @@ const HandoffDetails = () => {
     const labels = {
       'pending': 'Pending',
       'in-review': 'In Review',
+      'in_review': 'In Review',
+      'approved': 'Approved',
+      'rejected': 'Rejected',
       'completed': 'Completed'
     };
     return labels[status] || status;
@@ -208,7 +245,7 @@ const HandoffDetails = () => {
           Back to Handoffs
         </button>
         <div className="handoff-actions">
-          {handoff.status === 'in-review' && (
+          {(handoff.status === 'in-review' || handoff.status === 'in_review') && (
             <>
               <button 
                 className="review-btn approve"

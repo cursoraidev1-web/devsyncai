@@ -6,6 +6,7 @@ export const runtime = 'edge';
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
 import { deleteDocument, getDownloadUrl } from '../../../api/documents';
+import { fetchPRDs } from '../../../api/prds';
 import { uploadDocumentFile, formatFileSize, getFileTypeInfo, validateFile } from '../../../utils/fileUpload';
 import { 
   FileText, 
@@ -49,6 +50,7 @@ const DocumentStore = () => {
   const fileInputRef = useRef(null);
   const uploadAreaRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
+  const [prds, setPrds] = useState([]);
 
   // Update selected project when projects load
   useEffect(() => {
@@ -57,12 +59,41 @@ const DocumentStore = () => {
     }
   }, [projects, selectedProjectId]);
 
-  // Load documents when project changes
+  // Load documents and PRDs when project changes
   useEffect(() => {
     if (selectedProjectId) {
       loadDocuments(selectedProjectId).catch(console.error);
+      
+      // Also fetch PRDs for this project
+      fetchPRDs({ project_id: selectedProjectId })
+        .then(prdsData => {
+          setPrds(Array.isArray(prdsData) ? prdsData : []);
+        })
+        .catch(error => {
+          console.error('Failed to fetch PRDs:', error);
+          setPrds([]);
+        });
     }
   }, [selectedProjectId, loadDocuments]);
+
+  // Debug: Log documents when they change
+  useEffect(() => {
+    if (documents.length > 0) {
+      console.log('📄 Documents state:', {
+        count: documents.length,
+        documents: documents.map(d => ({
+          id: d.id,
+          title: d.title || d.name,
+          prd_id: d.prd_id,
+          type: d.type,
+          file_type: d.file_type,
+          category: getDocumentCategory(d)
+        })),
+        filteredCount: filteredDocuments.length,
+        selectedProjectId
+      });
+    }
+  }, [documents, selectedProjectId]);
 
   const documentTypes = [
     { id: 'prd', label: 'PRD', icon: FileText, color: '#4f46e5' },
@@ -71,11 +102,85 @@ const DocumentStore = () => {
     { id: 'other', label: 'Other', icon: File, color: '#6b7280' }
   ];
 
-  const filteredDocuments = documents.filter(doc => {
+  // Map file type (MIME type) to document category
+  const getDocumentCategory = (doc) => {
+    // PRIORITY 1: If document has prd_id, it's a PRD
+    if (doc.prd_id) {
+      return 'prd';
+    }
+    
+    // PRIORITY 2: If document already has a type category, use it
+    if (doc.type && ['prd', 'documentation', 'design', 'other'].includes(doc.type)) {
+      return doc.type;
+    }
+    
+    // PRIORITY 3: Check title and tags for PRD indicators
+    const titleLower = (doc.title || '').toLowerCase();
+    const tagsLower = (doc.tags || []).map(t => t.toLowerCase());
+    if (titleLower.includes('prd') || 
+        tagsLower.some(tag => tag.includes('prd'))) {
+      return 'prd';
+    }
+    
+    // PRIORITY 4: Map from file_type (MIME type) to category
+    const fileType = (doc.file_type || '').toLowerCase();
+    const fileUrl = (doc.file_url || doc.file_path || '').toLowerCase();
+    
+    // Design files - images
+    if (fileType.startsWith('image/') || 
+        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'psd', 'ai', 'sketch'].some(ext => 
+          fileType.includes(ext) || fileUrl.includes(`.${ext}`)
+        )) {
+      return 'design';
+    }
+    
+    // Documentation files - code, markdown, text, pdf
+    if (fileType.includes('markdown') || 
+        fileType.includes('text/') ||
+        fileType.includes('application/pdf') ||
+        fileType.includes('code') ||
+        ['md', 'txt', 'pdf', 'doc', 'docx'].some(ext => 
+          fileType.includes(ext) || fileUrl.includes(`.${ext}`)
+        )) {
+      return 'documentation';
+    }
+    
+    // Default to other
+    return 'other';
+  };
+
+  // Transform PRDs into document-like format
+  const prdDocuments = prds.map(prd => ({
+    id: `prd-${prd.id}`, // Prefix to avoid conflicts
+    prd_id: prd.id, // Store actual PRD ID
+    title: prd.title || 'Untitled PRD',
+    name: prd.title || 'Untitled PRD',
+    file_type: 'application/json', // PRDs are JSONB
+    file_size: 0,
+    size: '0 Bytes',
+    tags: ['prd'],
+    uploadedAt: prd.updated_at ? new Date(prd.updated_at).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    }) : '',
+    uploadedBy: prd.author || 'Unknown',
+    created_at: prd.created_at,
+    updated_at: prd.updated_at,
+    project_id: prd.project_id,
+    type: 'prd',
+    isPRD: true, // Flag to identify PRD documents
+    prdData: prd // Store full PRD data
+  }));
+
+  // Combine documents and PRD documents
+  const allDocuments = [...documents, ...prdDocuments];
+
+  const filteredDocuments = allDocuments.filter(doc => {
     const docName = doc.name || doc.title || '';
-    const docType = doc.type || doc.file_type || '';
+    const docCategory = getDocumentCategory(doc);
     const matchesSearch = docName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || docType === filterType;
+    const matchesType = filterType === 'all' || docCategory === filterType;
     return matchesSearch && matchesType;
   });
 
@@ -237,8 +342,14 @@ const DocumentStore = () => {
     }
   };
 
-  // Handle download
+  // Handle download or view PRD
   const handleDownload = async (doc) => {
+    // If it's a PRD, navigate to PRD page instead
+    if (doc.isPRD && doc.prd_id) {
+      router.push(`/prd-designer?id=${doc.prd_id}`);
+      return;
+    }
+
     if (downloadingId === doc.id) return; // Prevent double-click
     
     setDownloadingId(doc.id);
@@ -268,6 +379,12 @@ const DocumentStore = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const handleDelete = async (id) => {
+    // Check if it's a PRD - PRDs should be deleted from PRD page
+    const doc = allDocuments.find(d => d.id === id);
+    if (doc?.isPRD) {
+      toast.info('PRDs should be deleted from the PRD Designer page');
+      return;
+    }
     setDeleteConfirmId(id);
   };
 
@@ -293,21 +410,17 @@ const DocumentStore = () => {
     }
   };
 
-  const getDocumentIcon = (doc) => {
-    // Use file type info if available, otherwise fall back to document type
-    const fileType = doc.file_type || doc.type || '';
-    const fileInfo = getFileTypeInfo(fileType);
-    
-    // Map file type to document type icon for backward compatibility
-    const docType = documentTypes.find(t => t.id === doc.type);
+  const getDocumentIcon = (category) => {
+    // Find the document type by category ID
+    const docType = documentTypes.find(t => t.id === category);
     if (docType) {
       return docType;
     }
     
-    // Return a default icon based on file type
+    // Fallback to default
     return {
       icon: File,
-      color: fileInfo.color
+      color: '#6b7280'
     };
   };
 
@@ -373,7 +486,7 @@ const DocumentStore = () => {
       {/* Statistics */}
       <div className="documents-stats">
         {documentTypes.map(type => {
-          const count = documents.filter(d => d.type === type.id).length;
+          const count = allDocuments.filter(d => getDocumentCategory(d) === type.id).length;
           return (
             <div key={type.id} className="stat-item">
               <div className="stat-icon" style={{ backgroundColor: `${type.color}15`, color: type.color }}>
@@ -392,14 +505,20 @@ const DocumentStore = () => {
       {view === 'grid' && (
         <div className="documents-grid">
           {filteredDocuments.map(doc => {
-            const docIcon = getDocumentIcon(doc.type);
+            const docCategory = getDocumentCategory(doc);
+            const docIcon = getDocumentIcon(docCategory);
             return (
-              <div key={doc.id} className="document-card-grid">
+              <div 
+                key={doc.id} 
+                className="document-card-grid"
+                style={{ cursor: doc.isPRD ? 'pointer' : 'default' }}
+                onClick={doc.isPRD ? () => router.push(`/prd-designer?id=${doc.prd_id}`) : undefined}
+              >
                 <div className="document-card-icon" style={{ backgroundColor: `${docIcon.color}15`, color: docIcon.color }}>
                   <docIcon.icon size={32} />
                 </div>
                 <div className="document-card-content">
-                  <h3>{doc.title || doc.name}</h3>
+                  <h3>{doc.title || doc.name} {doc.isPRD && <span style={{ fontSize: '12px', color: '#6b7280' }}>(PRD)</span>}</h3>
                   <div className="document-card-meta">
                     <span className="document-size">{doc.size || formatFileSize(doc.file_size || 0)}</span>
                     <span className="document-date">{doc.uploadedAt || 'Unknown date'}</span>
@@ -417,10 +536,10 @@ const DocumentStore = () => {
                     </div>
                   )}
                 </div>
-                <div className="document-card-actions">
+                <div className="document-card-actions" onClick={(e) => e.stopPropagation()}>
                   <button 
                     className="action-btn" 
-                    title="Download"
+                    title={doc.isPRD ? "View PRD" : "Download"}
                     onClick={() => handleDownload(doc)}
                     disabled={downloadingId === doc.id}
                   >
@@ -430,9 +549,11 @@ const DocumentStore = () => {
                       <Download size={16} />
                     )}
                   </button>
-                  <button className="action-btn danger" onClick={() => handleDelete(doc.id)} title="Delete">
-                    <Trash2 size={16} />
-                  </button>
+                  {!doc.isPRD && (
+                    <button className="action-btn danger" onClick={() => handleDelete(doc.id)} title="Delete">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -453,7 +574,8 @@ const DocumentStore = () => {
           </div>
           <div className="documents-list-body">
             {filteredDocuments.map(doc => {
-              const docIcon = getDocumentIcon(doc.type);
+              const docCategory = getDocumentCategory(doc);
+              const docIcon = getDocumentIcon(docCategory);
               return (
                 <div key={doc.id} className="document-list-item">
                   <div className="list-col col-name">
@@ -462,13 +584,15 @@ const DocumentStore = () => {
                         <docIcon.icon size={20} />
                       </div>
                       <div>
-                        <div className="document-list-title">{doc.title || doc.name}</div>
+                                <div className="document-list-title">
+                          {doc.title || doc.name} {doc.isPRD && <span style={{ fontSize: '12px', color: '#6b7280' }}>(PRD)</span>}
+                        </div>
                         <div className="document-list-uploader">By {doc.uploadedBy || 'Unknown'}</div>
                       </div>
                     </div>
                   </div>
                   <div className="list-col col-type">
-                    <span className="badge badge-primary">{doc.type || 'other'}</span>
+                    <span className="badge badge-primary">{getDocumentCategory(doc)}</span>
                   </div>
                   <div className="list-col col-size">{doc.size || formatFileSize(doc.file_size || 0)}</div>
                   <div className="list-col col-uploaded">{doc.uploadedAt || 'Unknown date'}</div>
@@ -492,7 +616,7 @@ const DocumentStore = () => {
                     <div className="document-list-actions">
                       <button 
                         className="action-btn" 
-                        title="Download"
+                        title={doc.isPRD ? "View PRD" : "Download"}
                         onClick={() => handleDownload(doc)}
                         disabled={downloadingId === doc.id}
                       >
@@ -502,9 +626,11 @@ const DocumentStore = () => {
                           <Download size={16} />
                         )}
                       </button>
-                      <button className="action-btn danger" onClick={() => handleDelete(doc.id)} title="Delete">
-                        <Trash2 size={16} />
-                      </button>
+                      {!doc.isPRD && (
+                        <button className="action-btn danger" onClick={() => handleDelete(doc.id)} title="Delete">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

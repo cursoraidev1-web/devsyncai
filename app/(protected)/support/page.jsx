@@ -53,8 +53,8 @@ const SupportHelp = () => {
       await submitFeedback({
         type: 'general',
         title: ticketData.subject,
-        description: ticketData.message,
-        rating: 5 // Default rating for support tickets
+        description: `Priority: ${ticketData.priority}\n\n${ticketData.message}`,
+        rating: undefined // Rating is optional
       });
       toast.success('Support ticket submitted successfully! We\'ll get back to you soon.');
       setShowTicketModal(false);
@@ -84,7 +84,7 @@ const SupportHelp = () => {
         type: 'bug',
         title: reportData.title,
         description: description,
-        rating: 1 // Bug reports typically have low rating
+        rating: undefined // Rating is optional
       });
       toast.success('Bug report submitted successfully! Thank you for helping us improve.');
       setShowReportModal(false);
@@ -116,7 +116,7 @@ const SupportHelp = () => {
       description: 'Explore our guides and find answers to your questions.',
       buttonText: 'Go to Docs',
       buttonVariant: 'primary',
-      onClick: () => router.push('/feedback')
+      onClick: () => router.push('/documents')
     },
     {
       icon: MessageSquare,

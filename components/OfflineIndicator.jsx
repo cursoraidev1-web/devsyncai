@@ -1,10 +1,17 @@
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import './OfflineIndicator.css';
 
 const OfflineIndicator = () => {
   const isOnline = useOnlineStatus();
+  const pathname = usePathname();
+
+  // Don't show offline indicator on test pages (they need to test connectivity)
+  if (pathname?.startsWith('/test/')) {
+    return null;
+  }
 
   if (isOnline) return null;
 

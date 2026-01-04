@@ -60,6 +60,9 @@ const Settings = () => {
     getPlanType 
   } = usePlan();
   const [activeTab, setActiveTab] = useState('general');
+  const [companyMembers, setCompanyMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState(null);

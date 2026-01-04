@@ -10,7 +10,7 @@ let supabaseClient = null;
 let supabaseInitialized = false;
 
 // Initialize Supabase client
-const initSupabase = () => {
+export const initSupabase = () => {
   if (typeof window === 'undefined') return null;
   
   // Return cached client if already initialized

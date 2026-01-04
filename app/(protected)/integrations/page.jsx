@@ -5,14 +5,19 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
-import { fetchIntegrations, connectIntegration, disconnectIntegration } from '../../../api/integrations';
+import { fetchIntegrations, connectIntegration, disconnectIntegration, getIntegrationConfig, updateIntegrationConfig } from '../../../api/integrations';
+import { useApp } from '../../../context/AppContext';
 import { toast } from 'react-toastify';
 import '../../../styles/pages/Integrations.css';
 
 const Integrations = () => {
+  const { projects } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(null);
+  const [disconnecting, setDisconnecting] = useState(null);
+  const [showConfigModal, setShowConfigModal] = useState(null);
 
   // Available integrations catalog (not connected by default)
   const availableIntegrationsCatalog = [
@@ -72,7 +77,29 @@ const Integrations = () => {
       try {
         const data = await fetchIntegrations();
         if (Array.isArray(data) && data.length > 0) {
-          setIntegrations(data);
+          // Map API data to frontend format
+          const mappedIntegrations = data.map(apiIntegration => {
+            const catalogItem = availableIntegrationsCatalog.find(
+              item => item.id === apiIntegration.id || item.name.toLowerCase() === apiIntegration.name?.toLowerCase()
+            );
+            return {
+              ...(catalogItem || {
+                id: apiIntegration.id || apiIntegration.type,
+                name: apiIntegration.name,
+                description: apiIntegration.description,
+                category: apiIntegration.category,
+                icon: Github, // Default icon
+                color: '#718096'
+              }),
+              connected: apiIntegration.connected || false,
+              integration_id: apiIntegration.integration_id,
+              connected_at: apiIntegration.connected_at,
+              last_sync_at: apiIntegration.last_sync_at,
+              config: apiIntegration.config || {},
+              is_active: apiIntegration.is_active ?? true
+            };
+          });
+          setIntegrations(mappedIntegrations);
         } else {
           // Use default catalog if no integrations from API
           setIntegrations(availableIntegrationsCatalog.map(integration => ({
@@ -82,6 +109,7 @@ const Integrations = () => {
         }
       } catch (error) {
         console.error('Failed to load integrations:', error);
+        toast.error('Failed to load integrations');
         // Use default catalog on error
         setIntegrations(availableIntegrationsCatalog.map(integration => ({
           ...integration,
@@ -93,6 +121,83 @@ const Integrations = () => {
     };
     loadIntegrations();
   }, []);
+
+  const handleConnect = async (integration) => {
+    setConnecting(integration.id);
+    try {
+      const result = await connectIntegration(integration.id, {
+        // Add any initial config here
+      });
+      toast.success(`${integration.name} connected successfully!`);
+      // Reload integrations
+      const data = await fetchIntegrations();
+      if (Array.isArray(data) && data.length > 0) {
+        const mappedIntegrations = data.map(apiIntegration => {
+          const catalogItem = availableIntegrationsCatalog.find(
+            item => item.id === apiIntegration.id || item.name.toLowerCase() === apiIntegration.name?.toLowerCase()
+          );
+          return {
+            ...(catalogItem || {
+              id: apiIntegration.id || apiIntegration.type,
+              name: apiIntegration.name,
+              description: apiIntegration.description,
+              category: apiIntegration.category,
+              icon: Github,
+              color: '#718096'
+            }),
+            connected: apiIntegration.connected || false,
+            integration_id: apiIntegration.integration_id,
+            config: apiIntegration.config || {}
+          };
+        });
+        setIntegrations(mappedIntegrations);
+      }
+    } catch (error) {
+      console.error('Failed to connect integration:', error);
+      toast.error(error?.response?.data?.error || error?.message || 'Failed to connect integration');
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  const handleDisconnect = async (integration) => {
+    if (!window.confirm(`Are you sure you want to disconnect ${integration.name}?`)) {
+      return;
+    }
+    setDisconnecting(integration.integration_id || integration.id);
+    try {
+      await disconnectIntegration(integration.integration_id || integration.id);
+      toast.success(`${integration.name} disconnected successfully!`);
+      // Reload integrations
+      const data = await fetchIntegrations();
+      if (Array.isArray(data) && data.length > 0) {
+        const mappedIntegrations = data.map(apiIntegration => {
+          const catalogItem = availableIntegrationsCatalog.find(
+            item => item.id === apiIntegration.id || item.name.toLowerCase() === apiIntegration.name?.toLowerCase()
+          );
+          return {
+            ...(catalogItem || {
+              id: apiIntegration.id || apiIntegration.type,
+              name: apiIntegration.name,
+              description: apiIntegration.description,
+              category: apiIntegration.category,
+              icon: Github,
+              color: '#718096'
+            }),
+            connected: apiIntegration.connected || false,
+            integration_id: apiIntegration.integration_id,
+            config: apiIntegration.config || {}
+          };
+        });
+        setIntegrations(mappedIntegrations);
+      }
+    } catch (error) {
+      console.error('Failed to disconnect integration:', error);
+      toast.error(error?.response?.data?.error || error?.message || 'Failed to disconnect integration');
+    } finally {
+      setDisconnecting(null);
+    }
+  };
 
   const filteredIntegrations = integrations.filter(integration =>
     integration.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -160,13 +265,26 @@ const Integrations = () => {
                     <p className="integration-description">{integration.description}</p>
                     <div className="integration-category">{integration.category}</div>
                     <div className="integration-actions">
-                      <button className="integration-action-btn">
+                      <button 
+                        className="integration-action-btn"
+                        onClick={() => setShowConfigModal(integration)}
+                      >
                         <Settings size={16} />
                         Configure
                       </button>
-                      <button className="integration-action-btn danger">
-                        <X size={16} />
-                        Disconnect
+                      <button 
+                        className="integration-action-btn danger"
+                        onClick={() => handleDisconnect(integration)}
+                        disabled={disconnecting === (integration.integration_id || integration.id)}
+                      >
+                        {disconnecting === (integration.integration_id || integration.id) ? (
+                          'Disconnecting...'
+                        ) : (
+                          <>
+                            <X size={16} />
+                            Disconnect
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -195,9 +313,19 @@ const Integrations = () => {
                   <h3 className="integration-name">{integration.name}</h3>
                   <p className="integration-description">{integration.description}</p>
                   <div className="integration-category">{integration.category}</div>
-                  <button className="integration-connect-btn">
-                    <ExternalLink size={16} />
-                    Connect
+                  <button 
+                    className="integration-connect-btn"
+                    onClick={() => handleConnect(integration)}
+                    disabled={connecting === integration.id}
+                  >
+                    {connecting === integration.id ? (
+                      'Connecting...'
+                    ) : (
+                      <>
+                        <ExternalLink size={16} />
+                        Connect
+                      </>
+                    )}
                   </button>
                 </div>
               );

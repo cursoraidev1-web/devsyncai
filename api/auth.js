@@ -75,6 +75,10 @@ export const getUserCompanies = () => api.get('/auth/companies');
 export const switchCompany = (companyId) => api.post('/auth/switch-company', { companyId });
 export const createCompany = (payload) => api.post('/companies', payload);
 export const getCompany = (id) => api.get(`/companies/${id}`);
+export const getCompanyMembers = (companyId) => api.get(`/companies/${companyId}/members`);
+export const inviteUserToCompany = (companyId, payload) => api.post(`/companies/${companyId}/invite`, payload);
+export const updateMemberRole = (companyId, userId, role) => api.patch(`/companies/${companyId}/members/${userId}`, { role });
+export const removeMember = (companyId, userId) => api.delete(`/companies/${companyId}/members/${userId}`);
 
 /**
  * Exchange Supabase OAuth session token for backend JWT token
