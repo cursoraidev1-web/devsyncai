@@ -18,6 +18,7 @@ import { useAuth } from '../../../context/AuthContext';
 import '../../../styles/pages/OAuthCallback.css';
 
 function OAuthCallbackContent() {
+  // Initialize router from next/navigation - this is the correct way to handle navigation
   const router = useRouter();
   const searchParams = useSearchParams();
   const { syncSupabaseSession } = useAuth();
@@ -38,7 +39,9 @@ function OAuthCallbackContent() {
           const errorMsg = errorDescription || error || 'Authentication failed';
           setMessage(`Authentication failed: ${errorMsg}`);
           toast.error(`Authentication failed: ${errorMsg}`);
-          setTimeout(() => router.push('/login'), 3000);
+          setTimeout(() => {
+            router.push('/login');
+          }, 3000);
           return;
         }
 
@@ -48,7 +51,7 @@ function OAuthCallbackContent() {
         // This ensures Supabase has time to process the URL hash fragments
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        let { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           throw new Error(sessionError.message);
@@ -67,7 +70,9 @@ function OAuthCallbackContent() {
             setStatus('error');
             setMessage('No session found. Please try again.');
             toast.error('No session found. Please try again.');
-            setTimeout(() => router.push('/login'), 3000);
+            setTimeout(() => {
+              router.push('/login');
+            }, 3000);
             return;
           }
           
@@ -88,26 +93,31 @@ function OAuthCallbackContent() {
         // Check if 2FA is required (response format: { require2fa: true, email: string })
         if (result?.require2fa) {
           toast.info('Please enter your 2FA code');
-          router.push('/verify-2fa', { state: { email: result.email } });
+          router.push(`/verify-2fa?email=${encodeURIComponent(result.email)}`);
           return;
         }
         
         setStatus('success');
         setMessage('Login successful! Redirecting...');
         toast.success('Successfully authenticated!');
-        setTimeout(() => router.push('/dashboard'), 1500);
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
       } catch (err) {
         setStatus('error');
         const errorMsg = err?.message || 'Failed to complete authentication';
         setMessage(errorMsg);
         toast.error(errorMsg);
         console.error('OAuth callback error:', err);
-        setTimeout(() => router.push('/login'), 3000);
+        setTimeout(() => {
+          router.push('/login');
+        }, 3000);
       }
     };
 
     handleCallback();
-  }, [navigate, searchParams, syncSupabaseSession]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="oauth-callback">
@@ -139,4 +149,3 @@ export default function OAuthCallback() {
     </Suspense>
   );
 }
-

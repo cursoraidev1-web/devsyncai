@@ -17,7 +17,8 @@ import {
   MessageSquare,
   LogOut,
   ChevronRight,
-  Download
+  Download,
+  Mail
 } from 'lucide-react';
 import Modal from './ui/Modal';
 import PWAInstallModal from './PWAInstallModal';
@@ -64,6 +65,7 @@ const Sidebar = ({ isOpen }) => {
     { path: '/handoffs', icon: ArrowRightLeft, label: 'Handoff System', access: 'editor' },
     { path: '/ci-cd', icon: Bot, label: 'CI/CD Auto-Agent', access: 'editor' },
     { path: '/integrations', icon: Puzzle, label: 'Integrations', access: 'editor' },
+    { path: '/email-test', icon: Mail, label: 'Email Testing', access: 'editor' },
   ];
 
   // Settings - Available to all

@@ -254,12 +254,8 @@ const Login = () => {
           <div className="login-footer">
             <p>
               Don't have an account?{' '}
-              <Link href="/signup" className="login-link">
-                Sign Up
-              </Link>
-              {' '}or{' '}
               <Link href="/register" className="login-link">
-                Create Workspace
+                Register
               </Link>
             </p>
           </div>

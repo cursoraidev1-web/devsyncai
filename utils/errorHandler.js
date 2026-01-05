@@ -109,3 +109,93 @@ if (typeof window !== 'undefined') {
     originalConsoleWarn.apply(console, args);
   };
 }
+
+/**
+ * Handles API errors and returns a standardized error info object
+ * @param {Error|any} error - The error object from API calls
+ * @returns {Object} Error info with message, type, and additional metadata
+ */
+export const handleApiError = (error) => {
+  // Default error info
+  const errorInfo = {
+    message: 'An unexpected error occurred. Please try again.',
+    type: 'UNKNOWN',
+  };
+
+  // Extract status code from various error formats
+  const status = error?.status || 
+                 error?.statusCode || 
+                 error?.response?.status || 
+                 error?.data?.statusCode ||
+                 (error?.data?.error?.statusCode);
+
+  // Extract error data from various formats
+  const errorData = error?.data || 
+                    error?.response?.data || 
+                    error?.error?.data ||
+                    {};
+
+  // Extract error message from various formats
+  let message = error?.message || 
+                errorData?.error || 
+                errorData?.message || 
+                error?.errorMessage ||
+                error?.error?.message ||
+                errorInfo.message;
+
+  // Ensure message is a string
+  if (Array.isArray(message)) {
+    message = message.join(', ');
+  }
+  message = String(message || '');
+
+  // Determine error type based on status code and message
+  const messageLower = message.toLowerCase();
+  if (status === 423 || messageLower.includes('locked') || messageLower.includes('lockout')) {
+    errorInfo.type = 'LOCKED';
+    errorInfo.lockoutTime = errorData?.lockoutTime || 
+                           errorData?.lockout_time || 
+                           errorData?.retryAfter ||
+                           30; // Default 30 seconds
+    errorInfo.message = message || 'Your account has been temporarily locked due to too many failed login attempts. Please try again later.';
+  } else if (status === 429 || messageLower.includes('rate limit') || messageLower.includes('too many requests')) {
+    errorInfo.type = 'RATE_LIMIT';
+    errorInfo.retryAfter = errorData?.retryAfter || 
+                          errorData?.retry_after || 
+                          errorData?.retryAfterSeconds ||
+                          60; // Default 60 seconds
+    errorInfo.message = message || 'Too many requests. Please try again later.';
+  } else if (status === 403) {
+    // Check if it's email verification issue
+    if (messageLower.includes('email') && (messageLower.includes('verify') || messageLower.includes('verification') || messageLower.includes('not verified'))) {
+      errorInfo.type = 'EMAIL_NOT_VERIFIED';
+      errorInfo.message = message || 'Please verify your email address before logging in.';
+    } else {
+      errorInfo.type = 'FORBIDDEN';
+      errorInfo.message = message || 'You do not have permission to perform this action.';
+    }
+  } else if (status === 401) {
+    errorInfo.type = 'UNAUTHORIZED';
+    errorInfo.message = message || 'Authentication failed. Please check your credentials.';
+  } else if (status === 404) {
+    errorInfo.type = 'NOT_FOUND';
+    errorInfo.message = message || 'The requested resource was not found.';
+  } else if (status === 409) {
+    errorInfo.type = 'CONFLICT';
+    errorInfo.message = message || 'A resource with this information already exists.';
+  } else if (status === 400) {
+    errorInfo.type = 'BAD_REQUEST';
+    errorInfo.message = message || 'Invalid request. Please check your input.';
+  } else if (status === 500 || status === 502 || status === 503) {
+    errorInfo.type = 'SERVER_ERROR';
+    errorInfo.message = message || 'Server error. Please try again later.';
+  } else if (messageLower.includes('network') || messageLower.includes('fetch')) {
+    errorInfo.type = 'NETWORK_ERROR';
+    errorInfo.message = 'Network error. Please check your connection and try again.';
+  } else {
+    // Use the extracted message or default
+    errorInfo.message = message || errorInfo.message;
+  }
+
+  return errorInfo;
+};

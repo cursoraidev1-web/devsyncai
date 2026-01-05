@@ -14,7 +14,6 @@ const publicRoutes = [
   '/landing',
   '/login',
   '/register',
-  '/signup',
   '/forgot-password',
   '/reset-password',
   '/reset-password-success',
@@ -29,7 +28,6 @@ const publicRoutes = [
 const authRoutes = [
   '/login',
   '/register',
-  '/signup',
 ];
 
 /**

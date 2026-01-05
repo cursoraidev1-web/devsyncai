@@ -226,6 +226,31 @@ export const AuthProvider = ({ children }) => {
     }
   }, [persistSession]);
 
+  const syncSupabaseSession = useCallback(async (session, companyName = null) => {
+    try {
+      const response = await authApi.syncSupabaseSession(session, companyName);
+      const data = response?.data || response;
+      
+      // Check if 2FA is required (response format: { require2fa: true, email: string })
+      if (data?.require2fa) {
+        return { require2fa: true, email: data.email };
+      }
+      
+      // Normal response with user and token
+      const apiUser = data?.user || data;
+      const apiToken = data?.token || data?.accessToken;
+      
+      if (apiUser && apiToken) {
+        persistSession(apiUser, apiToken);
+        return { user: apiUser, token: apiToken };
+      }
+      
+      throw new Error('Invalid response from server');
+    } catch (error) {
+      throw error;
+    }
+  }, [persistSession]);
+
   const logout = useCallback(async () => {
     setLogoutLoading(true);
     try {
@@ -316,6 +341,7 @@ export const AuthProvider = ({ children }) => {
     register,
     googleLogin,
     githubLogin,
+    syncSupabaseSession,
     updateUser,
     updateProfile,
     changePassword,

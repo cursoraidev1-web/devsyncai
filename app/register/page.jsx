@@ -29,7 +29,7 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    workspaceName: '' // Company/workspace name (required for admin signup)
+    workspaceName: '' // Company/workspace name (optional - backend will auto-generate if not provided)
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,8 +57,8 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate required fields (workspace name always required for admin signup)
-    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'workspaceName'];
+    // Validate required fields (workspace name is optional - backend will auto-generate if not provided)
+    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
     
     const missingFields = requiredFields.filter(field => !formData[field]);
     if (missingFields.length > 0) {
@@ -94,7 +94,8 @@ const Register = () => {
         email: formData.email.trim(),
         password: formData.password,
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
-        workspaceName: formData.workspaceName.trim(),
+        // workspaceName is optional - backend will auto-generate if not provided
+        ...(formData.workspaceName.trim() && { companyName: formData.workspaceName.trim() }),
       };
 
       await register(registerPayload);
@@ -305,16 +306,15 @@ const Register = () => {
             </div>
 
             <div className="register-input-group">
-              <label htmlFor="workspaceName">Workspace Name</label>
+              <label htmlFor="workspaceName">Workspace Name <span style={{ color: '#6b7280', fontWeight: 'normal' }}>(Optional)</span></label>
               <input
                 type="text"
                 id="workspaceName"
                 name="workspaceName"
                 value={formData.workspaceName}
                 onChange={handleChange}
-                placeholder="e.g., Acme Corp, My Startup"
+                placeholder="e.g., Acme Corp, My Startup (leave blank for auto-generated name)"
                 className="register-input"
-                required
               />
               <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px' }}>
                 This will be your company or workspace name. You'll be the admin.

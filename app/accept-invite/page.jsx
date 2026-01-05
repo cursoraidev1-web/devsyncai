@@ -40,7 +40,7 @@ function AcceptInviteContent() {
     };
 
     join();
-  }, [navigate, searchParams]);
+  }, [router, searchParams]);
 
   return (
     <div className="accept-invite">
