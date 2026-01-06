@@ -154,10 +154,7 @@ const Register = () => {
         <div className="register-left">
           <div className="register-form-container">
             <div className="register-logo-header">
-              <div className="register-logo-square">
-                <span className="register-logo-z">Z</span>
-              </div>
-              <span className="register-logo-text">Zyndrx</span>
+              <Logo width={40} height={40} showText={true} priority={true} />
             </div>
             <EmailVerificationMessage
               email={formData.email}
@@ -185,10 +182,7 @@ const Register = () => {
       <div className="register-left">
         <div className="register-form-container">
           <div className="register-logo-header">
-            <div className="register-logo-square">
-              <span className="register-logo-z">Z</span>
-            </div>
-            <span className="register-logo-text">Zyndrx</span>
+            <Logo width={40} height={40} showText={true} priority={true} />
           </div>
           
           <h2 className="register-form-title">

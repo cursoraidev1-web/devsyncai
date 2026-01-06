@@ -58,6 +58,15 @@ export const getCurrentUser = () => api.get('/auth/me');
 
 export const updateProfile = (updates) => api.put('/auth/profile', updates);
 
+// Avatar upload token (mirrors documents upload-token pattern)
+export const getAvatarUploadToken = (fileInfo) => {
+  return api.post('/auth/avatar/upload-token', {
+    file_name: fileInfo.file_name,
+    file_size: fileInfo.file_size,
+    file_type: fileInfo.file_type,
+  }).then(response => response?.data || response);
+};
+
 export const changePassword = (payload) => api.post('/auth/change-password', payload);
 
 export const getActiveSessions = () => api.get('/auth/sessions');
@@ -69,6 +78,11 @@ export const setup2FA = () => api.post('/auth/2fa/setup');
 export const enable2FA = (token) => api.post('/auth/2fa/enable', { token });
 
 export const verify2FA = (email, token) => api.post('/auth/2fa/verify', { email, token }, { auth: false });
+
+export const disable2FA = (token) => api.post('/auth/2fa/disable', { token });
+
+export const regenerateRecoveryCodes = (token) =>
+  api.post('/auth/2fa/recovery-codes/regenerate', { token });
 
 // Company/Workspace Management
 export const getUserCompanies = () => api.get('/auth/companies');

@@ -21,3 +21,11 @@ export const getEmailTemplates = () => {
   return api.get('/email/templates');
 };
 
+/**
+ * Get email usage and limits for current company
+ * @returns {Promise} API response with usage data
+ */
+export const getEmailUsage = () => {
+  return api.get('/email/usage');
+};
+

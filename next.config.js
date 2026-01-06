@@ -3,14 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   // Disable static optimization for not-found pages
   outputFileTracingRoot: require('path').join(__dirname),
-  // Add webpack alias for easier imports
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': require('path').resolve(__dirname),
-    };
-    return config;
-  },
+  // Note: Webpack config removed for Turbopack compatibility
+  // Turbopack reads path aliases from jsconfig.json automatically
+  // If using webpack (via dev:webpack), path aliases are also handled by jsconfig.json
   // Configure proxy for backend API
   async rewrites() {
     return [

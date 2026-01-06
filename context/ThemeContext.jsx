@@ -44,6 +44,12 @@ export const ThemeProvider = ({ children }) => {
         if (userTheme) {
           setTheme(userTheme);
           setLoading(false);
+          // Apply theme immediately
+          const effectiveTheme = getEffectiveTheme(userTheme);
+          const htmlElement = document.documentElement;
+          htmlElement.classList.remove('light', 'dark');
+          htmlElement.classList.add(effectiveTheme);
+          htmlElement.setAttribute('data-theme', effectiveTheme);
           return;
         }
 
@@ -51,15 +57,26 @@ export const ThemeProvider = ({ children }) => {
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
         setLoading(false);
+        // Apply theme immediately
+        const effectiveTheme = getEffectiveTheme(savedTheme);
+        const htmlElement = document.documentElement;
+        htmlElement.classList.remove('light', 'dark');
+        htmlElement.classList.add(effectiveTheme);
+        htmlElement.setAttribute('data-theme', effectiveTheme);
       } catch (error) {
         console.error('Error loading theme:', error);
         setTheme('light');
         setLoading(false);
+        // Apply light theme as fallback
+        const htmlElement = document.documentElement;
+        htmlElement.classList.remove('light', 'dark');
+        htmlElement.classList.add('light');
+        htmlElement.setAttribute('data-theme', 'light');
       }
     };
 
     loadTheme();
-  }, [user?.themePreference]);
+  }, [user?.themePreference, getEffectiveTheme]);
 
   // Apply theme class to HTML element
   useEffect(() => {

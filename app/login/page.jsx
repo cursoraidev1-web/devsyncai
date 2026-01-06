@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
+import Logo from '../../components/Logo';
 import { signInWithGoogle, signInWithGitHub } from '../../utils/oauth';
 import DashboardPreview from '../../components/DashboardPreview';
 import AccountLockoutMessage from '../../components/AccountLockoutMessage';
@@ -140,10 +141,7 @@ const Login = () => {
       <div className="login-left">
         <div className="login-form-container">
           <div className="login-logo-header">
-            <div className="login-logo-square">
-              <span className="login-logo-z">Z</span>
-            </div>
-            <span className="login-logo-text">Zyndrx</span>
+            <Logo width={40} height={40} showText={true} priority={true} />
           </div>
           
           <h2 className="login-form-title">Welcome Back</h2>

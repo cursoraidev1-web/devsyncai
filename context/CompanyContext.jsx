@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { switchCompany as apiSwitchCompany, getUserCompanies as apiGetUserCompanies, createCompany as apiCreateCompany } from '../api/auth';
 
@@ -45,15 +45,34 @@ export const CompanyProvider = ({ children }) => {
   const [currentCompany, setCurrentCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const loadingRef = useRef(false);
+  const lastLoadTimeRef = useRef(0);
 
-  // Fetch user's companies
+  // Fetch user's companies with rate limiting and deduplication
   const loadCompanies = useCallback(async () => {
     if (!token) {
       setCompanies([]);
       setCurrentCompany(null);
       setLoading(false);
+      loadingRef.current = false;
       return;
     }
+
+    // Prevent multiple simultaneous requests
+    if (loadingRef.current) {
+      return;
+    }
+
+    // Rate limiting: Don't load more than once per 5 seconds
+    const now = Date.now();
+    if (now - lastLoadTimeRef.current < 5000) {
+      console.warn('Rate limit: Skipping loadCompanies call (too soon)');
+      return;
+    }
+
+    loadingRef.current = true;
+    lastLoadTimeRef.current = now;
+    setLoading(true);
 
     try {
       const response = await apiGetUserCompanies();
@@ -68,6 +87,7 @@ export const CompanyProvider = ({ children }) => {
         if (savedCompany) {
           setCurrentCompany(savedCompany);
           setLoading(false);
+          loadingRef.current = false;
           return;
         }
       }
@@ -81,16 +101,27 @@ export const CompanyProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to load companies:', error);
-      setCurrentCompany(null);
-      setCompanies([]);
+      
+      // Handle rate limiting error gracefully
+      if (error?.status === 429 || error?.message?.toLowerCase().includes('too many requests')) {
+        const retryAfter = error?.retryAfter || 5;
+        console.warn(`Rate limit reached, will retry after ${retryAfter} seconds`);
+        // Don't clear companies on rate limit - keep existing data
+        // Update lastLoadTimeRef to prevent immediate retry
+        lastLoadTimeRef.current = Date.now() + (retryAfter * 1000);
+      } else {
+        setCurrentCompany(null);
+        setCompanies([]);
+      }
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   }, [token]);
 
   useEffect(() => {
     loadCompanies();
-  }, [loadCompanies]);
+  }, [token, loadCompanies]); // Include loadCompanies to ensure it's stable
 
   const switchCompany = useCallback(async (companyId) => {
     try {

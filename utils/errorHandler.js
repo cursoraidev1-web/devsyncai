@@ -199,3 +199,19 @@ export const handleApiError = (error) => {
 
   return errorInfo;
 };
+
+/**
+ * Format a retry-after value in seconds into a human-readable string.
+ * Used by RateLimitMessage UI.
+ */
+export const formatRetryAfter = (seconds) => {
+  const total = Number(seconds) || 0;
+  if (total <= 0) return '0s';
+
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+
+  if (mins <= 0) return `${secs}s`;
+  if (secs === 0) return `${mins}m`;
+  return `${mins}m ${secs}s`;
+};

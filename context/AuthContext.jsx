@@ -166,6 +166,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authApi.login({ email, password });
       const data = response?.data || response;
+
+      // 2FA required: do not persist session yet
+      if (data?.require2fa) {
+        return { require2fa: true, email: data.email || email };
+      }
+
       const apiUser = data?.user || data;
       const apiToken = data?.token || data?.accessToken;
       
@@ -174,6 +180,24 @@ export const AuthProvider = ({ children }) => {
         return apiUser;
       }
       
+      throw new Error('Invalid response from server');
+    } catch (error) {
+      throw error;
+    }
+  }, [persistSession]);
+
+  const verify2FA = useCallback(async (email, token) => {
+    try {
+      const response = await authApi.verify2FA(email, token);
+      const data = response?.data || response;
+      const apiUser = data?.user || data;
+      const apiToken = data?.token || data?.accessToken;
+
+      if (apiUser && apiToken) {
+        persistSession(apiUser, apiToken);
+        return data;
+      }
+
       throw new Error('Invalid response from server');
     } catch (error) {
       throw error;
@@ -328,6 +352,24 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const disable2FA = useCallback(async (token) => {
+    try {
+      return await authApi.disable2FA(token);
+    } catch (error) {
+      console.error('Failed to disable 2FA:', error);
+      throw error;
+    }
+  }, []);
+
+  const regenerateRecoveryCodes = useCallback(async (token) => {
+    try {
+      return await authApi.regenerateRecoveryCodes(token);
+    } catch (error) {
+      console.error('Failed to regenerate recovery codes:', error);
+      throw error;
+    }
+  }, []);
+
   const isAuthenticated = !!token && !!user;
 
   const value = {
@@ -348,6 +390,9 @@ export const AuthProvider = ({ children }) => {
     getActiveSessions,
     setup2FA,
     enable2FA,
+    verify2FA,
+    disable2FA,
+    regenerateRecoveryCodes,
   };
 
   return (

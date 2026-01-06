@@ -1,183 +1,177 @@
 'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
-
-import React, { useState, Suspense } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
-import { Lock } from 'lucide-react';
-import PasswordInput from '../../components/PasswordInput';
-import { validatePassword } from '../../utils/passwordValidation';
-import { sanitizeInput } from '../../utils/inputSanitization';
-import '../../styles/pages/Auth.css';
+import { Eye, EyeOff, Lock } from 'lucide-react';
+import { toast } from 'react-toastify';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import Logo from '../../components/Logo';
+import './reset-password.css';
 
-function ResetPasswordContent() {
+const ResetPassword = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { resetPassword, requestPasswordReset } = useAuth();
-  const [formData, setFormData] = useState({
-    newPassword: '',
-    confirmPassword: '',
-    email: ''
-  });
-  const [error, setError] = useState('');
-  const hasToken = searchParams.get('token');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState('');
 
-  const handleChange = (e) => {
-    const sanitizedValue = sanitizeInput(e.target.value);
-    setFormData({
-      ...formData,
-      [e.target.name]: sanitizedValue
-    });
-    setError('');
-  };
-
-  const handlePasswordChange = (value) => {
-    setFormData({
-      ...formData,
-      newPassword: value
-    });
-    setError('');
-  };
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token');
+    if (!tokenFromUrl) {
+      toast.error('Invalid reset link');
+      router.push('/login');
+    } else {
+      setToken(tokenFromUrl);
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!hasToken) {
-      if (!formData.email) {
-        setError('Please enter your email');
-        return;
-      }
-      try {
-        await requestPasswordReset(formData.email);
-        router.push('/reset-password-success');
-      } catch (err) {
-        setError(err?.message || 'Unable to send reset email. Please try again.');
-      }
+
+    // Validation
+    if (!newPassword || !confirmPassword) {
+      toast.error('Please fill in all fields');
       return;
     }
 
-    if (!formData.newPassword || !formData.confirmPassword) {
-      setError('Please fill in all fields');
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters long');
       return;
     }
 
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
-    // Validate password strength
-    const passwordValidation = validatePassword(formData.newPassword);
-    if (!passwordValidation.valid) {
-      const errorMsg = passwordValidation.errors[0] || 'Password does not meet requirements';
-      setError(errorMsg);
-      return;
-    }
-
-    const token = new URLSearchParams(location.search).get('token');
-
-    if (!token) {
-      setError('Reset token missing. Please use the link from your email.');
-      return;
-    }
+    setLoading(true);
 
     try {
-      await resetPassword({ token, password: formData.newPassword });
-      router.push('/reset-password-success');
-    } catch (err) {
-      setError(err?.message || 'Unable to reset password. Please try again.');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      // Success - redirect to success page
+      router.push('/reset-password/success');
+    } catch (error) {
+      toast.error(error.message || 'Failed to reset password. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="reset-password-container">
       <div className="reset-password-card">
-        <div className="reset-password-header">
-          <div className="reset-password-logo">ZynDrx</div>
-          <h1 className="reset-password-title">Reset Your Password</h1>
-          <p className="reset-password-description">
-            Choose a new password for your account.
-          </p>
+        {/* Logo */}
+        <div className="reset-password-logo">
+          <Logo width={40} height={40} showText={true} priority={true} />
         </div>
 
-        {error && (
-          <div className="reset-password-error">
-            {error}
-          </div>
-        )}
+        {/* Header */}
+        <div className="reset-password-header">
+          <h1>Reset Your Password</h1>
+          <p>Choose a new password for your account.</p>
+        </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="reset-password-form">
-          {!hasToken && (
-            <div className="reset-password-input-group">
-              <label htmlFor="email">Email</label>
-              <div className="reset-password-input-wrapper">
-                <Lock size={18} className="reset-password-input-icon" />
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+          {/* New Password */}
+          <div className="form-group">
+            <label htmlFor="newPassword">New Password</label>
+            <div className="password-input-wrapper">
+              <Lock className="input-icon" size={20} />
+              <input
+                id="newPassword"
+                type={showNewPassword ? 'text' : 'password'}
+                placeholder="Enter your Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                aria-label="Toggle password visibility"
+              >
+                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
-          )}
+          </div>
 
-          {hasToken && (
-            <>
-              <div className="reset-password-input-group">
-                <label htmlFor="newPassword">New Password</label>
-                <PasswordInput
-                  value={formData.newPassword}
-                  onChange={handlePasswordChange}
-                  placeholder="Enter your new password"
-                  showRequirements={true}
-                  required
-                />
-              </div>
+          {/* Confirm Password */}
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm New Password</label>
+            <div className="password-input-wrapper">
+              <Lock className="input-icon" size={20} />
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Enter your Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label="Toggle password visibility"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
 
-              <div className="reset-password-input-group">
-                <label htmlFor="confirmPassword">Confirm New Password</label>
-                <PasswordInput
-                  value={formData.confirmPassword}
-                  onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
-                  placeholder="Confirm your new password"
-                  showRequirements={false}
-                  required
-                />
-                {formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
-                  <div className="password-error" style={{ marginTop: '8px', color: '#dc2626', fontSize: '13px' }}>
-                    Passwords do not match
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          <button type="submit" className="reset-password-submit-btn">
-            Update Password
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="reset-password-btn"
+            disabled={loading}
+          >
+            {loading ? <LoadingSpinner /> : 'Update Password'}
           </button>
+
+          {/* Back to Sign In */}
+          <div className="back-to-signin">
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="back-link"
+            >
+              Back to sign in
+            </button>
+          </div>
         </form>
 
+        {/* Footer Links */}
         <div className="reset-password-footer">
-          <Link href="/login" className="reset-password-link">
-            Back to Sign In
-          </Link>
+          <a href="/terms" className="footer-link">Terms of Service</a>
+          <span> and </span>
+          <a href="/privacy" className="footer-link">Privacy Policy</a>
         </div>
       </div>
     </div>
   );
-}
+};
 
-export default function ResetPassword() {
-  return (
-    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>}>
-      <ResetPasswordContent />
-    </Suspense>
-  );
-}
-
+export default ResetPassword;

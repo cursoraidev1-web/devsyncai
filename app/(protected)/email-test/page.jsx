@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { sendTestEmail, getEmailTemplates } from '../../../api/email';
+import { sendTestEmail, getEmailTemplates, getEmailUsage } from '../../../api/email';
 import { handleApiError } from '../../../utils/errorHandler';
-import { Mail, Send, Loader, FileText } from 'lucide-react';
+import { Mail, Send, Loader, FileText, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
 import '../../../styles/pages/EmailTest.css';
 
 const EmailTest = () => {
@@ -18,10 +18,34 @@ const EmailTest = () => {
   const [loading, setLoading] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [useTemplate, setUseTemplate] = useState(false);
+  const [emailUsage, setEmailUsage] = useState({
+    currentUsage: 0,
+    maxLimit: 15,
+    remaining: 15,
+    planType: 'free',
+    planName: 'Free',
+    isUnlimited: false,
+  });
+  const [loadingUsage, setLoadingUsage] = useState(false);
 
   useEffect(() => {
     loadTemplates();
+    loadEmailUsage();
   }, []);
+
+  const loadEmailUsage = async () => {
+    setLoadingUsage(true);
+    try {
+      const response = await getEmailUsage();
+      if (response.data) {
+        setEmailUsage(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load email usage:', error);
+    } finally {
+      setLoadingUsage(false);
+    }
+  };
 
   const loadTemplates = async () => {
     setLoadingTemplates(true);
@@ -81,6 +105,9 @@ const EmailTest = () => {
       await sendTestEmail(payload);
       toast.success('Test email sent successfully!');
       
+      // Reload usage after sending
+      await loadEmailUsage();
+      
       // Reset form
       setFormData({
         to: '',
@@ -105,11 +132,69 @@ const EmailTest = () => {
             <Mail size={24} />
           </div>
           <div>
-            <h1 className="email-test-title">Email Testing</h1>
+            <h1 className="email-test-title">Team Email Tool</h1>
             <p className="email-test-subtitle">
-              Test and verify email delivery from your Zyndrx workspace
+              Send emails within your team with tier-based limits
             </p>
           </div>
+        </div>
+        <div className="email-usage-card">
+          {loadingUsage ? (
+            <Loader size={16} className="spinner" />
+          ) : (
+            <>
+              <div className="email-usage-info">
+                <div className="email-usage-plan">
+                  <span className={`plan-badge plan-badge-${emailUsage.planType}`}>
+                    {emailUsage.planName} Plan
+                  </span>
+                </div>
+                <div className="email-usage-stats">
+                  {emailUsage.isUnlimited ? (
+                    <div className="usage-unlimited">
+                      <CheckCircle size={16} />
+                      <span>Unlimited emails</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="usage-progress">
+                        <div className="usage-text">
+                          <span className="usage-current">{emailUsage.currentUsage}</span>
+                          <span className="usage-separator">/</span>
+                          <span className="usage-max">{emailUsage.maxLimit}</span>
+                          <span className="usage-label">emails today</span>
+                        </div>
+                        <div className="usage-bar-container">
+                          <div 
+                            className={`usage-bar ${
+                              emailUsage.remaining === 0 ? 'error' : 
+                              emailUsage.remaining <= 3 ? 'warning' : 'success'
+                            }`}
+                            style={{ 
+                              width: `${Math.min(100, (emailUsage.currentUsage / emailUsage.maxLimit) * 100)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="usage-remaining">
+                        {emailUsage.remaining === 0 ? (
+                          <div className="usage-warning">
+                            <AlertCircle size={16} />
+                            <span>Limit reached</span>
+                          </div>
+                        ) : (
+                          <div className="usage-success">
+                            <TrendingUp size={16} />
+                            <span>{emailUsage.remaining} remaining</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -212,7 +297,7 @@ const EmailTest = () => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (!emailUsage.isUnlimited && emailUsage.remaining === 0)}
               className="email-test-submit-btn"
             >
               {loading ? (
@@ -244,6 +329,16 @@ const EmailTest = () => {
               <li>Click "Send Test Email" to send</li>
             </ul>
 
+            <h4>Plan Limits</h4>
+            <ul>
+              <li><strong>Free Plan:</strong> 15 emails per day</li>
+              <li><strong>Pro Plan:</strong> 100 emails per day</li>
+              <li><strong>Enterprise Plan:</strong> Custom limits (unlimited by default)</li>
+            </ul>
+            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
+              Limits reset daily at midnight UTC. Upgrade your plan to send more emails.
+            </p>
+
             <h4>Email Templates</h4>
             <ul>
               <li><strong>Welcome Email:</strong> Template for welcoming new users</li>
@@ -264,4 +359,6 @@ const EmailTest = () => {
 };
 
 export default EmailTest;
+
+
 

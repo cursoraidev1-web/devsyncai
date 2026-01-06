@@ -86,47 +86,49 @@ code {
 }
 
 .btn-secondary {
-  background-color: #6b7280;
+  background-color: var(--color-text-muted);
   color: white;
 }
 
 .btn-secondary:hover:not(:disabled):not(.disabled) {
-  background-color: #4b5563;
+  background-color: var(--color-text-secondary);
 }
 
 .btn-secondary:disabled,
 .btn-secondary.disabled {
-  background-color: #6b7280;
+  background-color: var(--color-text-muted);
   opacity: 0.5;
 }
 
 .btn-success {
-  background-color: #10b981;
+  background-color: var(--color-success);
   color: white;
 }
 
 .btn-success:hover:not(:disabled):not(.disabled) {
-  background-color: #059669;
+  opacity: 0.9;
+  filter: brightness(0.95);
 }
 
 .btn-success:disabled,
 .btn-success.disabled {
-  background-color: #10b981;
+  background-color: var(--color-success);
   opacity: 0.5;
 }
 
 .btn-danger {
-  background-color: #ef4444;
+  background-color: var(--color-error);
   color: white;
 }
 
 .btn-danger:hover:not(:disabled):not(.disabled) {
-  background-color: #dc2626;
+  opacity: 0.9;
+  filter: brightness(0.9);
 }
 
 .btn-danger:disabled,
 .btn-danger.disabled {
-  background-color: #ef4444;
+  background-color: var(--color-error);
   opacity: 0.5;
 }
 

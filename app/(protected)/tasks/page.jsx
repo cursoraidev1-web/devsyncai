@@ -16,11 +16,16 @@ import {
   AlertCircle,
   User,
   Calendar,
-  Tag
+  Tag,
+  ArrowLeft,
+  Pin,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
 import LoadingSpinner from '../../../components/LoadingSpinner';
+import KanbanBoardModal from '../../../components/KanbanBoardModal';
 import { validateFields, INPUT_LIMITS } from '../../../utils/inputValidation';
 import { handleApiError } from '../../../utils/errorHandler';
 import '../../../styles/pages/TaskTracker.css';
@@ -29,7 +34,8 @@ const TaskTracker = () => {
   const router = useRouter();
   const { tasks, tasksLoading, addTask, updateTask, deleteTask, getTasksByProject, loadAllTasks, projects, teams } = useApp();
   const updatingTasks = useRef(new Set()); // EDGE-005 FIX: Track tasks being updated to prevent race conditions
-  const [view, setView] = useState('board'); // 'board' or 'list'
+  const [view, setView] = useState('list'); // 'list' view by default
+  const [showKanbanModal, setShowKanbanModal] = useState(false); // Kanban modal state
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterProject, setFilterProject] = useState('all'); // 'all' or project ID
@@ -110,11 +116,26 @@ const TaskTracker = () => {
   };
 
   const columns = [
-    { id: 'todo', title: 'To Do', color: '#6b7280' },
-    { id: 'in-progress', title: 'In Progress', color: '#4f46e5' },
-    { id: 'in-review', title: 'In Review', color: '#f59e0b' },
-    { id: 'completed', title: 'Completed', color: '#10b981' }
+    { id: 'todo', title: 'To Do', color: '#EF4444' },
+    { id: 'in-progress', title: 'In Progress', color: '#3B82F6' },
+    { id: 'in-review', title: 'In Review', color: '#F59E0B' },
+    { id: 'completed', title: 'Completed', color: '#10B981' }
   ];
+
+  // Get card color based on priority
+  const getCardColor = (priority) => {
+    switch (priority) {
+      case 'high':
+      case 'urgent':
+        return '#EF4444'; // Red
+      case 'medium':
+        return '#FBBF24'; // Yellow
+      case 'low':
+        return '#10B981'; // Green
+      default:
+        return '#3B82F6'; // Blue (default)
+    }
+  };
 
   // Get base filtered tasks (by project)
   const baseTasks = getFilteredTasks();
@@ -276,13 +297,26 @@ const TaskTracker = () => {
 
   return (
     <div className="task-tracker">
-      <div className="tracker-header">
-        <div>
-          <h1>Task & Feature Tracker</h1>
-          <p className="page-subtitle">Manage tasks across your projects</p>
+      {/* Board Header */}
+      <div className="board-header">
+        <button 
+          className="back-button"
+          onClick={() => router.back()}
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div className="board-title-section">
+          <div className="board-icon">
+            <span>2</span>
+          </div>
+          <div>
+            <h1 className="board-title">Kanban Board</h1>
+            <p className="board-subtitle">Experience your tasks in a simple way.</p>
+          </div>
         </div>
         <button 
-          className="btn btn-primary" 
+          className="btn btn-primary new-task-header-btn" 
           onClick={() => {
             // EDGE-003 FIX: Check if projects exist before opening modal
             if (projects.length === 0) {
@@ -335,16 +369,18 @@ const TaskTracker = () => {
 
           <div className="view-toggle">
             <button
-              className={`view-btn ${view === 'board' ? 'active' : ''}`}
-              onClick={() => setView('board')}
-            >
-              Board
-            </button>
-            <button
               className={`view-btn ${view === 'list' ? 'active' : ''}`}
               onClick={() => setView('list')}
             >
+              <List size={16} />
               List
+            </button>
+            <button
+              className="view-btn btn-kanban"
+              onClick={() => setShowKanbanModal(true)}
+            >
+              <LayoutGrid size={16} />
+              Board View
             </button>
           </div>
         </div>
@@ -355,68 +391,6 @@ const TaskTracker = () => {
         <PulsingLoader message="Loading tasks..." />
       ) : (
         <>
-      {/* Kanban Board View */}
-      {view === 'board' && (
-        <div className="kanban-board">
-          {columns.map(column => (
-            <div
-              key={column.id}
-              className="kanban-column"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              <div className="column-header" style={{ borderTopColor: column.color }}>
-                <div className="column-title">
-                  <span>{column.title}</span>
-                  <span className="column-count">
-                    {filteredTasks.filter(t => t.status === column.id).length}
-                  </span>
-                </div>
-              </div>
-
-              <div className="column-content">
-                {filteredTasks
-                  .filter(task => task.status === column.id)
-                  .map(task => (
-                    <div
-                      key={task.id}
-                      className="task-card"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                    >
-                      <div className="task-card-header">
-                        <h3>{task.title}</h3>
-                        {getPriorityIcon(task.priority)}
-                      </div>
-                      <p className="task-card-description">{task.description}</p>
-                      <div className="task-card-tags">
-                        {(task.tags || []).map((tag, idx) => (
-                          <span key={idx} className="task-tag">
-                            <Tag size={12} />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="task-card-footer">
-                        <div className="task-assignee">
-                          <User size={14} />
-                          <span>{task.assignee}</span>
-                        </div>
-                        {task.dueDate && (
-                          <div className="task-due-date">
-                            <Calendar size={14} />
-                            <span>{task.dueDate}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* List View */}
       {view === 'list' && (
         <div className="task-list-view">
@@ -711,6 +685,16 @@ const TaskTracker = () => {
       )}
         </>
       )}
+
+      {/* Kanban Board Modal */}
+      <KanbanBoardModal
+        isOpen={showKanbanModal}
+        onClose={() => setShowKanbanModal(false)}
+        tasks={filteredTasks}
+        updateTask={updateTask}
+        projects={projects}
+        onTaskClick={() => {}} // Optional: handle task click to open task details
+      />
     </div>
   );
 };

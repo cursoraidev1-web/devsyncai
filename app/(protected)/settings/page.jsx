@@ -10,6 +10,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { usePlan } from '../../../context/PlanContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { cancelSubscription } from '../../../api/subscription';
+import { getAvatarUploadToken } from '../../../api/auth';
 import { toast } from 'react-toastify';
 import { subscribeToPush, unsubscribeFromPush, getVapidPublicKey } from '../../../api/push';
 import {
@@ -47,7 +48,17 @@ import '../../../styles/pages/Settings.css';
 
 const Settings = () => {
   const router = useRouter();
-  const { user, updateUser, updateProfile, setup2FA, enable2FA, changePassword, getActiveSessions } = useAuth();
+  const {
+    user,
+    updateUser,
+    updateProfile,
+    setup2FA,
+    enable2FA,
+    disable2FA,
+    regenerateRecoveryCodes,
+    changePassword,
+    getActiveSessions,
+  } = useAuth();
   const { theme, updateTheme } = useTheme();
   const { 
     subscription, 
@@ -65,9 +76,13 @@ const Settings = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [twoFactorData, setTwoFactorData] = useState(null);
+  const [twoFactorData, setTwoFactorData] = useState(null); // { qrCode, secret }
   const [verificationCode, setVerificationCode] = useState('');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(user?.twoFactorEnabled || false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(!!user?.is2FAEnabled);
+  const [twoFAAction, setTwoFAAction] = useState('enable'); // enable | disable | regenerate
+  const [twoFALoading, setTwoFALoading] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState([]);
+  const [recoveryAcknowledged, setRecoveryAcknowledged] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [activeSessions, setActiveSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -121,12 +136,155 @@ const Settings = () => {
     }
   }, [user]);
 
-  // Initialize twoFactorEnabled from user object (no need to fetch again)
-  React.useEffect(() => {
-    if (user?.twoFactorEnabled !== undefined) {
-      setTwoFactorEnabled(user.twoFactorEnabled);
+  // Initialize twoFactorEnabled from user object
+  useEffect(() => {
+    if (user?.is2FAEnabled !== undefined) {
+      setTwoFactorEnabled(!!user.is2FAEnabled);
     }
-  }, [user?.twoFactorEnabled]);
+  }, [user?.is2FAEnabled]);
+
+  const reset2FAState = () => {
+    setTwoFactorData(null);
+    setVerificationCode('');
+    setTwoFALoading(false);
+    setRecoveryCodes([]);
+    setRecoveryAcknowledged(false);
+  };
+
+  const openEnable2FA = async () => {
+    reset2FAState();
+    setTwoFAAction('enable');
+    setShow2FAModal(true);
+    setTwoFALoading(true);
+    try {
+      const resp = await setup2FA();
+      const data = resp?.data || resp;
+      
+      // Verify we got the required data
+      if (!data?.qrCode || !data?.secret) {
+        console.error('Invalid setup response:', data);
+        throw new Error('Invalid response from server. Please try again.');
+      }
+      
+      setTwoFactorData({ qrCode: data.qrCode, secret: data.secret });
+      toast.success('Scan the QR code with your authenticator app');
+    } catch (e) {
+      console.error('2FA setup error:', e);
+      const errorMsg = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'Failed to start 2FA setup';
+      toast.error(errorMsg);
+      setShow2FAModal(false);
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const openDisable2FA = () => {
+    reset2FAState();
+    setTwoFAAction('disable');
+    setShow2FAModal(true);
+  };
+
+  const openRegenerateCodes = () => {
+    reset2FAState();
+    setTwoFAAction('regenerate');
+    setShow2FAModal(true);
+  };
+
+  const handleConfirmEnable2FA = async () => {
+    if (!verificationCode || verificationCode.replace(/\D/g, '').length !== 6) {
+      toast.error('Enter a valid 6-digit code');
+      return;
+    }
+    
+    // Verify setup was completed first
+    if (!twoFactorData?.secret) {
+      toast.error('Please scan the QR code first. Click "Enable 2FA" again if needed.');
+      return;
+    }
+    
+    setTwoFALoading(true);
+    try {
+      const resp = await enable2FA(verificationCode);
+      const data = resp?.data || resp;
+      const codes = data?.recoveryCodes || data?.recovery_codes || [];
+      setRecoveryCodes(Array.isArray(codes) ? codes : []);
+      setTwoFactorEnabled(true);
+      updateUser({ is2FAEnabled: true });
+      toast.success('2FA enabled. Save your recovery codes.');
+    } catch (e) {
+      console.error('2FA enable error:', e);
+      const errorMsg = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'Failed to enable 2FA';
+      toast.error(errorMsg);
+      
+      // If setup wasn't initialized, suggest retrying setup
+      if (errorMsg.includes('Setup not initialized') || errorMsg.includes('run setup first')) {
+        toast.info('Please click "Enable 2FA" again to restart the setup process');
+      }
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const handleConfirmDisable2FA = async () => {
+    const code = String(verificationCode || '').trim();
+    if (code.length < 6) {
+      toast.error('Enter your authenticator code or a recovery code');
+      return;
+    }
+    setTwoFALoading(true);
+    try {
+      await disable2FA(code);
+      setTwoFactorEnabled(false);
+      updateUser({ is2FAEnabled: false });
+      toast.success('2FA disabled');
+      setShow2FAModal(false);
+    } catch (e) {
+      toast.error(e?.message || 'Failed to disable 2FA');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const handleConfirmRegenerateCodes = async () => {
+    if (!verificationCode || verificationCode.replace(/\D/g, '').length !== 6) {
+      toast.error('Enter a valid 6-digit code');
+      return;
+    }
+    setTwoFALoading(true);
+    try {
+      const resp = await regenerateRecoveryCodes(verificationCode);
+      const data = resp?.data || resp;
+      const codes = data?.recoveryCodes || data?.recovery_codes || [];
+      setRecoveryCodes(Array.isArray(codes) ? codes : []);
+      toast.success('New recovery codes generated. Save them now.');
+    } catch (e) {
+      toast.error(e?.message || 'Failed to regenerate recovery codes');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const copyRecoveryCodes = async () => {
+    try {
+      await navigator.clipboard.writeText((recoveryCodes || []).join('\n'));
+      toast.success('Recovery codes copied');
+    } catch {
+      toast.error('Failed to copy recovery codes');
+    }
+  };
+
+  const downloadRecoveryCodes = () => {
+    const text = (recoveryCodes || []).join('\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'zyndrx-recovery-codes.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   // Check push notification support and current subscription status
   useEffect(() => {
@@ -282,7 +440,9 @@ const Settings = () => {
       // If avatar file is selected, upload it to Supabase Storage first
       if (avatarFile) {
         try {
-          // Upload to Supabase Storage
+          // Mirror documents upload pattern:
+          // 1) ask backend for upload_path
+          // 2) upload directly to Supabase Storage using that upload_path
           const { uploadFile } = await import('../../../utils/supabase');
           const userId = user?.id;
           if (!userId) {
@@ -290,10 +450,19 @@ const Settings = () => {
             setSaving(false);
             return;
           }
-          
-          const timestamp = Date.now();
-          const fileExtension = avatarFile.name.split('.').pop();
-          const filePath = `${userId}/${timestamp}.${fileExtension}`;
+
+          const tokenData = await getAvatarUploadToken({
+            file_name: avatarFile.name,
+            file_size: avatarFile.size,
+            file_type: avatarFile.type,
+          });
+
+          const filePath = tokenData?.upload_path;
+          if (!filePath) {
+            toast.error('Failed to get upload path for avatar');
+            setSaving(false);
+            return;
+          }
           
           const { url } = await uploadFile(
             avatarFile,
@@ -709,12 +878,29 @@ const Settings = () => {
                   <div className="security-info">
                     <div className="security-label">2FA Status</div>
                     <div className="security-description">Add an extra layer of security to your account</div>
-                    <span className="badge badge-danger">Not Enabled</span>
+                    {twoFactorEnabled ? (
+                      <span className="badge badge-success">Enabled</span>
+                    ) : (
+                      <span className="badge badge-danger">Not Enabled</span>
+                    )}
                   </div>
-                  <button className="btn btn-primary">
-                    <Shield size={18} />
-                    Enable 2FA
-                  </button>
+                  {twoFactorEnabled ? (
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button className="btn btn-outline" onClick={openRegenerateCodes}>
+                        <Shield size={18} />
+                        Regenerate Codes
+                      </button>
+                      <button className="btn btn-danger" onClick={openDisable2FA}>
+                        <X size={18} />
+                        Disable 2FA
+                      </button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-primary" onClick={openEnable2FA}>
+                      <Shield size={18} />
+                      Enable 2FA
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -966,6 +1152,252 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      {/* 2FA Modal */}
+      <Modal
+        isOpen={show2FAModal}
+        onClose={() => {
+          if (twoFALoading) return;
+          setShow2FAModal(false);
+          reset2FAState();
+        }}
+        title={
+          twoFAAction === 'enable'
+            ? 'Enable Two-Factor Authentication'
+            : twoFAAction === 'disable'
+            ? 'Disable Two-Factor Authentication'
+            : 'Regenerate Recovery Codes'
+        }
+        subtitle={
+          twoFAAction === 'enable'
+            ? 'Scan the QR code in your authenticator app, then enter the 6-digit code.'
+            : twoFAAction === 'disable'
+            ? 'Enter a 6-digit authenticator code or a recovery code to disable 2FA.'
+            : 'Enter a 6-digit authenticator code to generate new recovery codes.'
+        }
+        size="md"
+        footer={
+          twoFAAction === 'enable' ? (
+            <>
+              <button
+                className="modal-btn-cancel"
+                onClick={() => {
+                  if (!twoFALoading) {
+                    setShow2FAModal(false);
+                    reset2FAState();
+                  }
+                }}
+                disabled={twoFALoading}
+              >
+                Cancel
+              </button>
+
+              {recoveryCodes.length > 0 ? (
+                <button
+                  className="modal-btn-primary"
+                  onClick={() => {
+                    if (!recoveryAcknowledged) {
+                      toast.error('Please confirm you saved your recovery codes.');
+                      return;
+                    }
+                    setShow2FAModal(false);
+                    reset2FAState();
+                  }}
+                  disabled={twoFALoading || !recoveryAcknowledged}
+                >
+                  Done
+                </button>
+              ) : (
+                <button
+                  className="modal-btn-primary"
+                  onClick={handleConfirmEnable2FA}
+                  disabled={twoFALoading || !verificationCode || verificationCode.replace(/\D/g, '').length !== 6}
+                >
+                  {twoFALoading ? 'Enabling...' : 'Enable 2FA'}
+                </button>
+              )}
+            </>
+          ) : twoFAAction === 'disable' ? (
+            <>
+              <button
+                className="modal-btn-cancel"
+                onClick={() => {
+                  if (!twoFALoading) {
+                    setShow2FAModal(false);
+                    reset2FAState();
+                  }
+                }}
+                disabled={twoFALoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-btn-danger"
+                onClick={handleConfirmDisable2FA}
+                disabled={twoFALoading || !verificationCode || String(verificationCode).trim().length < 6}
+              >
+                {twoFALoading ? 'Disabling...' : 'Disable 2FA'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="modal-btn-cancel"
+                onClick={() => {
+                  if (!twoFALoading) {
+                    setShow2FAModal(false);
+                    reset2FAState();
+                  }
+                }}
+                disabled={twoFALoading}
+              >
+                Cancel
+              </button>
+              {recoveryCodes.length > 0 ? (
+                <button
+                  className="modal-btn-primary"
+                  onClick={() => {
+                    if (!recoveryAcknowledged) {
+                      toast.error('Please confirm you saved your recovery codes.');
+                      return;
+                    }
+                    setShow2FAModal(false);
+                    reset2FAState();
+                  }}
+                  disabled={twoFALoading || !recoveryAcknowledged}
+                >
+                  Done
+                </button>
+              ) : (
+                <button
+                  className="modal-btn-primary"
+                  onClick={handleConfirmRegenerateCodes}
+                  disabled={twoFALoading || !verificationCode || verificationCode.replace(/\D/g, '').length !== 6}
+                >
+                  {twoFALoading ? 'Generating...' : 'Generate Codes'}
+                </button>
+              )}
+            </>
+          )
+        }
+      >
+        {twoFALoading && twoFAAction === 'enable' && !twoFactorData ? (
+          <div style={{ padding: '16px', textAlign: 'center' }}>Preparing 2FA setup...</div>
+        ) : (
+          <>
+            {twoFAAction === 'enable' && recoveryCodes.length === 0 && (
+              <>
+                {twoFactorData?.qrCode && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                    <img
+                      src={twoFactorData.qrCode}
+                      alt="2FA QR Code"
+                      style={{ width: '240px', height: '240px', borderRadius: '12px', border: '1px solid var(--color-border)' }}
+                    />
+                  </div>
+                )}
+                {twoFactorData?.secret && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+                      Can’t scan? Enter this key manually:
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'monospace',
+                        padding: '10px 12px',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '10px',
+                        background: 'var(--color-surface-alt)',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {twoFactorData.secret}
+                    </div>
+                  </div>
+                )}
+                <div className="input-group">
+                  <label htmlFor="twofa-code">6-digit code</label>
+                  <input
+                    id="twofa-code"
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                  />
+                </div>
+              </>
+            )}
+
+            {(twoFAAction === 'disable' || twoFAAction === 'regenerate') && recoveryCodes.length === 0 && (
+              <div className="input-group">
+                <label htmlFor="twofa-token">{twoFAAction === 'disable' ? 'Authenticator or recovery code' : '6-digit code'}</label>
+                <input
+                  id="twofa-token"
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (twoFAAction === 'regenerate') {
+                      setVerificationCode(raw.replace(/\D/g, '').slice(0, 6));
+                    } else {
+                      setVerificationCode(raw.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 32));
+                    }
+                  }}
+                  placeholder={twoFAAction === 'disable' ? '000000 or XXXX-XXXX-XXXX' : '000000'}
+                  autoComplete="one-time-code"
+                />
+              </div>
+            )}
+
+            {recoveryCodes.length > 0 && (
+              <div>
+                <div style={{ marginBottom: '10px', fontWeight: 600 }}>Recovery Codes</div>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                  Save these codes now. Each code can be used once if you lose access to your authenticator app.
+                </div>
+                <div
+                  style={{
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    background: 'var(--color-surface-alt)',
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    lineHeight: 1.8,
+                    marginBottom: '12px',
+                    maxHeight: '220px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {(recoveryCodes || []).map((c) => (
+                    <div key={c}>{c}</div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  <button className="btn btn-outline" type="button" onClick={copyRecoveryCodes}>
+                    Copy
+                  </button>
+                  <button className="btn btn-outline" type="button" onClick={downloadRecoveryCodes}>
+                    Download
+                  </button>
+                </div>
+
+                <label style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '14px' }}>
+                  <input
+                    type="checkbox"
+                    checked={recoveryAcknowledged}
+                    onChange={(e) => setRecoveryAcknowledged(e.target.checked)}
+                  />
+                  I have saved these recovery codes
+                </label>
+              </div>
+            )}
+          </>
+        )}
+      </Modal>
 
       {/* Change Password Modal */}
       <Modal

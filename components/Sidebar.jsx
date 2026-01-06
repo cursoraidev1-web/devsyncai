@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 import { 
   LayoutDashboard, 
   CheckSquare,
@@ -65,7 +66,7 @@ const Sidebar = ({ isOpen }) => {
     { path: '/handoffs', icon: ArrowRightLeft, label: 'Handoff System', access: 'editor' },
     { path: '/ci-cd', icon: Bot, label: 'CI/CD Auto-Agent', access: 'editor' },
     { path: '/integrations', icon: Puzzle, label: 'Integrations', access: 'editor' },
-    { path: '/email-test', icon: Mail, label: 'Email Testing', access: 'editor' },
+    { path: '/email-test', icon: Mail, label: 'Team Email Tool', access: 'editor' },
   ];
 
   // Settings - Available to all
@@ -104,8 +105,7 @@ const Sidebar = ({ isOpen }) => {
       <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <div className="sidebar-logo-icon">Z</div>
-            <span className="sidebar-logo-text">ZynDrx</span>
+            <Logo width={32} height={32} showText={true} />
           </div>
         </div>
 

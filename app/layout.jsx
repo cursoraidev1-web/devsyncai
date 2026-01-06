@@ -14,17 +14,59 @@ export default function RootLayout({ children }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#4f46e5" />
+        <meta name="theme-color" content="#040914" />
         <meta
           name="description"
           content="Zyndrx - Project Management & Development Coordination Platform"
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Zyndrx" />
+        
+        {/* Favicons */}
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        
+        {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" />
+        
         <title>Zyndrx Platform</title>
+        {/* Apply theme immediately to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window === 'undefined') return;
+                
+                // Apply theme immediately before React loads
+                try {
+                  const savedTheme = localStorage.getItem('theme') || 'light';
+                  const htmlElement = document.documentElement;
+                  htmlElement.classList.remove('light', 'dark');
+                  
+                  // Handle 'auto' mode
+                  let effectiveTheme = savedTheme;
+                  if (savedTheme === 'auto') {
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                      effectiveTheme = 'dark';
+                    } else {
+                      effectiveTheme = 'light';
+                    }
+                  }
+                  
+                  htmlElement.classList.add(effectiveTheme);
+                  htmlElement.setAttribute('data-theme', effectiveTheme);
+                } catch (e) {
+                  // Fallback to light theme
+                  document.documentElement.classList.add('light');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                }
+              })();
+            `,
+          }}
+        />
         {/* Block telemetry requests early - before React loads */}
         <script
           dangerouslySetInnerHTML={{

@@ -86,6 +86,15 @@ const handleResponse = async (res) => {
       handle401();
     }
     
+    // Handle 429 Too Many Requests - special handling
+    if (res.status === 429) {
+      const error = new Error('Too many requests, please try again later');
+      error.status = 429;
+      error.data = data;
+      error.retryAfter = res.headers.get('Retry-After') || 5; // Default 5 seconds
+      throw error;
+    }
+    
     // Extract error message from various response formats
     let message = 'Request failed';
     if (typeof data === 'string') {
