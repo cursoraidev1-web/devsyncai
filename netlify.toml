@@ -1,0 +1,16 @@
+[build]
+  # This is the command to build your app
+  command = "npm run build"
+  # This is the directory that contains the deploy-ready files
+  publish = ".next" # Use "dist" for Vite/React, "build" for CRA
+
+[[redirects]]
+  # This helps handle client-side routing
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  # You can define build-time variables here, 
+  # but it's safer to set Secret Keys in the Netlify UI.
+  NODE_VERSION = "20"
