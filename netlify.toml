@@ -1,16 +1,19 @@
 [build]
-  # This is the command to build your app
   command = "npm run build"
-  # This is the directory that contains the deploy-ready files
-  publish = ".next" # Use "dist" for Vite/React, "build" for CRA
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [[redirects]]
-  # This helps handle client-side routing
+  # This rule ensures that if a user refreshes on a dynamic route, 
+  # Netlify hands the request back to the Next.js App Router.
   from = "/*"
   to = "/index.html"
   status = 200
 
-[build.environment]
-  # You can define build-time variables here, 
-  # but it's safer to set Secret Keys in the Netlify UI.
-  NODE_VERSION = "20"
+[[redirects]]
+  # Optional: Specific helper for your Supabase callback if you experience issues
+  from = "/auth/callback"
+  to = "/auth/callback"
+  status = 200
