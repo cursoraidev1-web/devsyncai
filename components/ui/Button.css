@@ -85,7 +85,8 @@
 }
 
 .ds-button--destructive:hover:not(.ds-button--disabled) {
-  background-color: #C53030;
+  opacity: 0.9;
+  filter: brightness(0.9);
   box-shadow: var(--shadow-md);
 }
 

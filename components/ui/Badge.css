@@ -39,23 +39,23 @@
 }
 
 .ds-badge--success {
-  background-color: #D1FAE5;
-  color: #065F46;
+  background-color: rgba(56, 161, 105, 0.15);
+  color: var(--color-success);
 }
 
 .ds-badge--warning {
-  background-color: #FEF3C7;
-  color: #92400E;
+  background-color: rgba(221, 107, 32, 0.15);
+  color: var(--color-warning);
 }
 
 .ds-badge--error {
-  background-color: #FEE2E2;
-  color: #991B1B;
+  background-color: rgba(229, 62, 62, 0.15);
+  color: var(--color-error);
 }
 
 .ds-badge--info {
-  background-color: #DBEAFE;
-  color: #1E40AF;
+  background-color: rgba(49, 130, 206, 0.15);
+  color: var(--color-info);
 }
 
 /* Dot Variant */

@@ -6,7 +6,6 @@ export const runtime = 'edge';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-;
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';

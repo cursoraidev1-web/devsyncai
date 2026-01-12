@@ -3,14 +3,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: var(--color-background);
   padding: 20px;
 }
 
 .reset-success-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--color-border);
   padding: 48px 40px;
   max-width: 440px;
   width: 100%;
@@ -29,14 +30,14 @@
 .logo-icon {
   width: 40px;
   height: 40px;
-  background: #3B82F6;
+  background: var(--color-primary);
   border-radius: 8px;
 }
 
 .logo-text {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
 }
 
 /* Success Icon */
@@ -71,13 +72,13 @@
 .reset-success-content h1 {
   font-size: 26px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-primary);
   margin: 0 0 12px 0;
 }
 
 .reset-success-content p {
   font-size: 15px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.6;
 }
@@ -86,7 +87,7 @@
 .continue-btn {
   width: 100%;
   padding: 14px;
-  background: #3B82F6;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -98,9 +99,9 @@
 }
 
 .continue-btn:hover {
-  background: #2563eb;
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .continue-btn:active {
@@ -112,17 +113,17 @@
   text-align: center;
   margin-top: 32px;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .footer-link {
-  color: #3B82F6;
+  color: var(--color-info);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .footer-link:hover {
-  color: #2563eb;
+  opacity: 0.8;
   text-decoration: underline;
 }
 

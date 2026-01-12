@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import * as authApi from '../api/auth';
+import logger from '../utils/logger';
 
 const AuthContext = createContext(null);
 
@@ -23,7 +24,7 @@ const safeLocalStorage = {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('safeLocalStorage.getItem error:', error);
+      logger.error('safeLocalStorage.getItem error:', error);
       return null;
     }
   },
@@ -34,7 +35,7 @@ const safeLocalStorage = {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.error('safeLocalStorage.setItem error:', error);
+      logger.error('safeLocalStorage.setItem error:', error);
     }
   },
   removeItem: (key) => {
@@ -44,7 +45,7 @@ const safeLocalStorage = {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error('safeLocalStorage.removeItem error:', error);
+      logger.error('safeLocalStorage.removeItem error:', error);
     }
   }
 };
@@ -311,7 +312,7 @@ export const AuthProvider = ({ children }) => {
       }
       return response;
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      logger.error('Failed to update profile:', error);
       throw error;
     }
   }, [updateUser]);
@@ -320,7 +321,7 @@ export const AuthProvider = ({ children }) => {
     try {
       return await authApi.changePassword({ currentPassword, newPassword, confirmPassword });
     } catch (error) {
-      console.error('Failed to change password:', error);
+      logger.error('Failed to change password:', error);
       throw error;
     }
   }, []);
@@ -329,7 +330,7 @@ export const AuthProvider = ({ children }) => {
     try {
       return await authApi.getActiveSessions();
     } catch (error) {
-      console.error('Failed to fetch active sessions:', error);
+      logger.error('Failed to fetch active sessions:', error);
       throw error;
     }
   }, []);
@@ -338,7 +339,7 @@ export const AuthProvider = ({ children }) => {
     try {
       return await authApi.setup2FA();
     } catch (error) {
-      console.error('Failed to setup 2FA:', error);
+      logger.error('Failed to setup 2FA:', error);
       throw error;
     }
   }, []);
@@ -347,7 +348,7 @@ export const AuthProvider = ({ children }) => {
     try {
       return await authApi.enable2FA(token);
     } catch (error) {
-      console.error('Failed to enable 2FA:', error);
+      logger.error('Failed to enable 2FA:', error);
       throw error;
     }
   }, []);
@@ -356,7 +357,7 @@ export const AuthProvider = ({ children }) => {
     try {
       return await authApi.disable2FA(token);
     } catch (error) {
-      console.error('Failed to disable 2FA:', error);
+      logger.error('Failed to disable 2FA:', error);
       throw error;
     }
   }, []);
@@ -365,7 +366,7 @@ export const AuthProvider = ({ children }) => {
     try {
       return await authApi.regenerateRecoveryCodes(token);
     } catch (error) {
-      console.error('Failed to regenerate recovery codes:', error);
+      logger.error('Failed to regenerate recovery codes:', error);
       throw error;
     }
   }, []);

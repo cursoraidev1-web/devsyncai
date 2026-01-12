@@ -3,9 +3,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: var(--color-background);
   padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  font-family: var(--font-family);
 }
 
 .verify-2fa-content {
@@ -25,7 +25,7 @@
 }
 
 .verify-2fa-brand-text {
-  color: #111827 !important;
+  color: var(--color-text-primary) !important;
   font-size: 24px;
   font-weight: 700;
 }
@@ -40,29 +40,29 @@
 .verify-2fa-header h1 {
   font-size: 24px;
   font-weight: 600;
-  color: #1a202c;
+  color: var(--color-text-primary);
   margin: 0 0 8px 0;
   line-height: 1.4;
 }
 
 .verify-2fa-header p {
   font-size: 14px;
-  color: #718096;
+  color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.5;
 }
 
 /* Error Message */
 .verify-2fa-error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(252, 129, 129, 0.15);
+  color: var(--color-error);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 24px;
   font-size: 14px;
   width: 100%;
   text-align: center;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-error);
 }
 
 /* Form */
@@ -92,10 +92,10 @@
 .verify-2fa-digit-input {
   width: 100%;
   height: 100%;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
-  color: #1a202c;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   font-size: 24px;
   font-weight: 600;
   text-align: center;
@@ -106,8 +106,8 @@
 }
 
 .verify-2fa-digit-input:focus {
-  border-color: #8409BD;
-  box-shadow: 0 0 0 3px rgba(132, 9, 189, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .verify-2fa-digit-placeholder {
@@ -115,17 +115,11 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #9ca3af;
+  color: var(--color-text-muted);
   font-size: 24px;
   font-weight: 600;
   pointer-events: none;
   z-index: 0;
-}
-
-.verify-2fa-digit-input:focus {
-  border-color: #3b82f6;
-  background: #1f2937;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .verify-2fa-digit-input:disabled {
@@ -136,7 +130,7 @@
 /* Refresh Text */
 .verify-2fa-refresh-text {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   margin: 0;
   text-align: center;
 }
@@ -145,8 +139,8 @@
 .verify-2fa-submit-btn {
   width: 100%;
   padding: 14px 24px;
-  background: #8409BD;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -158,8 +152,8 @@
 }
 
 .verify-2fa-submit-btn:hover:not(:disabled) {
-  background: #6B0898;
-  box-shadow: 0 4px 12px rgba(132, 9, 189, 0.3);
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .verify-2fa-submit-btn:disabled {
@@ -169,7 +163,7 @@
 
 /* Mail Link */
 .verify-2fa-mail-link {
-  color: #3b82f6;
+  color: var(--color-info);
   text-decoration: underline;
   font-size: 14px;
   font-weight: 400;
@@ -178,7 +172,7 @@
 }
 
 .verify-2fa-mail-link:hover {
-  color: #2563eb;
+  opacity: 0.8;
 }
 
 /* Footer Links */
@@ -192,7 +186,7 @@
 }
 
 .verify-2fa-footer-link {
-  color: #3b82f6;
+  color: var(--color-info);
   text-decoration: underline;
   font-size: 14px;
   font-weight: 400;
@@ -200,12 +194,7 @@
 }
 
 .verify-2fa-footer-link:hover {
-  color: #2563eb;
-}
-
-/* Ensure light theme consistency */
-.verify-2fa-container {
-  background: #f5f5f5;
+  opacity: 0.8;
 }
 
 /* Responsive */

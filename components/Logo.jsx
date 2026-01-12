@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 
@@ -11,7 +13,7 @@ const Logo = ({
   className = '',
   showText = false,
   textClassName = '',
-  textColor = '#111827',
+  textColor,
   priority = false 
 }) => {
   return (
@@ -25,11 +27,14 @@ const Logo = ({
         className="logo-icon"
       />
       {showText && (
-        <span className={`logo-text ${textClassName}`} style={{ 
-          fontSize: '24px', 
-          fontWeight: 700, 
-          color: textColor 
-        }}>
+        <span 
+          className={`logo-text ${textClassName}`} 
+          style={{ 
+            fontSize: '24px', 
+            fontWeight: 700, 
+            color: textColor || 'var(--color-text-primary)'
+          }}
+        >
           Zyndrx
         </span>
       )}

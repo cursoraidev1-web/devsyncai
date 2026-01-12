@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { signInWithGoogle, signInWithGitHub } from '../../utils/oauth';
+import Logo from '../../components/Logo';
 import DashboardPreview from '../../components/DashboardPreview';
 import PasswordInput from '../../components/PasswordInput';
 import EmailVerificationMessage from '../../components/EmailVerificationMessage';

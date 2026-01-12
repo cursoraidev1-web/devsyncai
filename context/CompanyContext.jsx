@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { switchCompany as apiSwitchCompany, getUserCompanies as apiGetUserCompanies, createCompany as apiCreateCompany } from '../api/auth';
+import logger from '../utils/logger';
 
 const CompanyContext = createContext(null);
 
@@ -24,7 +25,7 @@ const safeLocalStorage = {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('safeLocalStorage.getItem error:', error);
+      logger.error('safeLocalStorage.getItem error:', error);
       return null;
     }
   },
@@ -35,7 +36,7 @@ const safeLocalStorage = {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.error('safeLocalStorage.setItem error:', error);
+      logger.error('safeLocalStorage.setItem error:', error);
     }
   }
 };
@@ -66,7 +67,7 @@ export const CompanyProvider = ({ children }) => {
     // Rate limiting: Don't load more than once per 5 seconds
     const now = Date.now();
     if (now - lastLoadTimeRef.current < 5000) {
-      console.warn('Rate limit: Skipping loadCompanies call (too soon)');
+      logger.warn('Rate limit: Skipping loadCompanies call (too soon)');
       return;
     }
 
@@ -100,12 +101,12 @@ export const CompanyProvider = ({ children }) => {
         setCurrentCompany(null);
       }
     } catch (error) {
-      console.error('Failed to load companies:', error);
+      logger.error('Failed to load companies:', error);
       
       // Handle rate limiting error gracefully
       if (error?.status === 429 || error?.message?.toLowerCase().includes('too many requests')) {
         const retryAfter = error?.retryAfter || 5;
-        console.warn(`Rate limit reached, will retry after ${retryAfter} seconds`);
+        logger.warn(`Rate limit reached, will retry after ${retryAfter} seconds`);
         // Don't clear companies on rate limit - keep existing data
         // Update lastLoadTimeRef to prevent immediate retry
         lastLoadTimeRef.current = Date.now() + (retryAfter * 1000);
@@ -135,7 +136,7 @@ export const CompanyProvider = ({ children }) => {
       }
       return company;
     } catch (error) {
-      console.error('Failed to switch company:', error);
+      logger.error('Failed to switch company:', error);
       throw error;
     }
   }, []);
@@ -146,28 +147,28 @@ export const CompanyProvider = ({ children }) => {
     }
 
     try {
-      console.log('Creating company with payload:', companyData);
+      logger.debug('Creating company with payload:', companyData);
       const response = await apiCreateCompany(companyData);
-      console.log('Create company API response:', response);
+      logger.debug('Create company API response:', response);
       
       // Response format from backend: { success: true, data: <company>, message: "..." }
       const data = response?.data || response;
       const newCompany = data?.company || data;
       
       if (!newCompany || !newCompany.id) {
-        console.error('Invalid company response:', { response, data, newCompany });
+        logger.error('Invalid company response:', { response, data, newCompany });
         throw new Error('Failed to create workspace: Invalid response from server');
       }
       
-      console.log('Company created successfully:', newCompany);
+      logger.info('Company created successfully:', newCompany);
       
       setCompanies(prev => [...prev, newCompany]);
       await switchCompany(newCompany.id);
       
       return newCompany;
     } catch (error) {
-      console.error('Failed to create company:', error);
-      console.error('Error details:', {
+      logger.error('Failed to create company:', error);
+      logger.error('Error details:', {
         message: error?.message,
         status: error?.status,
         response: error?.response,

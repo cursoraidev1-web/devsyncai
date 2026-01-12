@@ -141,6 +141,20 @@ export default function RootLayout({ children }) {
                   }
                   origError.apply(console, args);
                 };
+                
+                // Handle ethereum injection conflicts from browser extensions (MetaMask, etc.)
+                if (typeof window !== 'undefined' && window.ethereum) {
+                  try {
+                    // Prevent redefinition errors from browser extensions
+                    Object.defineProperty(window, 'ethereum', {
+                      value: window.ethereum,
+                      writable: true,
+                      configurable: true
+                    });
+                  } catch (e) {
+                    // Ignore redefinition errors - they're harmless
+                  }
+                }
               })();
             `,
           }}

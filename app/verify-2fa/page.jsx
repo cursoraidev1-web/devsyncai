@@ -196,7 +196,7 @@ function Verify2FAContent() {
 
 export default function Verify2FA() {
   return (
-    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f5f5', color: '#1a202c' }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--color-background)', color: 'var(--color-text-primary)' }}>Loading...</div>}>
       <Verify2FAContent />
     </Suspense>
   );
