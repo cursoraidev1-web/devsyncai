@@ -5,16 +5,17 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { 
-  BarChart3, 
-  TrendingUp, 
+import {
+  BarChart3,
+  TrendingUp,
   TrendingDown,
   Users,
   Clock,
   CheckCircle,
   Target,
   Activity,
-  Calendar
+  Calendar,
+  Download
 } from 'lucide-react';
 import PulsingLoader from '../../../components/PulsingLoader';
 import '../../../styles/pages/Analytics.css';
@@ -24,6 +25,25 @@ const Analytics = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const handleExportReport = () => {
+    const projectName = projects?.[0]?.name || 'Project';
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      project: projectName,
+      timeRange,
+      data: analyticsData
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-report-${projectName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     const projectId = projects?.[0]?.id;
@@ -81,8 +101,8 @@ const Analytics = () => {
             <option value="quarter">This Quarter</option>
             <option value="year">This Year</option>
           </select>
-          <button className="btn btn-primary">
-            <Calendar size={18} />
+          <button className="btn btn-primary" onClick={handleExportReport}>
+            <Download size={18} />
             Export Report
           </button>
         </div>
@@ -96,19 +116,19 @@ const Analytics = () => {
           </div>
         ) : kpiCards.length > 0 ? (
           kpiCards.map((kpi, index) => (
-          <div key={index} className="kpi-card">
-            <div className="kpi-icon" style={{ backgroundColor: `${kpi.color}15`, color: kpi.color }}>
-              <kpi.icon size={24} />
-            </div>
-            <div className="kpi-content">
-              <div className="kpi-label">{kpi.label}</div>
-              <div className="kpi-value">{kpi.value}</div>
-              <div className={`kpi-change ${kpi.trend}`}>
-                {kpi.trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                {kpi.change} from last period
+            <div key={index} className="kpi-card">
+              <div className="kpi-icon" style={{ backgroundColor: `${kpi.color}15`, color: kpi.color }}>
+                <kpi.icon size={24} />
+              </div>
+              <div className="kpi-content">
+                <div className="kpi-label">{kpi.label}</div>
+                <div className="kpi-value">{kpi.value}</div>
+                <div className={`kpi-change ${kpi.trend}`}>
+                  {kpi.trend === 'up' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {kpi.change} from last period
+                </div>
               </div>
             </div>
-          </div>
           ))
         ) : (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
@@ -129,28 +149,28 @@ const Analytics = () => {
           {projectProgress.length > 0 ? (
             <div className="project-progress-list">
               {projectProgress.map((project, index) => (
-              <div key={index} className="progress-item">
-                <div className="progress-item-header">
-                  <h3>{project.name}</h3>
-                  <span className={`status-badge ${project.status}`}>
-                    {project.status === 'on-track' ? 'On Track' : 
-                     project.status === 'ahead' ? 'Ahead of Schedule' : 
-                     'Behind Schedule'}
-                  </span>
+                <div key={index} className="progress-item">
+                  <div className="progress-item-header">
+                    <h3>{project.name}</h3>
+                    <span className={`status-badge ${project.status}`}>
+                      {project.status === 'on-track' ? 'On Track' :
+                        project.status === 'ahead' ? 'Ahead of Schedule' :
+                          'Behind Schedule'}
+                    </span>
+                  </div>
+                  <div className="progress-details">
+                    <span className="progress-text">
+                      {project.tasks.completed} of {project.tasks.total} tasks completed
+                    </span>
+                    <span className="progress-percentage">{project.progress}%</span>
+                  </div>
+                  <div className="progress-bar-container">
+                    <div
+                      className={`progress-bar-fill ${project.status}`}
+                      style={{ width: `${project.progress}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="progress-details">
-                  <span className="progress-text">
-                    {project.tasks.completed} of {project.tasks.total} tasks completed
-                  </span>
-                  <span className="progress-percentage">{project.progress}%</span>
-                </div>
-                <div className="progress-bar-container">
-                  <div 
-                    className={`progress-bar-fill ${project.status}`}
-                    style={{ width: `${project.progress}%` }}
-                  />
-                </div>
-              </div>
               ))}
             </div>
           ) : (
@@ -171,22 +191,22 @@ const Analytics = () => {
             <>
               <div className="velocity-chart">
                 {sprintVelocity.map((sprint, index) => (
-              <div key={index} className="velocity-bar-group">
-                <div className="velocity-bars">
-                  <div 
-                    className="velocity-bar planned"
-                    style={{ height: `${(sprint.planned / 60) * 100}%` }}
-                    title={`Planned: ${sprint.planned}`}
-                  />
-                  <div 
-                    className="velocity-bar completed"
-                    style={{ height: `${(sprint.completed / 60) * 100}%` }}
-                    title={`Completed: ${sprint.completed}`}
-                  />
-                </div>
-                <div className="velocity-label">{sprint.sprint}</div>
-                <div className="velocity-percentage">{sprint.percentage}%</div>
-              </div>
+                  <div key={index} className="velocity-bar-group">
+                    <div className="velocity-bars">
+                      <div
+                        className="velocity-bar planned"
+                        style={{ height: `${(sprint.planned / 60) * 100}%` }}
+                        title={`Planned: ${sprint.planned}`}
+                      />
+                      <div
+                        className="velocity-bar completed"
+                        style={{ height: `${(sprint.completed / 60) * 100}%` }}
+                        title={`Completed: ${sprint.completed}`}
+                      />
+                    </div>
+                    <div className="velocity-label">{sprint.sprint}</div>
+                    <div className="velocity-percentage">{sprint.percentage}%</div>
+                  </div>
                 ))}
               </div>
               <div className="velocity-legend">
@@ -225,36 +245,36 @@ const Analytics = () => {
               </div>
               <div className="table-body">
                 {teamPerformance.map((member, index) => (
-                <div key={index} className="table-row">
-                  <div className="table-col col-member">
-                    <div className="member-info">
-                      <div className="member-avatar">
-                        {member.member.split(' ').map(n => n[0]).join('')}
+                  <div key={index} className="table-row">
+                    <div className="table-col col-member">
+                      <div className="member-info">
+                        <div className="member-avatar">
+                          {member.member.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <span>{member.member}</span>
                       </div>
-                      <span>{member.member}</span>
+                    </div>
+                    <div className="table-col col-role">{member.role}</div>
+                    <div className="table-col col-tasks">
+                      <span className="badge badge-primary">{member.tasksCompleted}</span>
+                    </div>
+                    <div className="table-col col-ontime">
+                      <div className="ontime-indicator">
+                        <div className="indicator-bar">
+                          <div
+                            className="indicator-fill"
+                            style={{ width: member.onTime }}
+                          />
+                        </div>
+                        <span>{member.onTime}</span>
+                      </div>
+                    </div>
+                    <div className="table-col col-quality">
+                      <span className={`quality-badge ${member.quality.replace('+', 'plus')}`}>
+                        {member.quality}
+                      </span>
                     </div>
                   </div>
-                  <div className="table-col col-role">{member.role}</div>
-                  <div className="table-col col-tasks">
-                    <span className="badge badge-primary">{member.tasksCompleted}</span>
-                  </div>
-                  <div className="table-col col-ontime">
-                    <div className="ontime-indicator">
-                      <div className="indicator-bar">
-                        <div 
-                          className="indicator-fill"
-                          style={{ width: member.onTime }}
-                        />
-                      </div>
-                      <span>{member.onTime}</span>
-                    </div>
-                  </div>
-                  <div className="table-col col-quality">
-                    <span className={`quality-badge ${member.quality.replace('+', 'plus')}`}>
-                      {member.quality}
-                    </span>
-                  </div>
-                </div>
                 ))}
               </div>
             </div>
@@ -275,17 +295,17 @@ const Analytics = () => {
           {deploymentMetrics.length > 0 ? (
             <div className="deployment-metrics-grid">
               {deploymentMetrics.map((metric, index) => (
-              <div key={index} className="metric-card">
-                <div className="metric-label">{metric.metric}</div>
-                <div className="metric-value">{metric.value}</div>
-                <div className="metric-change">
-                  <span className={metric.change.startsWith('+') || metric.change.startsWith('-') ? 
-                    (metric.change.startsWith('+') ? 'positive' : 'negative') : ''}>
-                    {metric.change}
-                  </span>
-                  <span className="metric-period">{metric.period}</span>
+                <div key={index} className="metric-card">
+                  <div className="metric-label">{metric.metric}</div>
+                  <div className="metric-value">{metric.value}</div>
+                  <div className="metric-change">
+                    <span className={metric.change.startsWith('+') || metric.change.startsWith('-') ?
+                      (metric.change.startsWith('+') ? 'positive' : 'negative') : ''}>
+                      {metric.change}
+                    </span>
+                    <span className="metric-period">{metric.period}</span>
+                  </div>
                 </div>
-              </div>
               ))}
             </div>
           ) : (

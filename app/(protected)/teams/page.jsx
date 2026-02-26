@@ -3,7 +3,8 @@
 // Use Edge Runtime to avoid Vercel function limits
 export const runtime = 'edge';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '../../../context/AppContext';
 import { usePlan } from '../../../context/PlanContext';
 import { Plus, Search, Filter, Users, Mail, Phone, MoreVertical, UserPlus, Edit, Trash2 } from 'lucide-react';
@@ -15,27 +16,67 @@ import { inviteUserToCompany, getCompanyMembers } from '../../../api/auth';
 import '../../../styles/pages/Teams.css';
 
 const Teams = () => {
-  const { teams, teamsLoading, loadTeams, createTeam, updateTeam, deleteTeam, teamMembers, loadTeamMembers, openUpgradeModal } = useApp();
+  const router = useRouter();
+  const { teams, teamsLoading, loadTeams, createTeam, updateTeam, deleteTeam, openUpgradeModal } = useApp();
   const { canCreate, getRemaining, limits, usage } = usePlan();
+  const { currentCompany } = useCompany();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [teamToEdit, setTeamToEdit] = useState(null);
-  const [teamToDelete, setTeamToDelete] = useState(null);
+  const [companyMembers, setCompanyMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
   const dropdownRefs = useRef({});
 
+  // Load teams on mount
   useEffect(() => {
     loadTeams();
   }, [loadTeams]);
 
+  // Load company members so the "All Members" section is populated
+  useEffect(() => {
+    if (!currentCompany?.id) return;
+    setMembersLoading(true);
+    getCompanyMembers(currentCompany.id)
+      .then((data) => {
+        const list = data?.data || data || [];
+        setCompanyMembers(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => {
+        console.error('Failed to load company members', err);
+        setCompanyMembers([]);
+      })
+      .finally(() => setMembersLoading(false));
+  }, [currentCompany?.id]);
+
+  // Apply search filter to teams
+  const filteredTeams = teams.filter((team) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      team.name?.toLowerCase().includes(q) ||
+      team.description?.toLowerCase().includes(q)
+    );
+  });
+
+  // Apply search filter to members
+  const filteredMembers = companyMembers.filter((member) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const user = member.user || member;
+    return (
+      user.full_name?.toLowerCase().includes(q) ||
+      user.email?.toLowerCase().includes(q) ||
+      member.role?.toLowerCase().includes(q)
+    );
+  });
+
   const handleAddMemberClick = () => {
     if (!canCreate('teamMember')) {
-      const remaining = getRemaining('teamMember');
       const maxLimit = limits?.maxTeamMembers === -1 ? 'unlimited' : limits?.maxTeamMembers;
       const currentUsage = usage?.teamMembersCount || 0;
-      
       openUpgradeModal(
         `You've reached your team member limit (${currentUsage}/${maxLimit}). Upgrade your plan to invite more team members.`
       );
@@ -91,13 +132,23 @@ const Teams = () => {
           <h1>Teams</h1>
           <p className="teams-subtitle">Manage your teams and members</p>
         </div>
-        <button 
-          className="teams-new-btn"
-          onClick={() => setShowCreateModal(true)}
-        >
-          <Plus size={18} />
-          New Team
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            className="teams-new-btn"
+            onClick={handleAddMemberClick}
+            style={{ background: 'var(--color-surface)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}
+          >
+            <UserPlus size={18} />
+            Invite Members
+          </button>
+          <button
+            className="teams-new-btn"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus size={18} />
+            New Team
+          </button>
+        </div>
       </div>
 
       <div className="teams-controls">
@@ -120,148 +171,205 @@ const Teams = () => {
         <PulsingLoader message="Loading teams..." />
       ) : (
         <div className="teams-content">
+          {/* ── Teams grid ── */}
           <div className="teams-section">
-            <h2 className="teams-section-title">Teams</h2>
+            <h2 className="teams-section-title">
+              Teams{filteredTeams.length > 0 ? ` (${filteredTeams.length})` : ''}
+            </h2>
             <div className="teams-grid">
-              {teams.length > 0 ? (
-              <>
-                {teams.map(team => (
-                  <div key={team.id} className="team-card">
-                    <div className="team-card-header">
-                      <div className="team-avatar">{team.avatar}</div>
-                      <div 
-                        ref={(el) => {
-                          if (el) dropdownRefs.current[team.id] = el;
-                        }}
-                        style={{ position: 'relative' }}
-                      >
-                        <button 
-                          className="team-more-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setOpenDropdownId(openDropdownId === team.id ? null : team.id);
+              {filteredTeams.length > 0 ? (
+                <>
+                  {filteredTeams.map(team => (
+                    <div key={team.id} className="team-card">
+                      <div className="team-card-header">
+                        {/* Bug 2 Fix: derive avatar from team name instead of team.avatar */}
+                        <div className="team-avatar">
+                          {team.name?.charAt(0).toUpperCase() || 'T'}
+                        </div>
+                        <div
+                          ref={(el) => {
+                            if (el) dropdownRefs.current[team.id] = el;
                           }}
-                          type="button"
+                          style={{ position: 'relative' }}
                         >
-                          <MoreVertical size={18} />
-                        </button>
-                        {openDropdownId === team.id && (
-                          <div className="team-dropdown-menu">
-                            <button
-                              type="button"
-                              className="team-dropdown-item"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditTeam(team);
-                              }}
-                            >
-                              <Edit size={16} />
-                              <span>Edit Team</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="team-dropdown-item team-dropdown-item-danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTeam(team);
-                              }}
-                            >
-                              <Trash2 size={16} />
-                              <span>Delete Team</span>
-                            </button>
+                          <button
+                            className="team-more-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              setOpenDropdownId(openDropdownId === team.id ? null : team.id);
+                            }}
+                            type="button"
+                          >
+                            <MoreVertical size={18} />
+                          </button>
+                          {openDropdownId === team.id && (
+                            <div className="team-dropdown-menu">
+                              <button
+                                type="button"
+                                className="team-dropdown-item"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditTeam(team);
+                                }}
+                              >
+                                <Edit size={16} />
+                                <span>Edit Team</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="team-dropdown-item team-dropdown-item-danger"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTeam(team);
+                                }}
+                              >
+                                <Trash2 size={16} />
+                                <span>Delete Team</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <h3 className="team-name">{team.name}</h3>
+                      <p className="team-description">{team.description || 'No description'}</p>
+                      <div className="team-stats">
+                        <div className="team-stat">
+                          <Users size={16} />
+                          <span>
+                            {typeof team.member_count === 'number'
+                              ? `${team.member_count} Members`
+                              : Array.isArray(team.members)
+                                ? `${team.members.length} Members`
+                                : '0 Members'}
+                          </span>
+                        </div>
+                        {team.team_lead && (
+                          <div className="team-stat">
+                            <span>Lead: {team.team_lead.full_name}</span>
                           </div>
                         )}
                       </div>
+                      <button
+                        className="team-view-btn"
+                        onClick={() => router.push(`/teams/${team.id}`)}
+                      >
+                        View Team
+                      </button>
                     </div>
-                    <h3 className="team-name">{team.name}</h3>
-                    <p className="team-description">{team.description}</p>
-                    <div className="team-stats">
-                      <div className="team-stat">
-                        <Users size={16} />
-                        <span>{team.members} Members</span>
-                      </div>
-                      <div className="team-stat">
-                        <span>{team.projects} Projects</span>
-                      </div>
+                  ))}
+                  <div
+                    className="team-card team-card-add"
+                    onClick={() => setShowCreateModal(true)}
+                  >
+                    <Plus size={48} />
+                    <span>Create New Team</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {searchQuery ? (
+                    <div className="team-empty-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+                      <Search size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+                      <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No teams match your search</h3>
+                      <p style={{ color: '#718096' }}>Try a different search term</p>
                     </div>
-                    <button 
-                      className="team-view-btn"
+                  ) : (
+                    <div className="team-empty-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+                      <Users size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+                      <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No teams yet</h3>
+                      <p style={{ color: '#718096', marginBottom: '24px' }}>Create your first team to get started</p>
+                    </div>
+                  )}
+                  <div
+                    className="team-card team-card-add"
+                    onClick={() => setShowCreateModal(true)}
+                  >
+                    <Plus size={48} />
+                    <span>Create New Team</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── All Members (company members) ── */}
+          <div className="teams-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 className="teams-section-title" style={{ margin: 0 }}>
+                All Members
+                {filteredMembers.length > 0 ? ` (${filteredMembers.length})` : ''}
+              </h2>
+              <button className="teams-new-btn" onClick={handleAddMemberClick} style={{ padding: '8px 16px', fontSize: '13px' }}>
+                <UserPlus size={16} />
+                Invite
+              </button>
+            </div>
+            {membersLoading ? (
+              <PulsingLoader message="Loading members..." />
+            ) : (
+              <div className="members-list">
+                {filteredMembers.length > 0 ? (
+                  filteredMembers.map((member) => {
+                    // Backend returns: { id, role, user: { id, full_name, email, avatar_url } }
+                    const user = member.user || member;
+                    const name = user.full_name || user.name || 'Unknown';
+                    const email = user.email || '';
+                    const avatarUrl = user.avatar_url;
+                    const initial = name.charAt(0).toUpperCase();
+
+                    return (
+                      <div key={member.id} className="member-card">
+                        <div className="member-avatar">
+                          {avatarUrl ? (
+                            <img
+                              src={avatarUrl}
+                              alt={name}
+                              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            initial
+                          )}
+                        </div>
+                        <div className="member-info">
+                          <div className="member-name">{name}</div>
+                          <div className="member-email">{email}</div>
+                          <div className="member-meta">
+                            <span className="member-role">{member.role || 'member'}</span>
+                          </div>
+                        </div>
+                        <div className="member-actions">
+                          {email && (
+                            <button
+                              className="member-action-btn"
+                              title="Send email"
+                              onClick={() => window.open(`mailto:${email}`)}
+                            >
+                              <Mail size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="team-empty-state" style={{ textAlign: 'center', padding: '40px' }}>
+                    <UserPlus size={48} style={{ color: '#718096', marginBottom: '16px' }} />
+                    <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No members yet</h3>
+                    <p style={{ color: '#718096', marginBottom: '24px' }}>Invite team members to get started</p>
+                    <button
+                      className="teams-new-btn"
                       onClick={handleAddMemberClick}
                     >
-                      View Team
+                      <UserPlus size={18} />
+                      Invite Members
                     </button>
                   </div>
-                ))}
-                <div 
-                  className="team-card team-card-add"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  <Plus size={48} />
-                  <span>Create New Team</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="team-empty-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
-                  <Users size={48} style={{ color: '#718096', marginBottom: '16px' }} />
-                  <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No teams yet</h3>
-                  <p style={{ color: '#718096', marginBottom: '24px' }}>Create your first team to get started</p>
-                </div>
-                <div 
-                  className="team-card team-card-add"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  <Plus size={48} />
-                  <span>Create New Team</span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="teams-section">
-          <h2 className="teams-section-title">All Members</h2>
-          <div className="members-list">
-            {teamMembers.length > 0 ? (
-              teamMembers.map(member => (
-                <div key={member.id} className="member-card">
-                  <div className="member-avatar">{member.avatar}</div>
-                  <div className="member-info">
-                    <div className="member-name">{member.name}</div>
-                    <div className="member-email">{member.email}</div>
-                    <div className="member-meta">
-                      <span className="member-role">{member.role}</span>
-                      <span className="member-team">{member.team}</span>
-                    </div>
-                  </div>
-                  <div className="member-actions">
-                    <button className="member-action-btn">
-                      <Mail size={16} />
-                    </button>
-                    <button className="member-action-btn">
-                      <MoreVertical size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="team-empty-state" style={{ textAlign: 'center', padding: '40px' }}>
-                <UserPlus size={48} style={{ color: '#718096', marginBottom: '16px' }} />
-                <h3 style={{ marginBottom: '8px', color: '#1A1F36' }}>No team members yet</h3>
-                <p style={{ color: '#718096', marginBottom: '24px' }}>Invite team members to get started</p>
-                <button 
-                  className="teams-new-btn"
-                  onClick={handleAddMemberClick}
-                >
-                  <UserPlus size={18} />
-                  Invite Members
-                </button>
+                )}
               </div>
             )}
           </div>
         </div>
-      </div>
       )}
 
       {/* Create New Team Modal */}
@@ -287,12 +395,12 @@ const Teams = () => {
         size="md"
       >
         {teamToEdit && (
-          <EditTeamForm 
+          <EditTeamForm
             team={teamToEdit}
             onClose={() => {
               setShowEditModal(false);
               setTeamToEdit(null);
-            }} 
+            }}
           />
         )}
       </Modal>
@@ -301,11 +409,24 @@ const Teams = () => {
       <Modal
         isOpen={showAddMemberModal}
         onClose={() => setShowAddMemberModal(false)}
-        title="Add Team Members"
+        title="Invite Members"
         subtitle="Invite members to join this team or company."
         size="md"
       >
-        <AddTeamMembersForm onClose={() => setShowAddMemberModal(false)} />
+        <AddTeamMembersForm
+          onClose={() => setShowAddMemberModal(false)}
+          onInvited={() => {
+            // Reload company members after a successful invite
+            if (currentCompany?.id) {
+              getCompanyMembers(currentCompany.id)
+                .then((data) => {
+                  const list = data?.data || data || [];
+                  setCompanyMembers(Array.isArray(list) ? list : []);
+                })
+                .catch(() => { });
+            }
+          }}
+        />
       </Modal>
     </div>
   );
@@ -357,11 +478,11 @@ const EditTeamForm = ({ team, onClose }) => {
   return (
     <form onSubmit={handleSubmit} className="create-team-form">
       {error && (
-        <div style={{ 
-          padding: '12px', 
-          background: '#fee2e2', 
-          color: '#991b1b', 
-          borderRadius: '8px', 
+        <div style={{
+          padding: '12px',
+          background: '#fee2e2',
+          color: '#991b1b',
+          borderRadius: '8px',
           marginBottom: '16px',
           fontSize: '14px'
         }}>
@@ -397,7 +518,7 @@ const EditTeamForm = ({ team, onClose }) => {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
-        <button 
+        <button
           type="button"
           className="modal-btn-cancel"
           onClick={onClose}
@@ -405,7 +526,7 @@ const EditTeamForm = ({ team, onClose }) => {
         >
           Cancel
         </button>
-        <button 
+        <button
           type="submit"
           className="modal-btn-primary"
           disabled={isSubmitting || !formData.name || formData.name.trim().length < 3}
@@ -450,11 +571,13 @@ const CreateTeamForm = ({ onClose }) => {
         description: formData.description?.trim() || undefined,
       });
       await loadTeams(); // Refresh teams list
+      toast.success('Team created successfully');
       onClose();
       // Reset form
       setFormData({ name: '', description: '' });
     } catch (err) {
       setError(err?.message || 'Failed to create team. Please try again.');
+      toast.error(err?.message || 'Failed to create team');
     } finally {
       setIsSubmitting(false);
     }
@@ -463,11 +586,11 @@ const CreateTeamForm = ({ onClose }) => {
   return (
     <form onSubmit={handleSubmit} className="create-team-form">
       {error && (
-        <div style={{ 
-          padding: '12px', 
-          background: '#fee2e2', 
-          color: '#991b1b', 
-          borderRadius: '8px', 
+        <div style={{
+          padding: '12px',
+          background: '#fee2e2',
+          color: '#991b1b',
+          borderRadius: '8px',
           marginBottom: '16px',
           fontSize: '14px'
         }}>
@@ -503,7 +626,7 @@ const CreateTeamForm = ({ onClose }) => {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e7eb' }}>
-        <button 
+        <button
           type="button"
           className="modal-btn-cancel"
           onClick={onClose}
@@ -511,7 +634,7 @@ const CreateTeamForm = ({ onClose }) => {
         >
           Cancel
         </button>
-        <button 
+        <button
           type="submit"
           className="modal-btn-primary"
           disabled={isSubmitting || !formData.name || formData.name.trim().length < 3}
@@ -523,16 +646,34 @@ const CreateTeamForm = ({ onClose }) => {
   );
 };
 
-const AddTeamMembersForm = ({ onClose }) => {
+const AddTeamMembersForm = ({ onClose, onInvited }) => {
   const { sendInvite, projects, openUpgradeModal } = useApp();
   const { canCreate, limits, usage } = usePlan();
   const { currentCompany } = useCompany();
   const [formData, setFormData] = useState({
     members: [],
-    inviteType: 'project' // 'project' or 'company'
+    inviteType: 'company' // default to company invite
   });
+  const [emailInput, setEmailInput] = useState('');
   const [status, setStatus] = useState('');
   const [inviting, setInviting] = useState(false);
+
+  const addEmail = (value) => {
+    const email = value.trim();
+    if (!email) return;
+    // Basic email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setStatus('Please enter a valid email address.');
+      return;
+    }
+    if (formData.members.includes(email)) {
+      setStatus('Email already added.');
+      return;
+    }
+    setFormData({ ...formData, members: [...formData.members, email] });
+    setEmailInput('');
+    setStatus('');
+  };
 
   const handleInvite = async () => {
     if (formData.members.length === 0) {
@@ -548,7 +689,7 @@ const AddTeamMembersForm = ({ onClose }) => {
     if (formData.inviteType === 'project') {
       const projectId = projects?.[0]?.id;
       if (!projectId) {
-        setStatus('Please create a project before sending invites.');
+        setStatus('Please create a project before sending project invites.');
         return;
       }
 
@@ -585,8 +726,9 @@ const AddTeamMembersForm = ({ onClose }) => {
         );
         toast.success('Project invites sent successfully!');
       }
-      
+
       setStatus('Invites sent successfully.');
+      onInvited?.();
       setTimeout(() => {
         onClose?.();
       }, 1500);
@@ -613,26 +755,27 @@ const AddTeamMembersForm = ({ onClose }) => {
             border: '1px solid #e5e7eb',
             borderRadius: '8px',
             fontSize: '14px',
-            background: 'white',
-            marginBottom: '16px'
+            background: 'var(--color-surface)',
+            color: 'var(--color-text-primary)',
+            marginBottom: '4px'
           }}
         >
-          <option value="project">Project Invite (Join a specific project)</option>
           <option value="company">Company Invite (Join the workspace)</option>
+          <option value="project">Project Invite (Join a specific project)</option>
         </select>
-        <p className="form-help-text" style={{ marginTop: '-12px', marginBottom: '16px' }}>
-          {formData.inviteType === 'company' 
-            ? 'Invite users to join your company/workspace. They will be able to access all projects.'
-            : 'Invite users to join a specific project. They will only have access to that project.'}
+        <p className="form-help-text">
+          {formData.inviteType === 'company'
+            ? 'Invite users to join your company workspace.'
+            : 'Invite users to join a specific project only.'}
         </p>
       </div>
       <div className="form-group">
-        <label htmlFor="member-email">Email Address</label>
+        <label htmlFor="member-email">Email Addresses</label>
         <div className="members-input">
           {formData.members.map((member, idx) => (
             <span key={idx} className="member-chip">
               {member}
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   setFormData({
@@ -647,20 +790,19 @@ const AddTeamMembersForm = ({ onClose }) => {
           ))}
           <input
             type="email"
-            placeholder="Enter email address..."
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && e.target.value) {
+            placeholder="Enter email and press Enter..."
+            value={emailInput}
+            onChange={(e) => { setEmailInput(e.target.value); setStatus(''); }}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ',') && emailInput) {
                 e.preventDefault();
-                setFormData({
-                  ...formData,
-                  members: [...formData.members, e.target.value]
-                });
-                e.target.value = '';
+                addEmail(emailInput);
               }
             }}
+            onBlur={() => { if (emailInput) addEmail(emailInput); }}
           />
         </div>
-        <p className="form-help-text">Press Enter to add each email address</p>
+        <p className="form-help-text">Press Enter or comma to add each email address</p>
       </div>
       <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
         <button
@@ -677,13 +819,19 @@ const AddTeamMembersForm = ({ onClose }) => {
           disabled={inviting || formData.members.length === 0}
           style={{ flex: 1 }}
         >
-          {inviting ? 'Sending...' : 'Send Invites'}
+          {inviting ? 'Sending...' : `Send ${formData.members.length > 1 ? `${formData.members.length} ` : ''}Invite${formData.members.length !== 1 ? 's' : ''}`}
         </button>
       </div>
-      {status && <p className="form-help-text">{status}</p>}
+      {status && (
+        <p className="form-help-text" style={{
+          marginTop: '12px',
+          color: status.includes('success') ? '#166534' : '#991b1b'
+        }}>
+          {status}
+        </p>
+      )}
     </div>
   );
 };
 
 export default Teams;
-

@@ -95,8 +95,9 @@ const Register = () => {
         email: formData.email.trim(),
         password: formData.password,
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+        companyName: formData.workspaceName.trim() || ""
         // workspaceName is optional - backend will auto-generate if not provided
-        ...(formData.workspaceName.trim() && { companyName: formData.workspaceName.trim() }),
+        // ...(formData.workspaceName.trim() && { companyName: formData.workspaceName.trim() }),
       };
 
       await register(registerPayload);

@@ -188,7 +188,7 @@ const Landing = () => {
                   <div className="sidebar-item">Documentation Hub</div>
                   <div className="sidebar-item">Handoff System</div>
                   <div className="sidebar-item">CI/CD Auto-Agent</div>
-                  <div className="sidebar-item">Integrations</div>
+                  {/* <div className="sidebar-item">Integrations</div> */}
                 </div>
                 <div className="dashboard-main-preview">
                   <div className="dashboard-welcome">

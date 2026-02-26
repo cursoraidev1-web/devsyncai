@@ -5,7 +5,6 @@ export const runtime = 'edge';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-;
 import { useAuth } from '../../../context/AuthContext';
 import { usePlan } from '../../../context/PlanContext';
 import { useTheme } from '../../../context/ThemeContext';
@@ -20,10 +19,10 @@ import {
   unsubscribeFromPushNotifications,
   getCurrentSubscription,
 } from '../../../utils/pushNotifications';
-import { 
-  User, 
-  Bell, 
-  Lock, 
+import {
+  User,
+  Bell,
+  Lock,
   Palette,
   Monitor,
   Mail,
@@ -60,15 +59,15 @@ const Settings = () => {
     getActiveSessions,
   } = useAuth();
   const { theme, updateTheme } = useTheme();
-  const { 
-    subscription, 
-    limits, 
-    usage, 
-    isTrial, 
-    isTrialExpired, 
+  const {
+    subscription,
+    limits,
+    usage,
+    isTrial,
+    isTrialExpired,
     getTrialDaysRemaining,
     isActive,
-    getPlanType 
+    getPlanType
   } = usePlan();
   const [activeTab, setActiveTab] = useState('general');
   const [companyMembers, setCompanyMembers] = useState([]);
@@ -159,13 +158,13 @@ const Settings = () => {
     try {
       const resp = await setup2FA();
       const data = resp?.data || resp;
-      
+
       // Verify we got the required data
       if (!data?.qrCode || !data?.secret) {
         console.error('Invalid setup response:', data);
         throw new Error('Invalid response from server. Please try again.');
       }
-      
+
       setTwoFactorData({ qrCode: data.qrCode, secret: data.secret });
       toast.success('Scan the QR code with your authenticator app');
     } catch (e) {
@@ -195,13 +194,13 @@ const Settings = () => {
       toast.error('Enter a valid 6-digit code');
       return;
     }
-    
+
     // Verify setup was completed first
     if (!twoFactorData?.secret) {
       toast.error('Please scan the QR code first. Click "Enable 2FA" again if needed.');
       return;
     }
-    
+
     setTwoFALoading(true);
     try {
       const resp = await enable2FA(verificationCode);
@@ -215,7 +214,7 @@ const Settings = () => {
       console.error('2FA enable error:', e);
       const errorMsg = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'Failed to enable 2FA';
       toast.error(errorMsg);
-      
+
       // If setup wasn't initialized, suggest retrying setup
       if (errorMsg.includes('Setup not initialized') || errorMsg.includes('run setup first')) {
         toast.info('Please click "Enable 2FA" again to restart the setup process');
@@ -340,7 +339,7 @@ const Settings = () => {
 
   const handleChangePassword = async () => {
     setPasswordError('');
-    
+
     if (!changePasswordData.currentPassword || !changePasswordData.newPassword || !changePasswordData.confirmPassword) {
       setPasswordError('Please fill in all fields');
       return;
@@ -463,14 +462,14 @@ const Settings = () => {
             setSaving(false);
             return;
           }
-          
+
           const { url } = await uploadFile(
             avatarFile,
             'avatars',
             filePath,
             { contentType: avatarFile.type }
           );
-          
+
           updates.avatarUrl = url;
         } catch (uploadError) {
           console.error('Avatar upload error:', uploadError);
@@ -481,10 +480,10 @@ const Settings = () => {
       }
 
       const response = await updateProfile(updates);
-      
+
       // Handle response format: { success: true, data: {...} } or direct user object
       const updatedUser = response?.data || response;
-      
+
       if (updatedUser) {
         // Update local state
         updateUser(updatedUser);
@@ -508,7 +507,7 @@ const Settings = () => {
       if (notifications.push && pushSupported) {
         // Request permission first
         const permissionGranted = await requestNotificationPermission();
-        
+
         if (!permissionGranted) {
           setNotifications(prev => ({ ...prev, push: false }));
           toast.error('Notification permission denied');
@@ -517,7 +516,7 @@ const Settings = () => {
 
         // Get VAPID public key from backend
         const { data: vapidResponse } = await getVapidPublicKey();
-        
+
         if (!vapidResponse?.publicKey) {
           toast.error('Push notifications are not configured on the server');
           setNotifications(prev => ({ ...prev, push: false }));
@@ -526,22 +525,22 @@ const Settings = () => {
 
         // Subscribe to push notifications
         const subscription = await subscribeToPushNotifications(vapidResponse.publicKey);
-        
+
         // Send subscription to backend
         await subscribeToPush(subscription);
-        
+
         toast.success('Push notifications enabled!');
       } else if (!notifications.push) {
         // If disabled, unsubscribe
         const endpoint = await unsubscribeFromPushNotifications();
-        
+
         if (endpoint) {
           await unsubscribeFromPush({ endpoint });
         } else {
           // If no local subscription, try to unsubscribe all
           await unsubscribeFromPush({ endpoint: '' });
         }
-        
+
         toast.success('Push notifications disabled');
       }
     } catch (error) {
@@ -613,7 +612,7 @@ const Settings = () => {
                     onChange={handleAvatarSelect}
                     style={{ display: 'none' }}
                   />
-                  <button 
+                  <button
                     className="btn btn-outline"
                     onClick={(e) => {
                       e.preventDefault();
@@ -776,11 +775,11 @@ const Settings = () => {
                       <div>
                         <div className="toggle-label">Push Notifications</div>
                         <div className="toggle-description">
-                          {!pushSupported 
+                          {!pushSupported
                             ? 'Push notifications are not supported in this browser'
                             : pushInitialized
-                            ? 'Receive push notifications in-app'
-                            : 'Checking push notification support...'}
+                              ? 'Receive push notifications in-app'
+                              : 'Checking push notification support...'}
                         </div>
                       </div>
                     </div>
@@ -828,8 +827,8 @@ const Settings = () => {
               </div>
 
               <div className="settings-actions">
-                <button 
-                  className="btn btn-primary" 
+                <button
+                  className="btn btn-primary"
                   onClick={handleSaveProfile}
                   disabled={saving}
                 >
@@ -862,7 +861,7 @@ const Settings = () => {
                     <div className="security-label">Change Password</div>
                     <div className="security-description">Update your password regularly for better security</div>
                   </div>
-                  <button 
+                  <button
                     className="btn btn-outline"
                     onClick={() => setShowChangePasswordModal(true)}
                   >
@@ -1070,15 +1069,15 @@ const Settings = () => {
                     </div>
 
                     <div className="plan-actions">
-                      <button 
-                        className="btn btn-primary" 
+                      <button
+                        className="btn btn-primary"
                         onClick={() => router.push('/pricing')}
                       >
                         {isTrialExpired() || !isActive() ? 'Upgrade Plan' : 'Change Plan'}
                       </button>
                       {isActive() && !isTrial() && subscription?.status !== 'cancelled' && (
-                        <button 
-                          className="btn btn-outline" 
+                        <button
+                          className="btn btn-outline"
                           onClick={handleCancelSubscription}
                           disabled={cancelling}
                         >
@@ -1165,15 +1164,15 @@ const Settings = () => {
           twoFAAction === 'enable'
             ? 'Enable Two-Factor Authentication'
             : twoFAAction === 'disable'
-            ? 'Disable Two-Factor Authentication'
-            : 'Regenerate Recovery Codes'
+              ? 'Disable Two-Factor Authentication'
+              : 'Regenerate Recovery Codes'
         }
         subtitle={
           twoFAAction === 'enable'
             ? 'Scan the QR code in your authenticator app, then enter the 6-digit code.'
             : twoFAAction === 'disable'
-            ? 'Enter a 6-digit authenticator code or a recovery code to disable 2FA.'
-            : 'Enter a 6-digit authenticator code to generate new recovery codes.'
+              ? 'Enter a 6-digit authenticator code or a recovery code to disable 2FA.'
+              : 'Enter a 6-digit authenticator code to generate new recovery codes.'
         }
         size="md"
         footer={

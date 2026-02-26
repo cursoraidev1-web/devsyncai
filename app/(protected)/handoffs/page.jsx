@@ -5,7 +5,6 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-;
 import { Search, Filter, Plus, ArrowRightLeft, Clock, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { fetchHandoffs, createHandoff as apiCreateHandoff } from '../../../api/handoffs';
 import { fetchProjects } from '../../../api/projects';
@@ -145,7 +144,7 @@ const HandoffSystem = () => {
 
   const filteredHandoffs = handoffs.filter(handoff => {
     const matchesSearch = handoff.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (handoff.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (handoff.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     // Normalize status for comparison (handle both in-review and in_review)
     const normalizedStatus = handoff.status?.replace(/-/g, '_');
     const normalizedFilter = filter.replace(/-/g, '_');

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Download, Smartphone, Zap, Shield } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './PWAInstallPrompt.css';
 
 const PWAInstallPrompt = () => {
+  const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -10,6 +12,11 @@ const PWAInstallPrompt = () => {
   const promptFiredRef = useRef(false);
 
   useEffect(() => {
+    // Don't show prompt if user is not logged in
+    if (!user) {
+      return;
+    }
+
     // Check if already installed
     const checkInstalled = () => {
       // Check if running as standalone (installed)
@@ -107,7 +114,7 @@ const PWAInstallPrompt = () => {
       clearTimeout(debugTimeout);
       window.removeEventListener('beforeinstallprompt', handler);
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, [user]); // Re-run when user changes
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
@@ -145,8 +152,8 @@ const PWAInstallPrompt = () => {
     localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   };
 
-  // Don't show if already installed
-  if (isInstalled || !showPrompt) {
+  // Don't show if already installed, not logged in, or prompt shouldn't show
+  if (isInstalled || !showPrompt || !user) {
     return null;
   }
 

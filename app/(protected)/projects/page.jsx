@@ -5,7 +5,6 @@ export const runtime = 'edge';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-;
 import { Plus, Filter, ArrowUpDown, Grid, List, Calendar } from 'lucide-react';
 import { Modal } from '../../../components/ui';
 import { useApp } from '../../../context/AppContext';
@@ -61,7 +60,7 @@ const Projects = () => {
       const remaining = getRemaining('project');
       const maxLimit = limits?.maxProjects === -1 ? 'unlimited' : limits?.maxProjects;
       const currentUsage = usage?.projectsCount || 0;
-      
+
       openUpgradeModal(
         `You've reached your project limit (${currentUsage}/${maxLimit}). Upgrade your plan to create more projects.`
       );
@@ -88,7 +87,7 @@ const Projects = () => {
           <h1>Projects</h1>
           <p className="projects-subtitle">Manage all your team's projects in one place.</p>
         </div>
-        <button 
+        <button
           className="projects-new-btn"
           onClick={handleNewProjectClick}
         >
@@ -150,129 +149,129 @@ const Projects = () => {
         )
       ) : (
         <>
-      {view === 'grid' && (
-        <div className="projects-grid">
-          {filteredProjects.map(project => (
-            <div 
-              key={project.id} 
-              className="project-card"
-              onClick={() => router.push(`/projects/${project.id}`)}
-            >
-              <div className="project-card-header">
-                <h3 className="project-card-title">{project.name}</h3>
-                <span 
-                  className="project-status-badge"
-                  style={{ 
-                    backgroundColor: `${getStatusColor(project.status)}15`,
-                    color: getStatusColor(project.status)
-                  }}
+          {view === 'grid' && (
+            <div className="projects-grid">
+              {filteredProjects.map(project => (
+                <div
+                  key={project.id}
+                  className="project-card"
+                  onClick={() => router.push(`/projects/${project.id}`)}
                 >
-                  {getStatusLabel(project.status)}
-                </span>
-              </div>
-              <p className="project-card-team">{project.team}</p>
-              <p className="project-card-description">{project.description}</p>
-              <div className="project-progress-section">
-                <div className="project-progress-header">
-                  <span>Progress</span>
-                  <span>{project.progress}%</span>
-                </div>
-                <div className="project-progress-bar">
-                  <div 
-                    className="project-progress-fill"
-                    style={{ 
-                      width: `${project.progress}%`,
-                      backgroundColor: getStatusColor(project.status)
-                    }}
-                  ></div>
-                </div>
-              </div>
-              <div className="project-card-footer">
-                <div className="project-members">
-                  {Array.from({ length: Math.min(project.members, 3) }).map((_, i) => (
-                    <div key={i} className="project-member-avatar">
-                      {String.fromCharCode(65 + i)}
+                  <div className="project-card-header">
+                    <h3 className="project-card-title">{project.name}</h3>
+                    <span
+                      className="project-status-badge"
+                      style={{
+                        backgroundColor: `${getStatusColor(project.status)}15`,
+                        color: getStatusColor(project.status)
+                      }}
+                    >
+                      {getStatusLabel(project.status)}
+                    </span>
+                  </div>
+                  <p className="project-card-team">{project.team}</p>
+                  <p className="project-card-description">{project.description}</p>
+                  <div className="project-progress-section">
+                    <div className="project-progress-header">
+                      <span>Progress</span>
+                      <span>{project.progress}%</span>
                     </div>
-                  ))}
-                  {project.members > 3 && (
-                    <span className="project-members-more">+{project.members - 3}</span>
-                  )}
+                    <div className="project-progress-bar">
+                      <div
+                        className="project-progress-fill"
+                        style={{
+                          width: `${project.progress}%`,
+                          backgroundColor: getStatusColor(project.status)
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="project-card-footer">
+                    <div className="project-members">
+                      {Array.from({ length: Math.min(project.members, 3) }).map((_, i) => (
+                        <div key={i} className="project-member-avatar">
+                          {String.fromCharCode(65 + i)}
+                        </div>
+                      ))}
+                      {project.members > 3 && (
+                        <span className="project-members-more">+{project.members - 3}</span>
+                      )}
+                    </div>
+                    <div className="project-due-date">
+                      <Calendar size={14} />
+                      {project.dueDate}
+                    </div>
+                  </div>
                 </div>
-                <div className="project-due-date">
-                  <Calendar size={14} />
-                  {project.dueDate}
-                </div>
+              ))}
+              <div
+                className="project-card project-card-add"
+                onClick={handleNewProjectClick}
+              >
+                <Plus size={48} />
+                <span>Add New Project</span>
               </div>
             </div>
-          ))}
-          <div 
-            className="project-card project-card-add"
-            onClick={handleNewProjectClick}
-          >
-            <Plus size={48} />
-            <span>Add New Project</span>
-          </div>
-        </div>
-      )}
+          )}
 
-      {view === 'list' && !projectsLoading && (
-        <div className="projects-list">
-          <div className="projects-list-header">
-            <div>Project Name</div>
-            <div>Team</div>
-            <div>Progress</div>
-            <div>Status</div>
-            <div>Due Date</div>
-            <div>Actions</div>
-          </div>
-          {filteredProjects.map(project => (
-            <div 
-              key={project.id} 
-              className="projects-list-item"
-              onClick={() => router.push(`/projects/${project.id}`)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="list-item-name">
-                <strong>{project.name}</strong>
-                <p>{project.description}</p>
+          {view === 'list' && !projectsLoading && (
+            <div className="projects-list">
+              <div className="projects-list-header">
+                <div>Project Name</div>
+                <div>Team</div>
+                <div>Progress</div>
+                <div>Status</div>
+                <div>Due Date</div>
+                <div>Actions</div>
               </div>
-              <div>{project.team}</div>
-              <div>
-                <div className="list-progress-bar">
-                  <div 
-                    className="list-progress-fill"
-                    style={{ width: `${project.progress}%` }}
-                  ></div>
+              {filteredProjects.map(project => (
+                <div
+                  key={project.id}
+                  className="projects-list-item"
+                  onClick={() => router.push(`/projects/${project.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="list-item-name">
+                    <strong>{project.name}</strong>
+                    <p>{project.description}</p>
+                  </div>
+                  <div>{project.team}</div>
+                  <div>
+                    <div className="list-progress-bar">
+                      <div
+                        className="list-progress-fill"
+                        style={{ width: `${project.progress}%` }}
+                      ></div>
+                    </div>
+                    <span>{project.progress}%</span>
+                  </div>
+                  <div>
+                    <span
+                      className="list-status-badge"
+                      style={{
+                        backgroundColor: `${getStatusColor(project.status)}15`,
+                        color: getStatusColor(project.status)
+                      }}
+                    >
+                      {getStatusLabel(project.status)}
+                    </span>
+                  </div>
+                  <div>{project.dueDate}</div>
+                  <div>
+                    <button
+                      className="list-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/projects/${project.id}`);
+                      }}
+                    >
+                      View
+                    </button>
+                  </div>
                 </div>
-                <span>{project.progress}%</span>
-              </div>
-              <div>
-                <span 
-                  className="list-status-badge"
-                  style={{ 
-                    backgroundColor: `${getStatusColor(project.status)}15`,
-                    color: getStatusColor(project.status)
-                  }}
-                >
-                  {getStatusLabel(project.status)}
-                </span>
-              </div>
-              <div>{project.dueDate}</div>
-              <div>
-                <button 
-                  className="list-action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/projects/${project.id}`);
-                  }}
-                >
-                  View
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
         </>
       )}
 
@@ -285,13 +284,13 @@ const Projects = () => {
         size="lg"
         footer={
           <>
-            <button 
+            <button
               className="modal-btn-cancel"
               onClick={() => setShowCreateModal(false)}
             >
               Cancel
             </button>
-            <button 
+            <button
               className="modal-btn-primary"
               onClick={async () => {
                 try {
@@ -299,7 +298,7 @@ const Projects = () => {
                     name: formState.name,
                     description: formState.description,
                   };
-                  
+
                   // Add dates in ISO format if provided
                   if (formState.startDate) {
                     projectData.start_date = new Date(formState.startDate).toISOString();
@@ -307,7 +306,7 @@ const Projects = () => {
                   if (formState.endDate) {
                     projectData.end_date = new Date(formState.endDate).toISOString();
                   }
-                  
+
                   await createProject(projectData);
                   setShowCreateModal(false);
                   // Reset form
@@ -381,7 +380,7 @@ const CreateProjectForm = ({ formState, setFormState }) => {
           {formState.members?.map((member, idx) => (
             <span key={idx} className="member-chip">
               {member}
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   setFormState({

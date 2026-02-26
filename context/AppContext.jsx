@@ -96,7 +96,7 @@ export const AppProvider = ({ children }) => {
       const response = await apiFetchProjects();
       // Handle response structure: { success: true, data: [...], message: "..." }
       const projectsData = response?.data || (Array.isArray(response) ? response : []);
-      
+
       // Transform backend fields to frontend format
       const transformedProjects = projectsData.map(project => {
         // Format deadline/due date
@@ -105,10 +105,10 @@ export const AppProvider = ({ children }) => {
         if (endDate) {
           try {
             const date = new Date(endDate);
-            formattedDeadline = date.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            formattedDeadline = date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             });
           } catch (e) {
             formattedDeadline = endDate;
@@ -137,7 +137,7 @@ export const AppProvider = ({ children }) => {
           status: project.status || 'active'
         };
       });
-      
+
       setProjects(transformedProjects);
     } catch (error) {
       console.error('Failed to fetch projects', error);
@@ -168,7 +168,7 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await fetchTasks(); // Fetch all tasks
       const tasksArray = Array.isArray(data) ? data : [];
-      
+
       // Transform tasks to ensure all fields are properly formatted
       const transformedTasks = tasksArray.map(task => {
         // Format due date
@@ -177,10 +177,10 @@ export const AppProvider = ({ children }) => {
         if (dueDate) {
           try {
             const date = new Date(dueDate);
-            formattedDueDate = date.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            formattedDueDate = date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             });
           } catch (e) {
             formattedDueDate = dueDate;
@@ -202,9 +202,9 @@ export const AppProvider = ({ children }) => {
           priority: task.priority || 'medium'
         };
       });
-      
+
       setTasks(transformedTasks);
-      
+
       // Update cache by project for quick filtering
       const tasksByProjectMap = new Map();
       transformedTasks.forEach(task => {
@@ -244,17 +244,17 @@ export const AppProvider = ({ children }) => {
   const loadTasks = useCallback(
     async (projectId, forceRefresh = false) => {
       if (!token) return;
-      
+
       // If we need to refresh or don't have tasks yet, fetch all
       if (forceRefresh || tasks.length === 0) {
         await loadAllTasks();
       }
-      
+
       // Return filtered tasks (client-side filtering)
       if (projectId) {
         return getTasksByProject(projectId);
       }
-      
+
       return tasks;
     },
     [token, tasks, loadAllTasks, getTasksByProject]
@@ -288,7 +288,7 @@ export const AppProvider = ({ children }) => {
 
     // Optimistic update
     setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, ...updates } : task)));
-    
+
     // Update cache if project_id exists
     if (projectId) {
       setTasksByProject(prev => {
@@ -303,7 +303,7 @@ export const AppProvider = ({ children }) => {
       const data = await apiUpdateTask(id, updates);
       // Update with server response
       setTasks((prev) => prev.map((task) => (task.id === id ? data : task)));
-      
+
       // Update cache
       if (projectId) {
         setTasksByProject(prev => {
@@ -313,7 +313,7 @@ export const AppProvider = ({ children }) => {
           return newMap;
         });
       }
-      
+
       return data;
     } catch (error) {
       console.error('Failed to update task', error);
@@ -329,9 +329,9 @@ export const AppProvider = ({ children }) => {
     // Optimistic removal
     const taskToDelete = tasks.find(t => t.id === id);
     const projectId = taskToDelete?.project_id;
-    
+
     setTasks((prev) => prev.filter((task) => task.id !== id));
-    
+
     // Remove from cache
     if (projectId) {
       setTasksByProject(prev => {
@@ -341,7 +341,7 @@ export const AppProvider = ({ children }) => {
         return newMap;
       });
     }
-    
+
     try {
       await apiDeleteTask(id);
     } catch (error) {
@@ -379,7 +379,7 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await apiFetchDocuments(projectId);
       const documentsArray = Array.isArray(data) ? data : [];
-      
+
       // Transform backend response fields to frontend format
       const transformedDocuments = documentsArray.map(doc => {
         // Format file size if it's a number
@@ -391,28 +391,28 @@ export const AppProvider = ({ children }) => {
           const i = Math.floor(Math.log(formattedSize) / Math.log(k));
           formattedSize = Math.round(formattedSize / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
-        
+
         // Format date
         let formattedDate = doc.uploadedAt || doc.created_at || '';
         if (formattedDate) {
           try {
             const date = new Date(formattedDate);
-            formattedDate = date.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            formattedDate = date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             });
           } catch (e) {
             // Keep original if parsing fails
           }
         }
-        
+
         // Handle tags - ensure it's an array
         const tags = Array.isArray(doc.tags) ? doc.tags : (doc.tags ? [doc.tags] : []);
-        
+
         // Handle uploader information
         const uploaderName = doc.uploader?.full_name || doc.uploader?.name || doc.uploaded_by || 'Unknown';
-        
+
         return {
           ...doc,
           // Map backend fields to frontend expected fields
@@ -436,7 +436,7 @@ export const AppProvider = ({ children }) => {
           uploader: doc.uploader
         };
       });
-      
+
       setDocuments(transformedDocuments);
     } catch (error) {
       console.error('Failed to fetch documents', error);
@@ -553,21 +553,21 @@ export const AppProvider = ({ children }) => {
     if (token && currentCompany) {
       // Set initial loading state
       setInitialDataLoading(true);
-      
+
       // PERF-001 FIX: Execute API calls in parallel for faster initial load
       Promise.all([
         loadNotifications(),
         loadProjects(),
         loadAllTasks()
       ])
-      .then(() => {
-        setInitialDataLoading(false);
-      })
-      .catch(error => {
-        console.error('Failed to load initial data:', error);
-        setInitialDataLoading(false);
-      });
-      
+        .then(() => {
+          setInitialDataLoading(false);
+        })
+        .catch(error => {
+          console.error('Failed to load initial data:', error);
+          setInitialDataLoading(false);
+        });
+
       // Poll for notifications every minute
       const interval = setInterval(() => loadNotifications(), 60000);
       return () => clearInterval(interval);
@@ -589,6 +589,7 @@ export const AppProvider = ({ children }) => {
         { ...notification, id: Date.now(), timestamp: new Date(), read: false },
         ...prev
       ]),
+    setNotifications,
     markNotificationRead,
     markAllNotificationsRead,
     projects,

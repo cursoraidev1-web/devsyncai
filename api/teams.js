@@ -61,7 +61,7 @@ export const inviteToProject = (projectId, payload) => {
 };
 
 export const acceptInvite = (token) => {
-  return api.post('/teams/accept-invite', { token }, { auth: false }).then(response => {
+  return api.post('/teams/accept-invite', { token }).then(response => {
     return response?.data || response;
   });
 };

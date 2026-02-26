@@ -5,12 +5,13 @@ export const runtime = 'edge';
 
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { 
-  Bell, 
-  CheckCircle, 
+import { deleteNotification as apiDeleteNotification } from '../../../api/notifications';
+import { toast } from 'react-toastify';
+import {
+  Bell,
+  CheckCircle,
   Trash2,
   Filter,
-  CheckCheck,
   GitBranch,
   FileText,
   AlertCircle,
@@ -20,8 +21,9 @@ import {
 import '../../../styles/pages/Notifications.css';
 
 const Notifications = () => {
-  const { notifications, notificationsLoading, markNotificationRead, markAllNotificationsRead } = useApp();
+  const { notifications, notificationsLoading, markNotificationRead, markAllNotificationsRead, setNotifications } = useApp();
   const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const notificationIcons = {
     'task': CheckCircle,
@@ -42,7 +44,6 @@ const Notifications = () => {
   };
 
   const filteredNotifications = (notifications || []).filter(notif => {
-    if (filter === 'all') return true;
     if (filter === 'mentions') return notif.type === 'mention';
     if (filter === 'tasks') return notif.type === 'task';
     if (filter === 'projects') return notif.type === 'project';
@@ -50,27 +51,32 @@ const Notifications = () => {
     if (filter === 'prds') return notif.type === 'prd';
     if (filter === 'system') return notif.type === 'alert' || notif.type === 'user';
     return true;
+  }).filter(notif => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (notif.title || '').toLowerCase().includes(q) ||
+      (notif.message || '').toLowerCase().includes(q) ||
+      (notif.source || '').toLowerCase().includes(q)
+    );
   });
 
   const unreadCount = (notifications || []).filter(n => !n.read).length;
 
   const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
     const now = new Date();
-    const diff = now - timestamp;
+    const diff = now - new Date(timestamp);
     const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    const isToday = days === 0;
-    const isYesterday = days === 1;
-
-    if (isToday && minutes < 60) {
+    if (days === 0 && minutes < 60) {
       return `Today at ${new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     }
-    if (isToday) {
+    if (days === 0) {
       return `Today at ${new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     }
-    if (isYesterday) {
+    if (days === 1) {
       return `Yesterday at ${new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     }
     if (days < 7) {
@@ -82,16 +88,40 @@ const Notifications = () => {
   const handleMarkAllRead = async () => {
     try {
       await markAllNotificationsRead();
+      toast.success('All notifications marked as read');
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
+      toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleDelete = async (e, notifId) => {
+    e.stopPropagation();
+    try {
+      await apiDeleteNotification(notifId);
+      // Remove from local state
+      if (typeof setNotifications === 'function') {
+        setNotifications(prev => prev.filter(n => n.id !== notifId));
+      }
+      toast.success('Notification deleted');
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      toast.error('Failed to delete notification');
     }
   };
 
   return (
     <div className="notifications-page">
       <div className="notifications-header">
-        <h1>Notifications</h1>
-        <button className="btn btn-outline" onClick={handleMarkAllRead}>
+        <h1>
+          Notifications{' '}
+          {unreadCount > 0 && (
+            <span style={{ fontSize: '16px', fontWeight: 'normal', color: '#6b7280' }}>
+              ({unreadCount} unread)
+            </span>
+          )}
+        </h1>
+        <button className="btn btn-outline" onClick={handleMarkAllRead} disabled={unreadCount === 0}>
           Mark All as Read
         </button>
       </div>
@@ -104,6 +134,8 @@ const Notifications = () => {
             type="text"
             placeholder="Search notifications..."
             className="search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
@@ -111,62 +143,34 @@ const Notifications = () => {
       {/* Filters */}
       <div className="notifications-controls">
         <div className="filter-tabs">
-          <button
-            className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All
-          </button>
-          <button
-            className={`filter-tab ${filter === 'mentions' ? 'active' : ''}`}
-            onClick={() => setFilter('mentions')}
-          >
-            Mentions
-          </button>
-          <button
-            className={`filter-tab ${filter === 'tasks' ? 'active' : ''}`}
-            onClick={() => setFilter('tasks')}
-          >
-            Tasks
-          </button>
-          <button
-            className={`filter-tab ${filter === 'projects' ? 'active' : ''}`}
-            onClick={() => setFilter('projects')}
-          >
-            Projects
-          </button>
-          <button
-            className={`filter-tab ${filter === 'cicd' ? 'active' : ''}`}
-            onClick={() => setFilter('cicd')}
-          >
-            CI/CD
-          </button>
-          <button
-            className={`filter-tab ${filter === 'prds' ? 'active' : ''}`}
-            onClick={() => setFilter('prds')}
-          >
-            PRDs
-          </button>
-          <button
-            className={`filter-tab ${filter === 'system' ? 'active' : ''}`}
-            onClick={() => setFilter('system')}
-          >
-            System
-          </button>
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'mentions', label: 'Mentions' },
+            { id: 'tasks', label: 'Tasks' },
+            { id: 'projects', label: 'Projects' },
+            { id: 'cicd', label: 'CI/CD' },
+            { id: 'prds', label: 'PRDs' },
+            { id: 'system', label: 'System' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              className={`filter-tab ${filter === tab.id ? 'active' : ''}`}
+              onClick={() => setFilter(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Notifications List */}
       <div className="notifications-container">
-        {filteredNotifications.length > 0 ? (
+        {notificationsLoading && (
+          <div className="notifications-loading">Loading notifications...</div>
+        )}
+        {!notificationsLoading && filteredNotifications.length > 0 ? (
           <div className="notifications-list">
-      {notificationsLoading && (
-        <div className="notifications-loading">Loading notifications...</div>
-      )}
-      {!notificationsLoading && filteredNotifications.length === 0 && (
-        <div className="notifications-empty">No notifications yet.</div>
-      )}
-      {!notificationsLoading && filteredNotifications.map(notif => {
+            {filteredNotifications.map(notif => {
               const Icon = notificationIcons[notif.type] || Bell;
               const color = notificationColors[notif.type] || '#6b7280';
 
@@ -189,7 +193,7 @@ const Notifications = () => {
                     <p>{notif.message}</p>
                     <div className="notification-footer">
                       <span className="notification-source">
-                        {notif.source || 'System'} • {formatTimestamp(notif.timestamp)}
+                        {notif.source || 'System'} • {formatTimestamp(notif.timestamp || notif.created_at)}
                       </span>
                       {notif.action && (
                         <button className="notification-action-btn">
@@ -200,10 +204,8 @@ const Notifications = () => {
                   </div>
                   <button
                     className="notification-action"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Handle delete
-                    }}
+                    title="Delete notification"
+                    onClick={(e) => handleDelete(e, notif.id)}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -211,13 +213,13 @@ const Notifications = () => {
               );
             })}
           </div>
-        ) : (
+        ) : !notificationsLoading ? (
           <div className="empty-state">
             <Bell size={64} />
             <h2>No Notifications</h2>
-            <p>You're all caught up! No {filter !== 'all' ? filter : ''} notifications to show.</p>
+            <p>You're all caught up!{filter !== 'all' ? ` No ${filter} notifications to show.` : ''}</p>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

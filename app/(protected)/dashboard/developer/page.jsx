@@ -5,14 +5,13 @@ export const runtime = 'edge';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-;
 import { useApp } from '../../../../context/AppContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { fetchCommits, getCICDMetrics } from '../../../../api/cicd';
-import { 
-  Code, 
-  GitBranch, 
-  CheckCircle, 
+import {
+  Code,
+  GitBranch,
+  CheckCircle,
   Clock,
   AlertCircle,
   TrendingUp,
@@ -51,8 +50,8 @@ const DeveloperDashboard = () => {
   };
 
   // Filter tasks assigned to current user (by user ID, not role)
-  const myTasks = tasks.filter(t => 
-    t.assigned_to === user?.id || 
+  const myTasks = tasks.filter(t =>
+    t.assigned_to === user?.id ||
     t.assignee_id === user?.id ||
     (user?.role === 'developer' && !t.assigned_to && !t.assignee_id) // Fallback: unassigned tasks for developers
   );
@@ -147,11 +146,10 @@ const DeveloperDashboard = () => {
               <div key={task.id} className="task-card">
                 <div className="task-header">
                   <h3>{task.title}</h3>
-                  <span className={`badge ${
-                    task.status === 'completed' ? 'badge-success' : 
-                    task.status === 'in-progress' ? 'badge-primary' : 
-                    'badge-secondary'
-                  }`}>
+                  <span className={`badge ${task.status === 'completed' ? 'badge-success' :
+                      task.status === 'in-progress' ? 'badge-primary' :
+                        'badge-secondary'
+                    }`}>
                     {task.status}
                   </span>
                 </div>
@@ -244,7 +242,7 @@ const DeveloperDashboard = () => {
               </div>
               <ArrowRight size={20} />
             </button>
-            
+
             <button className="action-card" onClick={() => router.push('/documents')}>
               <div className="action-icon" style={{ backgroundColor: '#d1fae5', color: '#10b981' }}>
                 <CheckCircle size={24} />
@@ -255,7 +253,7 @@ const DeveloperDashboard = () => {
               </div>
               <ArrowRight size={20} />
             </button>
-            
+
             <button className="action-card" onClick={() => router.push('/ci-cd')}>
               <div className="action-icon" style={{ backgroundColor: '#fef3c7', color: '#f59e0b' }}>
                 <GitBranch size={24} />

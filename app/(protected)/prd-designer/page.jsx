@@ -4,12 +4,12 @@
 export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  Save, 
+import {
+  FileText,
+  Plus,
+  Edit2,
+  Trash2,
+  Save,
   CheckCircle,
   Users,
   Clock,
@@ -60,12 +60,12 @@ const PRDDesigner = () => {
       toast.error('Please enter a title');
       return;
     }
-    
+
     if (!newPrd.project_id) {
       toast.error('Please select a project');
       return;
     }
-    
+
     try {
       const prdData = {
         project_id: newPrd.project_id,
@@ -79,7 +79,7 @@ const PRDDesigner = () => {
           { title: 'Success Metrics', content: '' }
         ]
       };
-      
+
       const prd = await apiCreatePRD(prdData);
       setPrds([prd, ...prds]);
       setSelectedPrd(prd);
@@ -96,7 +96,7 @@ const PRDDesigner = () => {
 
   const handleUpdatePrd = async () => {
     if (!selectedPrd) return;
-    
+
     try {
       const updated = await apiUpdatePRD(selectedPrd.id, {
         title: selectedPrd.title,
@@ -115,7 +115,7 @@ const PRDDesigner = () => {
 
   const handleExportPRD = () => {
     if (!selectedPrd) return;
-    
+
     try {
       // Create markdown content
       let markdown = `# ${selectedPrd.title}\n\n`;
@@ -124,7 +124,7 @@ const PRDDesigner = () => {
       markdown += `**Author:** ${selectedPrd.author}\n`;
       markdown += `**Last Updated:** ${selectedPrd.lastUpdated}\n\n`;
       markdown += `---\n\n`;
-      
+
       // Add sections
       if (selectedPrd.sections && selectedPrd.sections.length > 0) {
         selectedPrd.sections.forEach(section => {
@@ -132,7 +132,7 @@ const PRDDesigner = () => {
           markdown += `${section.content || '_No content_'}\n\n`;
         });
       }
-      
+
       // Create blob and download
       const blob = new Blob([markdown], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
@@ -143,7 +143,7 @@ const PRDDesigner = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       toast.success('PRD exported successfully');
     } catch (error) {
       console.error('Failed to export PRD:', error);
@@ -230,11 +230,10 @@ const PRDDesigner = () => {
                   <div className="prd-list-content">
                     <div className="prd-list-title">{prd.title}</div>
                     <div className="prd-list-meta">
-                      <span className={`badge badge-${
-                        prd.status === 'approved' ? 'success' : 
-                        prd.status === 'in-review' ? 'warning' : 
-                        'secondary'
-                      }`}>
+                      <span className={`badge badge-${prd.status === 'approved' ? 'success' :
+                          prd.status === 'in-review' ? 'warning' :
+                            'secondary'
+                        }`}>
                         {prd.status}
                       </span>
                       <span className="prd-list-date">v{prd.version}</span>
@@ -247,8 +246,8 @@ const PRDDesigner = () => {
             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#718096' }}>
               <FileText size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
               <p style={{ marginBottom: '16px' }}>No PRDs yet</p>
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={() => setShowNewPrdModal(true)}
                 style={{ fontSize: '14px', padding: '8px 16px' }}
               >
@@ -267,11 +266,10 @@ const PRDDesigner = () => {
                 <div className="prd-title-section">
                   <h1>{selectedPrd.title}</h1>
                   <div className="prd-meta-info">
-                    <span className={`badge badge-${
-                      selectedPrd.status === 'approved' ? 'success' : 
-                      selectedPrd.status === 'in-review' ? 'warning' : 
-                      'secondary'
-                    }`}>
+                    <span className={`badge badge-${selectedPrd.status === 'approved' ? 'success' :
+                        selectedPrd.status === 'in-review' ? 'warning' :
+                          'secondary'
+                      }`}>
                       {selectedPrd.status}
                     </span>
                     <span className="prd-version">Version {selectedPrd.version}</span>
@@ -289,16 +287,16 @@ const PRDDesigner = () => {
                         Edit
                       </button>
                       {selectedPrd.status !== 'approved' && user?.role === 'admin' && (
-                        <button 
-                          className="btn btn-success" 
+                        <button
+                          className="btn btn-success"
                           onClick={() => handleApprove(selectedPrd.id)}
                         >
                           <CheckCircle size={18} />
                           Approve
                         </button>
                       )}
-                      <button 
-                        className="btn btn-danger" 
+                      <button
+                        className="btn btn-danger"
                         onClick={() => handleDeletePrd(selectedPrd.id)}
                       >
                         <Trash2 size={18} />
@@ -390,7 +388,20 @@ const PRDDesigner = () => {
 
               {isEditing && (
                 <div className="prd-section">
-                  <button className="btn btn-outline">
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => {
+                      const newSection = {
+                        id: `section-${Date.now()}`,
+                        title: 'New Section',
+                        content: ''
+                      };
+                      setSelectedPrd(prev => ({
+                        ...prev,
+                        sections: [...(prev.sections || []), newSection]
+                      }));
+                    }}
+                  >
                     <Plus size={18} />
                     Add Section
                   </button>

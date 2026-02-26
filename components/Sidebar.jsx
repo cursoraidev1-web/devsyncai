@@ -12,7 +12,7 @@ import {
   Network,
   ArrowRightLeft,
   Bot,
-  Puzzle,
+  // Puzzle, // Unused - integrations hidden
   Settings,
   Headphones,
   MessageSquare,
@@ -65,7 +65,7 @@ const Sidebar = ({ isOpen }) => {
     { path: '/documents', icon: Network, label: 'Documentation Hub', access: 'editor' },
     { path: '/handoffs', icon: ArrowRightLeft, label: 'Handoff System', access: 'editor' },
     { path: '/ci-cd', icon: Bot, label: 'CI/CD Auto-Agent', access: 'editor' },
-    { path: '/integrations', icon: Puzzle, label: 'Integrations', access: 'editor' },
+    // { path: '/integrations', icon: Puzzle, label: 'Integrations', access: 'editor' }, // Hidden for now
     { path: '/email-test', icon: Mail, label: 'Team Email Tool', access: 'editor' },
   ];
 
