@@ -14,6 +14,10 @@ import ServiceWorkerRegistration from '../../components/ServiceWorkerRegistratio
 import ErrorBoundary from '../../components/ErrorBoundary';
 import UpgradeModal from '../../components/UpgradeModal';
 import OfflineIndicator from '../../components/OfflineIndicator';
+import AppPreloader from '../../components/AppPreloader';
+
+/** Set to false when you want to remove the permanent loader and show the app. */
+const PERMANENT_LOADER = true;
 
 function GlobalUI() {
   const { upgradeModalOpen, upgradeMessage, closeUpgradeModal } = useApp();
@@ -41,6 +45,9 @@ function ProvidersContent({ children }) {
               {children}
               <OfflineIndicator />
               <ThemeAwareToast />
+              {PERMANENT_LOADER && (
+                <AppPreloader message="Zyndrx is Coming — Anticipate!" showProgress />
+              )}
             </AppProvider>
           </PlanProvider>
         </CompanyProvider>

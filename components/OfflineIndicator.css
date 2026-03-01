@@ -85,7 +85,28 @@
   border-top: 4px solid #6b46c1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto;
+  margin: 0 auto 1.25rem;
+}
+
+.offline-retry {
+  display: inline-block;
+  padding: 0.6rem 1.25rem;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  background: #6b46c1;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.offline-retry:hover {
+  background: #5a3aa3;
+}
+
+.offline-retry:active {
+  transform: scale(0.98);
 }
 
 @keyframes spin {
@@ -123,6 +144,14 @@
   .offline-spinner {
     border-color: #374151;
     border-top-color: #8b5cf6;
+  }
+
+  .offline-retry {
+    background: #7c3aed;
+  }
+
+  .offline-retry:hover {
+    background: #6d28d9;
   }
 }
 

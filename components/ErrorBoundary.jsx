@@ -20,31 +20,44 @@ class ErrorBoundary extends React.Component {
     });
   }
 
+  componentDidUpdate(_, prevState) {
+    if (this.state.hasError && !prevState.hasError) {
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  componentWillUnmount() {
+    document.body.style.overflow = '';
+  }
+
   handleReset = () => {
+    document.body.style.overflow = '';
     this.setState({ hasError: false, error: null, errorInfo: null });
     window.location.reload();
   };
 
   handleGoHome = () => {
+    document.body.style.overflow = '';
     window.location.href = '/dashboard';
   };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary">
+        <div className="error-boundary" role="alert">
           <div className="error-boundary-content">
             <div className="error-boundary-icon">
-              <AlertCircle size={64} />
+              <AlertCircle size={48} strokeWidth={1.5} aria-hidden />
             </div>
-            <h1>Something went wrong</h1>
+            <p className="error-boundary-badge">Something went wrong</p>
+            <h1 className="error-boundary-title">We hit a snag</h1>
             <p className="error-boundary-message">
-              We're sorry, but something unexpected happened. Please try again or contact support if the problem persists.
+              Something unexpected happened. Try again, or head back to the dashboard. If it keeps happening, contact support.
             </p>
-            
+
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="error-boundary-details">
-                <summary>Error Details (Development Only)</summary>
+                <summary>Error details (dev only)</summary>
                 <pre className="error-boundary-stack">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack}
@@ -53,13 +66,13 @@ class ErrorBoundary extends React.Component {
             )}
 
             <div className="error-boundary-actions">
-              <button className="btn btn-primary" onClick={this.handleReset}>
-                <RefreshCw size={18} />
-                Try Again
+              <button type="button" className="error-boundary-btn error-boundary-btn-primary" onClick={this.handleReset}>
+                <RefreshCw size={18} aria-hidden />
+                Try again
               </button>
-              <button className="btn btn-outline" onClick={this.handleGoHome}>
-                <Home size={18} />
-                Go to Dashboard
+              <button type="button" className="error-boundary-btn error-boundary-btn-secondary" onClick={this.handleGoHome}>
+                <Home size={18} aria-hidden />
+                Go to dashboard
               </button>
             </div>
           </div>

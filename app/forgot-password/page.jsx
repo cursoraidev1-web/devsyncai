@@ -6,6 +6,7 @@ import { Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Logo from '../../components/Logo';
+import { forgotPassword } from '../../api/auth';
 import './forgot-password.css';
 
 const ForgotPassword = () => {
@@ -31,20 +32,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send reset email');
-      }
-
+      await forgotPassword({ email });
       setEmailSent(true);
       toast.success('Password reset link sent to your email');
     } catch (error) {

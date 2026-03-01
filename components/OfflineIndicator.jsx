@@ -5,7 +5,7 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import './OfflineIndicator.css';
 
 const OfflineIndicator = () => {
-  const isOnline = useOnlineStatus();
+  const { isOnline, recheck } = useOnlineStatus();
   const pathname = usePathname();
 
   // Don't show offline indicator on test pages (they need to test connectivity)
@@ -21,11 +21,19 @@ const OfflineIndicator = () => {
         <div className="offline-icon">
           <WifiOff size={48} />
         </div>
-        <h2 className="offline-title">You're Offline</h2>
+        <h2 className="offline-title">You're offline</h2>
         <p className="offline-message">
-          Please check your internet connection and try again.
+          Connect to Wi‑Fi or mobile data to continue.
         </p>
         <div className="offline-spinner" />
+        <button
+          type="button"
+          className="offline-retry"
+          onClick={recheck}
+          aria-label="Check connection again"
+        >
+          Try again
+        </button>
       </div>
     </div>
   );

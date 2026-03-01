@@ -1,0 +1,217 @@
+/* Coming Soon overlay – premium glassmorphism, Plus Jakarta Sans only */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+.coming-soon-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: coming-soon-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes coming-soon-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.coming-soon-card {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+  padding: 2.5rem 2rem;
+  background: rgba(30, 41, 59, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 20px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  animation: coming-soon-slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+@keyframes coming-soon-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulsing icon – no generic spinner */
+.icon-pulse-container {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(148, 163, 184, 0.25);
+  animation: coming-soon-pulse 2.2s ease-out infinite;
+}
+
+.pulse-ring--delay {
+  animation-delay: 1.1s;
+}
+
+@keyframes coming-soon-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.icon-center {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  color: rgba(226, 232, 240, 0.95);
+  animation: coming-soon-icon-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes coming-soon-icon-glow {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.2);
+  }
+  50% {
+    opacity: 0.92;
+    box-shadow: 0 0 20px 4px rgba(148, 163, 184, 0.12);
+  }
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.95);
+  background: rgba(51, 65, 85, 0.6);
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Typography */
+.coming-soon-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.2;
+}
+
+.coming-soon-subtext {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: #94a3b8;
+  margin: 0 0 1.75rem 0;
+}
+
+/* Return button */
+.btn-return {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  background: rgba(51, 65, 85, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-return:hover {
+  background: rgba(71, 85, 105, 0.8);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #f1f5f9;
+}
+
+.btn-return:active {
+  transform: scale(0.98);
+}
+
+/* Light mode variant (if overlay is used on light backgrounds) */
+@media (prefers-color-scheme: light) {
+  .coming-soon-overlay {
+    background: rgba(15, 23, 42, 0.35);
+  }
+
+  .coming-soon-card {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+
+  .icon-center {
+    background: rgba(15, 23, 42, 0.08);
+    color: #334155;
+  }
+
+  .status-badge {
+    color: #475569;
+    background: rgba(15, 23, 42, 0.08);
+    border-color: rgba(0, 0, 0, 0.06);
+  }
+
+  .coming-soon-title {
+    color: #0f172a;
+  }
+
+  .coming-soon-subtext {
+    color: #64748b;
+  }
+
+  .btn-return {
+    color: #334155;
+    background: rgba(15, 23, 42, 0.08);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .btn-return:hover {
+    background: rgba(15, 23, 42, 0.12);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #0f172a;
+  }
+}

@@ -6,6 +6,7 @@ import { Eye, EyeOff, Lock } from 'lucide-react';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Logo from '../../components/Logo';
+import { resetPassword } from '../../api/auth';
 import './reset-password.css';
 
 const ResetPassword = () => {
@@ -50,24 +51,7 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          newPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password');
-      }
-
-      // Success - redirect to success page
+      await resetPassword({ password: newPassword, token });
       router.push('/reset-password/success');
     } catch (error) {
       toast.error(error.message || 'Failed to reset password. Please try again.');

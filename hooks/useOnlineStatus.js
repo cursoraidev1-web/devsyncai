@@ -1,46 +1,87 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+const OFFLINE_DEBOUNCE_MS = 800;
+const RECHECK_INTERVAL_MS = 4000;
 
 /**
- * Custom hook to track online/offline status with actual connectivity verification
- * @returns {boolean} isOnline - true if device is online, false otherwise
+ * Check real connectivity with a lightweight request (avoids relying only on navigator.onLine).
+ * @returns {Promise<boolean>}
+ */
+function checkConnectivity() {
+  if (typeof window === 'undefined') return Promise.resolve(true);
+  const url = `${window.location.origin}/?nocache=${Date.now()}`;
+  return fetch(url, { method: 'HEAD', cache: 'no-store', mode: 'same-origin' })
+    .then(() => true)
+    .catch(() => false);
+}
+
+/**
+ * Custom hook to track online/offline status with debouncing and periodic recheck when offline.
+ * @returns {{ isOnline: boolean, recheck: () => void }}
  */
 export const useOnlineStatus = () => {
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+  const offlineTimeoutRef = useRef(null);
+  const recheckIntervalRef = useRef(null);
+
+  const performRecheck = useCallback(() => {
+    checkConnectivity().then((ok) => {
+      if (ok) setIsOnline(true);
+    });
+  }, []);
 
   useEffect(() => {
-    // Simple approach: trust navigator.onLine
-    // Only do a connectivity check if navigator says we're offline
-    // This prevents false positives from failed fetch requests
-    
     const handleOnline = () => {
+      if (offlineTimeoutRef.current) {
+        clearTimeout(offlineTimeoutRef.current);
+        offlineTimeoutRef.current = null;
+      }
       setIsOnline(true);
     };
 
     const handleOffline = () => {
-      // Only mark as offline if navigator explicitly says so
-      // Don't do additional checks that might fail and cause false positives
-      setIsOnline(false);
+      if (offlineTimeoutRef.current) return;
+      offlineTimeoutRef.current = setTimeout(() => {
+        offlineTimeoutRef.current = null;
+        setIsOnline(false);
+      }, OFFLINE_DEBOUNCE_MS);
     };
 
-    // Set initial state based on navigator
+    // Sync initial state with navigator
     setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
-    // Add event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Cleanup
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      if (offlineTimeoutRef.current) {
+        clearTimeout(offlineTimeoutRef.current);
+        offlineTimeoutRef.current = null;
+      }
     };
   }, []);
 
-  return isOnline;
+  // When we're offline, periodically recheck so we recover as soon as connection is back
+  useEffect(() => {
+    if (isOnline) {
+      if (recheckIntervalRef.current) {
+        clearInterval(recheckIntervalRef.current);
+        recheckIntervalRef.current = null;
+      }
+      return;
+    }
+    recheckIntervalRef.current = setInterval(performRecheck, RECHECK_INTERVAL_MS);
+    return () => {
+      if (recheckIntervalRef.current) {
+        clearInterval(recheckIntervalRef.current);
+        recheckIntervalRef.current = null;
+      }
+    };
+  }, [isOnline, performRecheck]);
+
+  return { isOnline, recheck: performRecheck };
 };
-
-
-
-

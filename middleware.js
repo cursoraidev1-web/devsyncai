@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * Middleware for route protection and authentication
- * 
- * SEC-002 FIX: Enhanced token validation and route protection
+ * * SEC-002 FIX: Enhanced token validation and route protection
  * - Validates token format (basic check)
  * - Clears invalid tokens
  * - Provides better security for protected routes
@@ -87,6 +86,7 @@ export function middleware(request) {
     '/notifications',
     '/activity',
   ];
+  
   const isProtectedRoute = protectedRoutePatterns.some(pattern => pathname.startsWith(pattern));
   
   if (!hasValidToken && isProtectedRoute && !isPublicRoute && pathname !== '/') {
@@ -115,7 +115,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - forgot-password (Excluded to fix Stream Error)
+     * - reset-password (Excluded to fix Stream Error)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|forgot-password|reset-password).*)',
   ],
 };
