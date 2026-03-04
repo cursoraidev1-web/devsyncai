@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { Send, MessageSquare, Star, Bug, Lightbulb, AlertCircle, List, CheckCircle, Clock, XCircle } from 'lucide-react';
@@ -202,7 +200,7 @@ const Feedback = () => {
         </div>
       ) : submitted ? (
         <div className="feedback-success">
-          <div className="success-icon">✓</div>
+          <div className="success-icon">âœ“</div>
           <h2>Thank you for your feedback!</h2>
           <p>We've received your submission and will review it shortly.</p>
         </div>

@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -153,7 +151,7 @@ const Activity = () => {
       </div>
 
       <div className="activity-title-section">
-        <h1>&quot;QuantumLeap&quot; Platform — Activity</h1>
+        <h1>&quot;QuantumLeap&quot; Platform â€” Activity</h1>
         <div className="activity-tabs">
           <button 
             className={`activity-tab ${activeTab === 'overview' ? 'active' : ''}`}

@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -355,7 +353,7 @@ const CICDIntegration = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Deployment Logs - {selectedItem.env}</h3>
-              <button className="modal-close" onClick={() => setShowLogsModal(false)}>×</button>
+              <button className="modal-close" onClick={() => setShowLogsModal(false)}>Ã—</button>
             </div>
             <div className="modal-body">
               <div className="logs-container">
@@ -420,9 +418,9 @@ const CICDIntegration = () => {
             <div className="modal-header">
               <div>
                 <h3>Commit Details</h3>
-                <p className="modal-subtitle">#{selectedItem.hash} • {selectedItem.branch}</p>
+                <p className="modal-subtitle">#{selectedItem.hash} â€¢ {selectedItem.branch}</p>
               </div>
-              <button className="modal-close" onClick={() => setShowCodeModal(false)}>×</button>
+              <button className="modal-close" onClick={() => setShowCodeModal(false)}>Ã—</button>
             </div>
             <div className="modal-body">
               <div className="commit-details">

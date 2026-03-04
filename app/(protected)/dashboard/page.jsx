@@ -1,12 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import AppPreloader from '../../../components/AppPreloader';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 export default function Dashboard() {
   const router = useRouter();

@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';

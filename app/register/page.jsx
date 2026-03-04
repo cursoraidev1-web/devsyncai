@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -22,8 +20,8 @@ import '../../styles/pages/Auth.css';
 
 const Register = () => {
   const router = useRouter();
-  const { register } = useAuth();
-  
+  const { register, isAuthenticated, loading: authLoading } = useAuth();
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -36,6 +34,13 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [retryAfter, setRetryAfter] = useState(null);
+
+  // Redirect when already authenticated (replaces middleware behavior)
+  React.useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const handleChange = (e) => {
     const sanitizedValue = sanitizeInput(e.target.value);

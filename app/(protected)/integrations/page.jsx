@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
@@ -293,7 +291,7 @@ const IntegrationConfigModal = ({ integration, onClose, onSave }) => {
         {integration.connected_at && (
           <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
             Connected on {new Date(integration.connected_at).toLocaleDateString()}
-            {integration.last_sync_at && ` · Last synced ${new Date(integration.last_sync_at).toLocaleDateString()}`}
+            {integration.last_sync_at && ` Â· Last synced ${new Date(integration.last_sync_at).toLocaleDateString()}`}
           </p>
         )}
 

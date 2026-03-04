@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
@@ -193,7 +191,7 @@ const Notifications = () => {
                     <p>{notif.message}</p>
                     <div className="notification-footer">
                       <span className="notification-source">
-                        {notif.source || 'System'} • {formatTimestamp(notif.timestamp || notif.created_at)}
+                        {notif.source || 'System'} â€¢ {formatTimestamp(notif.timestamp || notif.created_at)}
                       </span>
                       {notif.action && (
                         <button className="notification-action-btn">

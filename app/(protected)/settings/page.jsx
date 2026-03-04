@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -834,7 +832,7 @@ const Settings = () => {
                 >
                   {saving ? (
                     <>
-                      <span className="spinner" style={{ display: 'inline-block', marginRight: '8px' }}>⏳</span>
+                      <span className="spinner" style={{ display: 'inline-block', marginRight: '8px' }}>â³</span>
                       Saving...
                     </>
                   ) : (
@@ -920,7 +918,7 @@ const Settings = () => {
                           <div className="session-device">{session.device}</div>
                           <div className="session-location">
                             {session.location}
-                            {session.isCurrent && ' • Current Session'}
+                            {session.isCurrent && ' â€¢ Current Session'}
                           </div>
                           <div className="session-time">
                             Last active: {new Date(session.lastActive).toLocaleString()}
@@ -1049,19 +1047,19 @@ const Settings = () => {
                           <div className="usage-item">
                             <span className="usage-label">Projects:</span>
                             <span className="usage-value">
-                              {usage.projectsCount} / {limits.maxProjects === -1 ? '∞' : limits.maxProjects}
+                              {usage.projectsCount} / {limits.maxProjects === -1 ? 'âˆž' : limits.maxProjects}
                             </span>
                           </div>
                           <div className="usage-item">
                             <span className="usage-label">Team Members:</span>
                             <span className="usage-value">
-                              {usage.teamMembersCount} / {limits.maxTeamMembers === -1 ? '∞' : limits.maxTeamMembers}
+                              {usage.teamMembersCount} / {limits.maxTeamMembers === -1 ? 'âˆž' : limits.maxTeamMembers}
                             </span>
                           </div>
                           <div className="usage-item">
                             <span className="usage-label">Storage:</span>
                             <span className="usage-value">
-                              {usage.storageUsedGB?.toFixed(1)} GB / {limits.maxStorageGB === -1 ? '∞' : limits.maxStorageGB} GB
+                              {usage.storageUsedGB?.toFixed(1)} GB / {limits.maxStorageGB === -1 ? 'âˆž' : limits.maxStorageGB} GB
                             </span>
                           </div>
                         </div>
@@ -1113,7 +1111,7 @@ const Settings = () => {
                 <div className="api-key-item">
                   <div className="api-key-info">
                     <div className="api-key-label">Production API Key</div>
-                    <div className="api-key-value">sk_live_••••••••••••••••••••••••</div>
+                    <div className="api-key-value">sk_live_â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢</div>
                     <div className="api-key-description">Created on Sep 1, 2024</div>
                   </div>
                   <div className="api-key-actions">
@@ -1298,7 +1296,7 @@ const Settings = () => {
                 {twoFactorData?.secret && (
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
-                      Can’t scan? Enter this key manually:
+                      Canâ€™t scan? Enter this key manually:
                     </div>
                     <div
                       style={{

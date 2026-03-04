@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,7 +49,7 @@ const DocumentationEditor = () => {
 
   // Debug: Log project availability
   useEffect(() => {
-    console.log('📋 Projects loaded:', { 
+    console.log('ðŸ“‹ Projects loaded:', { 
       projectsCount: projects?.length, 
       projectId,
       projects: projects?.map(p => ({ id: p.id, name: p.name }))
@@ -151,7 +149,7 @@ const DocumentationEditor = () => {
         throw new Error('Failed to get upload token');
       }
 
-      console.log('📤 Uploading image to Supabase...', { upload_path: tokenData.upload_path });
+      console.log('ðŸ“¤ Uploading image to Supabase...', { upload_path: tokenData.upload_path });
 
       // Step 2: Upload to Supabase Storage (documents bucket)
       const uploadResult = await uploadFile(
@@ -166,7 +164,7 @@ const DocumentationEditor = () => {
       // Step 3: Get public URL
       const publicUrl = getPublicUrl('documents', tokenData.upload_path) || uploadResult.url;
 
-      console.log('✅ Image uploaded, public URL:', publicUrl);
+      console.log('âœ… Image uploaded, public URL:', publicUrl);
 
       // Step 4: Insert image into editor at cursor position
       const editorElement = document.getElementById('editor-content');
@@ -219,7 +217,7 @@ const DocumentationEditor = () => {
 
       toast.success('Image uploaded and inserted successfully');
     } catch (error) {
-      console.error('❌ Failed to upload image:', error);
+      console.error('âŒ Failed to upload image:', error);
       toast.error(error?.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
@@ -232,7 +230,7 @@ const DocumentationEditor = () => {
 
   const handleSave = async () => {
     const currentProjectId = selectedProjectId || projectId;
-    console.log('💾 Save button clicked', { title, selectedProjectId, projectId: currentProjectId, projects, saving });
+    console.log('ðŸ’¾ Save button clicked', { title, selectedProjectId, projectId: currentProjectId, projects, saving });
     
     if (!title || title.trim() === '') {
       toast.error('Please enter a title for the documentation');
@@ -240,7 +238,7 @@ const DocumentationEditor = () => {
     }
 
     if (!currentProjectId) {
-      console.error('❌ No project ID available', { projects, selectedProjectId });
+      console.error('âŒ No project ID available', { projects, selectedProjectId });
       toast.error('No project selected. Please select a project from the dropdown.');
       return;
     }
@@ -249,7 +247,7 @@ const DocumentationEditor = () => {
     const editorElement = document.getElementById('editor-content');
     const htmlContent = editorElement?.innerHTML || content || '<p>Start writing your documentation...</p>';
     
-    console.log('📝 Content check', { 
+    console.log('ðŸ“ Content check', { 
       htmlContent: htmlContent.substring(0, 100), 
       contentLength: htmlContent.length,
       isPlaceholder: htmlContent === '<p>Start writing your documentation...</p>'
@@ -262,7 +260,7 @@ const DocumentationEditor = () => {
     }
 
     setSaving(true);
-    console.log('🚀 Starting save process...');
+    console.log('ðŸš€ Starting save process...');
 
     try {
       // Convert HTML content to a Blob (text/html)
@@ -270,10 +268,10 @@ const DocumentationEditor = () => {
       const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
       const file = new File([blob], fileName, { type: 'text/html' });
 
-      console.log('📄 File created', { fileName, fileSize: file.size, fileType: file.type });
+      console.log('ðŸ“„ File created', { fileName, fileSize: file.size, fileType: file.type });
 
       // Upload the document
-      console.log('⬆️ Calling uploadDocumentFile...');
+      console.log('â¬†ï¸ Calling uploadDocumentFile...');
       const uploadedDoc = await uploadDocumentFile(
         currentProjectId,
         file,
@@ -283,16 +281,16 @@ const DocumentationEditor = () => {
         }
       );
 
-      console.log('✅ Document uploaded successfully', uploadedDoc);
+      console.log('âœ… Document uploaded successfully', uploadedDoc);
 
       // Refresh the document list
-      console.log('🔄 Refreshing document list...');
+      console.log('ðŸ”„ Refreshing document list...');
       await loadDocuments(currentProjectId);
 
       toast.success('Documentation saved successfully!');
       router.push('/documents');
     } catch (error) {
-      console.error('❌ Failed to save documentation:', error);
+      console.error('âŒ Failed to save documentation:', error);
       console.error('Error details:', {
         message: error?.message,
         stack: error?.stack,
@@ -356,7 +354,7 @@ const DocumentationEditor = () => {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('🔘 Save button clicked (onClick handler)');
+              console.log('ðŸ”˜ Save button clicked (onClick handler)');
               handleSave();
             }}
             disabled={saving}
@@ -367,7 +365,7 @@ const DocumentationEditor = () => {
           </button>
           {(!projectId || !selectedProjectId) && projects && projects.length === 0 && (
             <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '4px' }}>
-              ⚠️ No project available. Please go to Projects and create a project first.
+              âš ï¸ No project available. Please go to Projects and create a project first.
             </div>
           )}
         </div>
@@ -472,7 +470,7 @@ const DocumentationEditor = () => {
             title="Upload Image"
           >
             {uploadingImage ? (
-              <span style={{ fontSize: '12px' }}>⏳</span>
+              <span style={{ fontSize: '12px' }}>â³</span>
             ) : (
               <ImageIcon size={18} />
             )}

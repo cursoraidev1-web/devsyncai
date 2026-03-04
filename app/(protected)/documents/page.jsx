@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
@@ -79,7 +77,7 @@ const DocumentStore = () => {
   // Debug: Log documents when they change
   useEffect(() => {
     if (documents.length > 0) {
-      console.log('📄 Documents state:', {
+      console.log('ðŸ“„ Documents state:', {
         count: documents.length,
         documents: documents.map(d => ({
           id: d.id,

@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -171,7 +169,7 @@ const Landing = () => {
                     </div>
                     <div className="dashboard-user-menu">
                       <div className="avatar-circle-small"></div>
-                      <div className="menu-dots">⋯</div>
+                      <div className="menu-dots">â‹¯</div>
                     </div>
                   </div>
                 </div>
@@ -192,24 +190,24 @@ const Landing = () => {
                 </div>
                 <div className="dashboard-main-preview">
                   <div className="dashboard-welcome">
-                    <h2>Welcome back, Calvin 👋</h2>
+                    <h2>Welcome back, Calvin ðŸ‘‹</h2>
                     <p>Here's your project and team performance summary.</p>
                   </div>
                   <div className="metrics-preview">
                     <div className="metric-card">
                       <div className="metric-label">Tasks In Progress</div>
                       <div className="metric-value">18</div>
-                      <div className="metric-change positive">↑ +5 from last week</div>
+                      <div className="metric-change positive">â†‘ +5 from last week</div>
                     </div>
                     <div className="metric-card">
                       <div className="metric-label">Tasks Completed</div>
                       <div className="metric-value">231</div>
-                      <div className="metric-change positive">↑ +11% vs last month</div>
+                      <div className="metric-change positive">â†‘ +11% vs last month</div>
                     </div>
                     <div className="metric-card">
                       <div className="metric-label">Overdue Tasks</div>
                       <div className="metric-value">3</div>
-                      <div className="metric-change negative">↓ -1 from last week</div>
+                      <div className="metric-change negative">â†“ -1 from last week</div>
                     </div>
                     <div className="metric-card">
                       <div className="metric-label">AI Suggestions</div>
@@ -480,7 +478,7 @@ const Landing = () => {
                 <span className="logo-text">Zyndrx</span>
               </div>
               <p className="footer-tagline">The AI-powered workspace for modern product teams.</p>
-              <p className="footer-copyright">Copyright ©2023</p>
+              <p className="footer-copyright">Copyright Â©2023</p>
             </div>
             <div className="footer-right">
               <div className="footer-column">

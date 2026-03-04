@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -389,7 +387,7 @@ const CreateProjectForm = ({ formState, setFormState }) => {
                   });
                 }}
               >
-                ×
+                Ã—
               </button>
             </span>
           ))}

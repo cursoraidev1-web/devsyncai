@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -237,7 +235,7 @@ const HandoffSystem = () => {
                         <User size={14} />
                         {handoff.from}
                       </span>
-                      <span className="handoff-arrow">→</span>
+                      <span className="handoff-arrow">â†’</span>
                       <span className="handoff-to">
                         <User size={14} />
                         {handoff.to}

@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 /**
  * Unified OAuth Callback Handler for Supabase Auth
@@ -124,8 +122,8 @@ function OAuthCallbackContent() {
       <div className="oauth-callback-card">
         <div className={`oauth-callback-status oauth-callback-status--${status}`}>
           {status === 'processing' && <div className="spinner" />}
-          {status === 'success' && '✅'}
-          {status === 'error' && '⚠️'}
+          {status === 'success' && 'âœ…'}
+          {status === 'error' && 'âš ï¸'}
         </div>
         <h1 className="oauth-callback-title">Authentication</h1>
         <p className="oauth-callback-message">{message}</p>

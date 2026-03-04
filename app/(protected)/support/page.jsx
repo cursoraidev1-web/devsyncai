@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -229,7 +227,7 @@ const SupportHelp = () => {
       <div className="support-system-status">
         <h2>System Status</h2>
         <div className="system-status-link" onClick={() => toast.info('Status page coming soon!')}>
-          View Status Page →
+          View Status Page â†’
         </div>
       </div>
 

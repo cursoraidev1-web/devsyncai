@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -171,7 +169,7 @@ const Teams = () => {
         <PulsingLoader message="Loading teams..." />
       ) : (
         <div className="teams-content">
-          {/* ── Teams grid ── */}
+          {/* â”€â”€ Teams grid â”€â”€ */}
           <div className="teams-section">
             <h2 className="teams-section-title">
               Teams{filteredTeams.length > 0 ? ` (${filteredTeams.length})` : ''}
@@ -293,7 +291,7 @@ const Teams = () => {
             </div>
           </div>
 
-          {/* ── All Members (company members) ── */}
+          {/* â”€â”€ All Members (company members) â”€â”€ */}
           <div className="teams-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 className="teams-section-title" style={{ margin: 0 }}>
@@ -784,7 +782,7 @@ const AddTeamMembersForm = ({ onClose, onInvited }) => {
                   });
                 }}
               >
-                ×
+                Ã—
               </button>
             </span>
           ))}

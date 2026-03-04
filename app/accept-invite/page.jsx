@@ -1,7 +1,5 @@
-'use client';
+﻿'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -47,8 +45,8 @@ function AcceptInviteContent() {
       <div className="accept-invite-card">
         <div className={`accept-invite-status accept-invite-status--${status}`}>
           {status === 'loading' && <span className="spinner" />}
-          {status === 'success' && '✅'}
-          {status === 'error' && '⚠️'}
+          {status === 'success' && 'âœ…'}
+          {status === 'error' && 'âš ï¸'}
         </div>
         <h1 className="accept-invite-title">Team Invitation</h1>
         <p className="accept-invite-message">{message}</p>
