@@ -5,9 +5,8 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-;
 import { Check, X, Zap, Building2, Crown } from 'lucide-react';
-import { getPlans, upgradeSubscription } from '../../api/subscription';
+import { getPlans, upgradeSubscription } from '../../services/api/subscription';
 import { usePlan } from '../../context/PlanContext';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';

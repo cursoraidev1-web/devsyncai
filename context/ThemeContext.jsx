@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { updateProfile } from '../api/auth';
+import { updateProfile } from '../services/api/auth';
 
 const ThemeContext = createContext();
 

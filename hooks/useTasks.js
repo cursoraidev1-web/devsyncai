@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { fetchTasksByProject, createTask, updateTask, deleteTask } from '../api/tasks';
-import { getComments, createComment } from '../api/comments';
+import { fetchTasksByProject, createTask, updateTask, deleteTask } from '../services/api/tasks';
+import { getComments, createComment } from '../services/api/comments';
 
 /**
  * React hook for managing tasks with comments

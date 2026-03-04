@@ -161,4 +161,3 @@ export const removeProjectMember = (projectId, userId) => {
   return api.delete(`/projects/${projectId}/members/${userId}`);
 };
 
-

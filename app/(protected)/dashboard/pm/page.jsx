@@ -5,17 +5,16 @@ export const runtime = 'edge';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-;
 import { useApp } from '../../../../context/AppContext';
-import { fetchHandoffs } from '../../../../api/handoffs';
-import { 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
+import { fetchHandoffs } from '../../../../services/api/handoffs';
+import {
+  FileText,
+  CheckCircle,
+  AlertCircle,
   TrendingUp,
   Users,
   Clock,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import '../../../../styles/pages/Dashboard.css';
 

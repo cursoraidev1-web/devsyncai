@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useApp } from '../../../../context/AppContext';
-import { getProject } from '../../../../api/projects';
+import { getProject } from '../../../../services/api/projects';
 import { handleApiError } from '../../../../utils/errorHandler';
 import '../../../../styles/pages/ProjectDetail.css';
 

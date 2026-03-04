@@ -1,5 +1,5 @@
-import { getTaskAttachmentUploadToken, saveTaskAttachment } from '../api/attachments';
-import { getDocumentUploadToken, createDocument } from '../api/documents';
+import { getTaskAttachmentUploadToken, saveTaskAttachment } from '../services/api/attachments';
+import { getDocumentUploadToken, createDocument } from '../services/api/documents';
 import { uploadFile, getPublicUrl } from './supabase';
 
 /**

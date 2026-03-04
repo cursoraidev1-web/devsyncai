@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 import React, { useState } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { deleteNotification as apiDeleteNotification } from '../../../api/notifications';
+import { deleteNotification as apiDeleteNotification } from '../../../services/api/notifications';
 import { toast } from 'react-toastify';
 import {
   Bell,

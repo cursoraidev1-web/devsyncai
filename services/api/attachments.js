@@ -71,6 +71,3 @@ export const deleteAttachment = (attachmentId) => {
   return api.delete(`/tasks/attachments/${attachmentId}`);
 };
 
-
-
-

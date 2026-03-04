@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
-import { fetchIntegrations, connectIntegration, disconnectIntegration, getIntegrationConfig, updateIntegrationConfig } from '../../../api/integrations';
+import { fetchIntegrations, connectIntegration, disconnectIntegration, getIntegrationConfig, updateIntegrationConfig } from '../../../services/api/integrations';
 import { useApp } from '../../../context/AppContext';
 import { toast } from 'react-toastify';
 import '../../../styles/pages/Integrations.css';

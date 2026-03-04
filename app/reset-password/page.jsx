@@ -6,7 +6,7 @@ import { Eye, EyeOff, Lock } from 'lucide-react';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Logo from '../../components/Logo';
-import { resetPassword } from '../../api/auth';
+import { resetPassword } from '../../services/api/auth';
 import './reset-password.css';
 
 const ResetPassword = () => {

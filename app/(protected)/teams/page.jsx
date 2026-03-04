@@ -12,7 +12,7 @@ import { Modal } from '../../../components/ui';
 import PulsingLoader from '../../../components/PulsingLoader';
 import { toast } from 'react-toastify';
 import { useCompany } from '../../../context/CompanyContext';
-import { inviteUserToCompany, getCompanyMembers } from '../../../api/auth';
+import { inviteUserToCompany, getCompanyMembers } from '../../../services/api/auth';
 import '../../../styles/pages/Teams.css';
 
 const Teams = () => {

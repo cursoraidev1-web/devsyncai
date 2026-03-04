@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../../../../context/AppContext';
 import { useAuth } from '../../../../context/AuthContext';
-import { fetchCommits, getCICDMetrics } from '../../../../api/cicd';
+import { fetchCommits, getCICDMetrics } from '../../../../services/api/cicd';
 import {
   Code,
   GitBranch,

@@ -5,17 +5,16 @@ export const runtime = 'edge';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-;
-import { fetchDeployments, fetchPipelines, getCICDMetrics } from '../../../../api/cicd';
-import { 
-  Server, 
-  Activity, 
-  GitBranch, 
+import { fetchDeployments, fetchPipelines, getCICDMetrics } from '../../../../services/api/cicd';
+import {
+  Server,
+  Activity,
+  GitBranch,
   TrendingUp,
   CheckCircle,
   AlertCircle,
   XCircle,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import PulsingLoader from '../../../../components/PulsingLoader';
 import '../../../../styles/pages/Dashboard.css';

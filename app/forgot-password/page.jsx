@@ -6,7 +6,7 @@ import { Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Logo from '../../components/Logo';
-import { forgotPassword } from '../../api/auth';
+import { forgotPassword } from '../../services/api/auth';
 import './forgot-password.css';
 
 const ForgotPassword = () => {

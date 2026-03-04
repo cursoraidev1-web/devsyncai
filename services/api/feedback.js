@@ -27,6 +27,3 @@ export const updateFeedbackStatus = (id, status) => {
   });
 };
 
-
-
-

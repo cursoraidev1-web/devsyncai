@@ -8,4 +8,3 @@ export const markAllNotificationsRead = () => api.patch('/notifications/mark-all
 
 export const deleteNotification = (id) => api.delete(`/notifications/${id}`);
 
-

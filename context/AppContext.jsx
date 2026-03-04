@@ -1,11 +1,11 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
-import { fetchNotifications, markNotificationRead as apiMarkNotificationRead, markAllNotificationsRead as apiMarkAllNotificationsRead } from '../api/notifications';
-import { fetchProjects as apiFetchProjects, createProject as apiCreateProject } from '../api/projects';
-import { fetchTasks, fetchTasksByProject, updateTask as apiUpdateTask, createTask as apiCreateTask, deleteTask as apiDeleteTask } from '../api/tasks';
-import { inviteToProject, fetchTeams as apiFetchTeams, createTeam as apiCreateTeam, updateTeam as apiUpdateTeam, deleteTeam as apiDeleteTeam, getTeamMembers as apiGetTeamMembers, addTeamMember as apiAddTeamMember, removeTeamMember as apiRemoveTeamMember } from '../api/teams';
-import { fetchDocuments as apiFetchDocuments, createDocument as apiCreateDocument } from '../api/documents';
-import { getAnalytics as apiGetAnalytics } from '../api/analytics';
-import { setUpgradeHandler } from '../api/client';
+import { fetchNotifications, markNotificationRead as apiMarkNotificationRead, markAllNotificationsRead as apiMarkAllNotificationsRead } from '../services/api/notifications';
+import { fetchProjects as apiFetchProjects, createProject as apiCreateProject } from '../services/api/projects';
+import { fetchTasks, fetchTasksByProject, updateTask as apiUpdateTask, createTask as apiCreateTask, deleteTask as apiDeleteTask } from '../services/api/tasks';
+import { inviteToProject, fetchTeams as apiFetchTeams, createTeam as apiCreateTeam, updateTeam as apiUpdateTeam, deleteTeam as apiDeleteTeam, getTeamMembers as apiGetTeamMembers, addTeamMember as apiAddTeamMember, removeTeamMember as apiRemoveTeamMember } from '../services/api/teams';
+import { fetchDocuments as apiFetchDocuments, createDocument as apiCreateDocument } from '../services/api/documents';
+import { getAnalytics as apiGetAnalytics } from '../services/api/analytics';
+import { setUpgradeHandler } from '../services/api/client';
 import { useAuth } from './AuthContext';
 import { useCompany } from './CompanyContext';
 

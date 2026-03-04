@@ -121,4 +121,3 @@ export const syncSupabaseSession = (session, companyName = null) => {
   return api.post('/auth/oauth/session', payload, { auth: false });
 };
 
-

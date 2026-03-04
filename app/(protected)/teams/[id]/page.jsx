@@ -12,7 +12,7 @@ import { Users, ArrowLeft, UserPlus, Mail, MoreVertical, Trash2 } from 'lucide-r
 import { Modal } from '../../../../components/ui';
 import PulsingLoader from '../../../../components/PulsingLoader';
 import { toast } from 'react-toastify';
-import { inviteUserToCompany } from '../../../../api/auth';
+import { inviteUserToCompany } from '../../../../services/api/auth';
 import '../../../../styles/pages/Teams.css';
 
 const TeamDetailPage = () => {

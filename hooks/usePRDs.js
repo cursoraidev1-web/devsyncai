@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchPRDs, createPRD, updatePRD, deletePRD, getPRD } from '../api/prds';
+import { fetchPRDs, createPRD, updatePRD, deletePRD, getPRD } from '../services/api/prds';
 
 /**
  * React hook for managing PRDs

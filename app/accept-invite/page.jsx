@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { acceptInvite } from '../../api/teams';
+import { acceptInvite } from '../../services/api/teams';
 import '../../styles/pages/AcceptInvite.css';
 
 function AcceptInviteContent() {

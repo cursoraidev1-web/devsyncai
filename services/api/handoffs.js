@@ -121,6 +121,3 @@ export const uploadHandoffAttachment = (id, file) => {
   });
 };
 
-
-
-

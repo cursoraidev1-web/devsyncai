@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
 import { Send, MessageSquare, Star, Bug, Lightbulb, AlertCircle, List, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { submitFeedback, fetchFeedback } from '../../../api/feedback';
+import { submitFeedback, fetchFeedback } from '../../../services/api/feedback';
 import { toast } from 'react-toastify';
 import '../../../styles/pages/Feedback.css';
 

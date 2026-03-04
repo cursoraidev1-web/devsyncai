@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { getSubscription, checkLimits } from '../api/subscription';
+import { getSubscription, checkLimits } from '../services/api/subscription';
 import { useAuth } from './AuthContext';
 import { useCompany } from './CompanyContext';
 

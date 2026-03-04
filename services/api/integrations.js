@@ -57,6 +57,3 @@ export const slackOAuthCallback = (code, state) => {
   });
 };
 
-
-
-

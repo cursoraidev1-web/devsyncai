@@ -4,10 +4,10 @@
 export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  GitBranch, 
-  CheckCircle, 
-  XCircle, 
+import {
+  GitBranch,
+  CheckCircle,
+  XCircle,
   Clock,
   Activity,
   Server,
@@ -15,9 +15,9 @@ import {
   RefreshCw,
   Play,
   Settings,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
-import { fetchPipelines, fetchDeployments, fetchCommits, getCICDMetrics } from '../../../api/cicd';
+import { fetchPipelines, fetchDeployments, fetchCommits, getCICDMetrics } from '../../../services/api/cicd';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
 import '../../../styles/pages/CICDIntegration.css';

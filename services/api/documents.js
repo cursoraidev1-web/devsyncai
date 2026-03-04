@@ -119,12 +119,3 @@ export const downloadDocument = (id) => {
   });
 };
 
-
-
-
-
-
-
-
-
-

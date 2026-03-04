@@ -16,7 +16,7 @@ import {
   MessageSquare,
   Download
 } from 'lucide-react';
-import { fetchPRDs, createPRD as apiCreatePRD, updatePRD as apiUpdatePRD, deletePRD as apiDeletePRD, approvePRD as apiApprovePRD } from '../../../api/prds';
+import { fetchPRDs, createPRD as apiCreatePRD, updatePRD as apiUpdatePRD, deletePRD as apiDeletePRD, approvePRD as apiApprovePRD } from '../../../services/api/prds';
 import { useApp } from '../../../context/AppContext';
 import { useAuth } from '../../../context/AuthContext';
 import { toast } from 'react-toastify';

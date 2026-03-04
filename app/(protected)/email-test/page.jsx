@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { sendTestEmail, getEmailUsage } from '../../../api/email';
+import { sendTestEmail, getEmailUsage } from '../../../services/api/email';
 import { handleApiError } from '../../../utils/errorHandler';
 import logger from '../../../utils/logger';
 import { Mail, Send, Loader, FileText, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';

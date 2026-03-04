@@ -5,8 +5,8 @@ export const runtime = 'edge';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { deleteDocument, getDownloadUrl } from '../../../api/documents';
-import { fetchPRDs } from '../../../api/prds';
+import { deleteDocument, getDownloadUrl } from '../../../services/api/documents';
+import { fetchPRDs } from '../../../services/api/prds';
 import { uploadDocumentFile, formatFileSize, getFileTypeInfo, validateFile } from '../../../utils/fileUpload';
 import { 
   FileText, 

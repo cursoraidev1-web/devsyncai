@@ -20,7 +20,7 @@ import {
   Tag,
   ArrowRightLeft
 } from 'lucide-react';
-import { getHandoff, getHandoffComments, addHandoffComment, approveHandoff, rejectHandoff } from '../../../../api/handoffs';
+import { getHandoff, getHandoffComments, addHandoffComment, approveHandoff, rejectHandoff } from '../../../../services/api/handoffs';
 import { Modal } from '../../../../components/ui';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../../components/PulsingLoader';

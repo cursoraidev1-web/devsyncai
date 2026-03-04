@@ -8,10 +8,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { usePlan } from '../../../context/PlanContext';
 import { useTheme } from '../../../context/ThemeContext';
-import { cancelSubscription } from '../../../api/subscription';
-import { getAvatarUploadToken } from '../../../api/auth';
+import { cancelSubscription } from '../../../services/api/subscription';
+import { getAvatarUploadToken } from '../../../services/api/auth';
 import { toast } from 'react-toastify';
-import { subscribeToPush, unsubscribeFromPush, getVapidPublicKey } from '../../../api/push';
+import { subscribeToPush, unsubscribeFromPush, getVapidPublicKey } from '../../../services/api/push';
 import {
   isPushSupported,
   requestNotificationPermission,

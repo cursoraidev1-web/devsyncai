@@ -14,7 +14,7 @@ import { validatePassword } from '../../utils/passwordValidation';
 import { sanitizeInput } from '../../utils/inputSanitization';
 import { handleApiError } from '../../utils/errorHandler';
 import EmailVerificationMessage from '../../components/EmailVerificationMessage';
-import { resendVerificationEmail } from '../../api/auth';
+import { resendVerificationEmail } from '../../services/api/auth';
 import '../../styles/pages/AcceptCompanyInvite.css';
 
 /**

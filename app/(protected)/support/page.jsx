@@ -20,7 +20,7 @@ import {
   Send
 } from 'lucide-react';
 import { Modal } from '../../../components/ui';
-import { submitFeedback } from '../../../api/feedback';
+import { submitFeedback } from '../../../services/api/feedback';
 import { toast } from 'react-toastify';
 import '../../../styles/pages/SupportHelp.css';
 

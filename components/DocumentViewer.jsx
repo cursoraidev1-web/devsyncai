@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDocument, getDownloadUrl } from '../api/documents';
+import { getDocument, getDownloadUrl } from '../services/api/documents';
 import { formatFileSize, getFileTypeInfo } from '../utils/fileUpload';
 import { Download, X, ExternalLink } from 'lucide-react';
 import { toast } from 'react-toastify';

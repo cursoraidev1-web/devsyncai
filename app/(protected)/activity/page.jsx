@@ -12,7 +12,7 @@ import {
   Search,
   Clock
 } from 'lucide-react';
-import { fetchActivity } from '../../../api/activity';
+import { fetchActivity } from '../../../services/api/activity';
 import { toast } from 'react-toastify';
 import PulsingLoader from '../../../components/PulsingLoader';
 import '../../../styles/pages/Activity.css';

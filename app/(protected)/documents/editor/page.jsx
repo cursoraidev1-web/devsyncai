@@ -24,7 +24,7 @@ import {
 import { toast } from 'react-toastify';
 import { useApp } from '../../../../context/AppContext';
 import { uploadDocumentFile } from '../../../../utils/fileUpload';
-import { getDocumentUploadToken } from '../../../../api/documents';
+import { getDocumentUploadToken } from '../../../../services/api/documents';
 import { uploadFile, getPublicUrl } from '../../../../utils/supabase';
 import '../../../../styles/pages/DocumentationEditor.css';
 

@@ -15,6 +15,3 @@ export const createActivity = (payload) => {
   });
 };
 
-
-
-

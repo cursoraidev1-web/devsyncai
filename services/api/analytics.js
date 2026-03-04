@@ -34,15 +34,3 @@ export const getTaskAnalytics = (projectId) => {
   });
 };
 
-
-
-
-
-
-
-
-
-
-
-
-

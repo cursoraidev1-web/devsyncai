@@ -6,7 +6,7 @@ export const runtime = 'edge';
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '../../../context/AppContext';
-import { getTeamMembers } from '../../../api/teams';
+import { getTeamMembers } from '../../../services/api/teams';
 import { 
   Plus, 
   Search, 

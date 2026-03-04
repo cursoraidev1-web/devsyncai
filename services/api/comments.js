@@ -53,6 +53,3 @@ export const deleteComment = (id) => {
   return api.delete(`/comments/${id}`);
 };
 
-
-
-

@@ -17,7 +17,7 @@ import RateLimitMessage from '../../components/RateLimitMessage';
 import { validatePassword } from '../../utils/passwordValidation';
 import { sanitizeInput } from '../../utils/inputSanitization';
 import { handleApiError } from '../../utils/errorHandler';
-import { resendVerificationEmail } from '../../api/auth';
+import { resendVerificationEmail } from '../../services/api/auth';
 import '../../styles/pages/Auth.css';
 
 const Register = () => {
