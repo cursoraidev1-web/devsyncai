@@ -1,7 +1,5 @@
 'use client';
 
-// Use Edge Runtime to avoid Vercel function limits
-export const runtime = 'edge';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,7 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import AppPreloader from '../components/AppPreloader';
 
 const MIN_LOADER_MS = 500;
-
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();

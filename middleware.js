@@ -106,18 +106,15 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
-// Configure which routes to run middleware on
+// Configure which routes to run middleware on.
+// Root path (/) is excluded to avoid MIDDLEWARE_INVOCATION_FAILED (__dirname) on Vercel Edge.
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - forgot-password (Excluded to fix Stream Error)
-     * - reset-password (Excluded to fix Stream Error)
+     * Match all request paths except:
+     * - / (root; excluded so middleware never runs for GET /, avoiding Edge __dirname error)
+     * - _next/static, _next/image, favicon.ico, static files, public, forgot-password, reset-password
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|forgot-password|reset-password).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|forgot-password|reset-password).+)',
   ],
 };
