@@ -118,6 +118,6 @@ export const config = {
      * - forgot-password (Excluded to fix Stream Error)
      * - reset-password (Excluded to fix Stream Error)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|forgot-password|reset-password).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public|forgot-password|reset-password).+)',
   ],
 };
