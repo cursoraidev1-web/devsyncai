@@ -1,8 +1,10 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Disable static optimization for not-found pages
-  outputFileTracingRoot: require('path').join(__dirname),
+  // Ensure file tracing uses project root without relying on __dirname (works in ESM/edge contexts)
+  outputFileTracingRoot: path.join(process.cwd()),
   // Note: Webpack config removed for Turbopack compatibility
   // Turbopack reads path aliases from jsconfig.json automatically
   // If using webpack (via dev:webpack), path aliases are also handled by jsconfig.json
