@@ -1,6 +1,7 @@
 {
   "name": "zyndrx-platform",
   "version": "1.0.0",
+  "type": "module",
   "description": "Project Management & Development Coordination Platform",
   "private": true,
   "scripts": {
