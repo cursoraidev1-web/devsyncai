@@ -11,5 +11,5 @@ export function middleware() {
 
 // Empty matcher = middleware never runs. Avoids MIDDLEWARE_INVOCATION_FAILED on Vercel.
 export const config = {
-  matcher: [],
+  matcher: ['/_disable_middleware_dummy_path'],
 };
