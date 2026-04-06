@@ -15,20 +15,26 @@ export const getPipeline = (id) => {
   });
 };
 
-export const getPipelineLogs = (id) => {
-  return api.get(`/cicd/pipelines/${id}/logs`).then(response => {
+export const getPipelineLogs = (id, filters = {}) => {
+  const params = new URLSearchParams(filters).toString();
+  const query = params ? `?${params}` : '';
+  return api.get(`/cicd/pipelines/${id}/logs${query}`).then(response => {
     return response?.data || response;
   });
 };
 
-export const triggerPipeline = (id) => {
-  return api.post(`/cicd/pipelines/${id}/trigger`).then(response => {
+export const triggerPipeline = (id, filters = {}) => {
+  const params = new URLSearchParams(filters).toString();
+  const query = params ? `?${params}` : '';
+  return api.post(`/cicd/pipelines/${id}/trigger${query}`).then(response => {
     return response?.data || response;
   });
 };
 
-export const cancelPipeline = (id) => {
-  return api.post(`/cicd/pipelines/${id}/cancel`).then(response => {
+export const cancelPipeline = (id, filters = {}) => {
+  const params = new URLSearchParams(filters).toString();
+  const query = params ? `?${params}` : '';
+  return api.post(`/cicd/pipelines/${id}/cancel${query}`).then(response => {
     return response?.data || response;
   });
 };
@@ -48,8 +54,10 @@ export const getDeployment = (id) => {
   });
 };
 
-export const rollbackDeployment = (id) => {
-  return api.post(`/cicd/deployments/${id}/rollback`).then(response => {
+export const rollbackDeployment = (id, filters = {}) => {
+  const params = new URLSearchParams(filters).toString();
+  const query = params ? `?${params}` : '';
+  return api.post(`/cicd/deployments/${id}/rollback${query}`).then(response => {
     return response?.data || response;
   });
 };

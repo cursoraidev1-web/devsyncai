@@ -28,6 +28,9 @@ export const signInWithGoogle = async (options = {}) => {
   if (options.companyName) {
     sessionStorage.setItem('oauth_company_name', options.companyName);
   }
+  if (options.returnTo) {
+    sessionStorage.setItem('oauth_return_to', options.returnTo);
+  }
   
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -60,6 +63,9 @@ export const signInWithGitHub = async (options = {}) => {
   // Store companyName in sessionStorage if provided (for new signups)
   if (options.companyName) {
     sessionStorage.setItem('oauth_company_name', options.companyName);
+  }
+  if (options.returnTo) {
+    sessionStorage.setItem('oauth_return_to', options.returnTo);
   }
   
   const { error } = await supabase.auth.signInWithOAuth({

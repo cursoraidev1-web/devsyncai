@@ -17,7 +17,7 @@ import OfflineIndicator from '../../components/OfflineIndicator';
 import AppPreloader from '../../components/AppPreloader';
 
 /** Set to false when you want to remove the permanent loader and show the app. */
-const PERMANENT_LOADER = true;
+const PERMANENT_LOADER = false;
 
 function GlobalUI() {
   const { upgradeModalOpen, upgradeMessage, closeUpgradeModal } = useApp();

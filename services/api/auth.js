@@ -3,30 +3,7 @@ import { api } from './client';
 export const login = (credentials) => api.post('/auth/login', credentials, { auth: false });
 
 export const register = (payload) => {
-  // Ensure fullName is sent (combine firstName + lastName if needed)
-  const registerPayload = { ...payload };
-  if (payload.firstName && payload.lastName && !payload.fullName) {
-    registerPayload.fullName = `${payload.firstName} ${payload.lastName}`;
-    delete registerPayload.firstName;
-    delete registerPayload.lastName;
-  }
-  // If name is provided instead of fullName, rename it
-  if (payload.name && !payload.fullName) {
-    registerPayload.fullName = payload.name;
-    delete registerPayload.name;
-  }
-  // Send workspaceName as companyName to backend (only if no invitation token)
-  if (payload.workspaceName && !payload.invitationToken) {
-    registerPayload.companyName = payload.workspaceName;
-    delete registerPayload.workspaceName;
-  }
-  // If invitationToken is provided, don't send companyName
-  if (payload.invitationToken) {
-    registerPayload.invitationToken = payload.invitationToken;
-    delete registerPayload.companyName;
-    delete registerPayload.workspaceName;
-  }
-  return api.post('/auth/register', registerPayload, { auth: false });
+  return api.post('/auth/register', payload, { auth: false });
 };
 
 /**
@@ -46,15 +23,14 @@ export const githubLogin = (payload) => api.post('/auth/github', payload, { auth
 export const forgotPassword = (payload) => api.post('/auth/forgot-password', payload, { auth: false });
 
 export const resetPassword = (payload) => {
-  // API expects accessToken, not token
   const resetPayload = {
-    password: payload.password,
-    accessToken: payload.accessToken || payload.token
+    newPassword: payload.newPassword,
+    token: payload.token,
   };
   return api.post('/auth/reset-password', resetPayload, { auth: false });
 };
 
-export const getCurrentUser = () => api.get('/auth/me');
+export const getCurrentUser = () => api.get('/auth/me', { redirectOn401: false });
 
 export const updateProfile = (updates) => api.put('/auth/profile', updates);
 
@@ -86,7 +62,7 @@ export const regenerateRecoveryCodes = (token) =>
 
 // Company/Workspace Management
 export const getUserCompanies = () => api.get('/auth/companies');
-export const switchCompany = (companyId) => api.post('/auth/switch-company', { companyId });
+export const switchCompany = (companyId) => api.post('/auth/switch-company', { company_id: companyId });
 export const createCompany = (payload) => api.post('/companies', payload);
 export const getCompany = (id) => api.get(`/companies/${id}`);
 export const getCompanyMembers = (companyId) => api.get(`/companies/${companyId}/members`);

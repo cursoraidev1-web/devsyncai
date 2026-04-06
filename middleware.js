@@ -1,15 +1,69 @@
 import { NextResponse } from 'next/server';
 
-/**
- * Middleware disabled on Vercel: the Edge bundle triggers ReferenceError: __dirname is not defined.
- * Route protection is handled in app/(protected)/layout.jsx (redirect to /login when unauthenticated).
- * Auth redirects (e.g. logged-in user on /login → /dashboard) are handled in the login/register pages.
- */
-export function middleware() {
+const SESSION_COOKIE_NAME = 'zyndrx_session';
+const protectedPrefixes = [
+  '/activity',
+  '/analytics',
+  '/ci-cd',
+  '/dashboard',
+  '/documents',
+  '/email-test',
+  '/feedback',
+  '/handoffs',
+  '/integrations',
+  '/kanban',
+  '/notifications',
+  '/prd-designer',
+  '/projects',
+  '/settings',
+  '/support',
+  '/tasks',
+  '/teams',
+];
+const guestOnlyPrefixes = ['/login', '/register'];
+
+const matchesPrefix = (pathname, prefixes) =>
+  prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+
+export function middleware(request) {
+  const { nextUrl, cookies } = request;
+  const { pathname, search } = nextUrl;
+  const hasSession = Boolean(cookies.get(SESSION_COOKIE_NAME)?.value);
+
+  if (matchesPrefix(pathname, protectedPrefixes) && !hasSession) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('returnTo', `${pathname}${search}`);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (matchesPrefix(pathname, guestOnlyPrefixes) && hasSession) {
+    const redirectTo = nextUrl.searchParams.get('returnTo') || '/dashboard';
+    return NextResponse.redirect(new URL(redirectTo, request.url));
+  }
+
   return NextResponse.next();
 }
 
-// Empty matcher = middleware never runs. Avoids MIDDLEWARE_INVOCATION_FAILED on Vercel.
 export const config = {
-  matcher: ['/_disable_middleware_dummy_path'],
+  matcher: [
+    '/activity/:path*',
+    '/analytics/:path*',
+    '/ci-cd/:path*',
+    '/dashboard/:path*',
+    '/documents/:path*',
+    '/email-test/:path*',
+    '/feedback/:path*',
+    '/handoffs/:path*',
+    '/integrations/:path*',
+    '/kanban/:path*',
+    '/login',
+    '/notifications/:path*',
+    '/prd-designer/:path*',
+    '/projects/:path*',
+    '/register',
+    '/settings/:path*',
+    '/support/:path*',
+    '/tasks/:path*',
+    '/teams/:path*',
+  ],
 };

@@ -1,8 +1,9 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as authApi from '../services/api/auth';
 import logger from '../utils/logger';
 
 const AuthContext = createContext(null);
+const COOKIE_SESSION_TOKEN = 'cookie-session';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -10,44 +11,6 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-const TOKEN_KEY = 'zyndrx_token';
-const USER_KEY = 'zyndrx_user';
-
-// Safe localStorage access (handles SSR and Edge Runtime)
-const safeLocalStorage = {
-  getItem: (key) => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      logger.error('safeLocalStorage.getItem error:', error);
-      return null;
-    }
-  },
-  setItem: (key, value) => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return;
-    }
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      logger.error('safeLocalStorage.setItem error:', error);
-    }
-  },
-  removeItem: (key) => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return;
-    }
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      logger.error('safeLocalStorage.removeItem error:', error);
-    }
-  }
 };
 
 export const AuthProvider = ({ children }) => {
@@ -59,221 +22,147 @@ export const AuthProvider = ({ children }) => {
   const clearSession = useCallback(() => {
     setUser(null);
     setToken(null);
-    safeLocalStorage.removeItem(USER_KEY);
-    safeLocalStorage.removeItem(TOKEN_KEY);
-    
-    // Also clear cookie
-    if (typeof document !== 'undefined') {
-      document.cookie = 'auth-token=; path=/; max-age=0';
-    }
   }, []);
 
+  const persistSession = useCallback((userData, tokenData = COOKIE_SESSION_TOKEN) => {
+    setUser(userData);
+    setToken(tokenData || COOKIE_SESSION_TOKEN);
+  }, []);
+
+  const replaceSession = useCallback((userData, tokenData = COOKIE_SESSION_TOKEN) => {
+    persistSession(userData, tokenData);
+  }, [persistSession]);
+
   const getCurrentUser = useCallback(async () => {
-    if (!token) return null;
     try {
       const response = await authApi.getCurrentUser();
       const apiUser = response?.data || response;
-      
-      if (apiUser && apiUser.id) {
-        setUser(apiUser);
-        safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
-        return apiUser;
-      }
-      
-      return null;
-    } catch (error) {
-      if (error.status === 401 || error?.response?.status === 401) {
+
+      if (!apiUser?.id) {
         clearSession();
+        return null;
       }
-      return null;
+
+      persistSession(apiUser);
+      return apiUser;
+    } catch (error) {
+      if (error?.status === 401 || error?.response?.status === 401) {
+        clearSession();
+        return null;
+      }
+      throw error;
     }
-  }, [token, clearSession]);
+  }, [clearSession, persistSession]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const initializeAuth = async () => {
       try {
-        const savedToken = safeLocalStorage.getItem(TOKEN_KEY);
-        const savedUser = safeLocalStorage.getItem(USER_KEY);
-        
-        if (savedToken && savedUser) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
-            setToken(savedToken);
-            setUser(parsedUser);
-            
-            const fetchUser = async () => {
-              try {
-                const response = await authApi.getCurrentUser();
-                const apiUser = response?.data || response;
-                
-                if (!apiUser || !apiUser.id) {
-                  throw new Error('Invalid user data from API');
-                }
-                
-                setUser(apiUser);
-                safeLocalStorage.setItem(USER_KEY, JSON.stringify(apiUser));
-              } catch (fetchError) {
-                if (fetchError?.status === 401 || fetchError?.response?.status === 401) {
-                  clearSession();
-                  if (typeof window !== 'undefined') {
-                    // Suppress any errors during redirect (telemetry, extensions, etc.)
-                    try {
-                      window.location.href = '/login';
-                    } catch (redirectError) {
-                      // Silently ignore redirect errors (telemetry, extensions, etc.)
-                      // Force redirect using replace to avoid history issues
-                      window.location.replace('/login');
-                    }
-                  }
-                }
-              }
-            };
-            
-            const timeoutId = setTimeout(() => {
-              if (loading) {
-                setLoading(false);
-              }
-            }, 5000);
-            
-            await fetchUser();
-            clearTimeout(timeoutId);
-          } catch (parseError) {
-            clearSession();
-          }
+        const currentUser = await getCurrentUser();
+        if (!cancelled && !currentUser) {
+          clearSession();
         }
       } catch (error) {
-        clearSession();
+        logger.error('Failed to initialize auth session:', error);
+        if (!cancelled) {
+          clearSession();
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     initializeAuth();
-  }, []);
 
-  const persistSession = useCallback((userData, tokenData) => {
-    setUser(userData);
-    setToken(tokenData);
-    safeLocalStorage.setItem(USER_KEY, JSON.stringify(userData));
-    safeLocalStorage.setItem(TOKEN_KEY, tokenData);
-    
-    // Also set cookie
-    if (typeof document !== 'undefined') {
-      document.cookie = `auth-token=${tokenData}; path=/; max-age=${7 * 24 * 60 * 60}`;
-    }
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [clearSession, getCurrentUser]);
 
   const login = useCallback(async (email, password) => {
-    try {
-      const response = await authApi.login({ email, password });
-      const data = response?.data || response;
+    const response = await authApi.login({ email, password });
+    const data = response?.data || response;
 
-      // 2FA required: do not persist session yet
-      if (data?.require2fa) {
-        return { require2fa: true, email: data.email || email };
-      }
-
-      const apiUser = data?.user || data;
-      const apiToken = data?.token || data?.accessToken;
-      
-      if (apiUser && apiToken) {
-        persistSession(apiUser, apiToken);
-        return apiUser;
-      }
-      
-      throw new Error('Invalid response from server');
-    } catch (error) {
-      throw error;
+    if (data?.require2fa) {
+      return { require2fa: true, email: data.email || email };
     }
+
+    const apiUser = data?.user || data;
+    const apiToken = data?.token || data?.accessToken || COOKIE_SESSION_TOKEN;
+
+    if (!apiUser?.id) {
+      throw new Error('Invalid response from server');
+    }
+
+    persistSession(apiUser, apiToken);
+    return data;
   }, [persistSession]);
 
-  const verify2FA = useCallback(async (email, token) => {
-    try {
-      const response = await authApi.verify2FA(email, token);
-      const data = response?.data || response;
-      const apiUser = data?.user || data;
-      const apiToken = data?.token || data?.accessToken;
+  const verify2FA = useCallback(async (email, tokenValue) => {
+    const response = await authApi.verify2FA(email, tokenValue);
+    const data = response?.data || response;
+    const apiUser = data?.user || data;
+    const apiToken = data?.token || data?.accessToken || COOKIE_SESSION_TOKEN;
 
-      if (apiUser && apiToken) {
-        persistSession(apiUser, apiToken);
-        return data;
-      }
-
+    if (!apiUser?.id) {
       throw new Error('Invalid response from server');
-    } catch (error) {
-      throw error;
     }
+
+    persistSession(apiUser, apiToken);
+    return data;
   }, [persistSession]);
 
   const register = useCallback(async (payload) => {
-    try {
-      const response = await authApi.register(payload);
-      const data = response?.data || response;
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await authApi.register(payload);
+    return response?.data || response;
   }, []);
 
   const googleLogin = useCallback(async (accessToken) => {
-    try {
-      const response = await authApi.googleLogin(accessToken);
-      const data = response?.data || response;
-      const apiUser = data?.user || data;
-      const apiToken = data?.token || data?.accessToken;
-      
-      if (apiUser && apiToken) {
-        persistSession(apiUser, apiToken);
-        return apiUser;
-      }
-      
+    const response = await authApi.googleLogin(accessToken);
+    const data = response?.data || response;
+    const apiUser = data?.user || data;
+
+    if (!apiUser?.id) {
       throw new Error('Invalid response from server');
-    } catch (error) {
-      throw error;
     }
+
+    persistSession(apiUser, data?.token || data?.accessToken || COOKIE_SESSION_TOKEN);
+    return data;
   }, [persistSession]);
 
   const githubLogin = useCallback(async (payload) => {
-    try {
-      const response = await authApi.githubLogin(payload);
-      const data = response?.data || response;
-      const apiUser = data?.user || data;
-      const apiToken = data?.token || data?.accessToken;
-      
-      if (apiUser && apiToken) {
-        persistSession(apiUser, apiToken);
-        return apiUser;
-      }
-      
+    const response = await authApi.githubLogin(payload);
+    const data = response?.data || response;
+    const apiUser = data?.user || data;
+
+    if (!apiUser?.id) {
       throw new Error('Invalid response from server');
-    } catch (error) {
-      throw error;
     }
+
+    persistSession(apiUser, data?.token || data?.accessToken || COOKIE_SESSION_TOKEN);
+    return data;
   }, [persistSession]);
 
   const syncSupabaseSession = useCallback(async (session, companyName = null) => {
-    try {
-      const response = await authApi.syncSupabaseSession(session, companyName);
-      const data = response?.data || response;
-      
-      // Check if 2FA is required (response format: { require2fa: true, email: string })
-      if (data?.require2fa) {
-        return { require2fa: true, email: data.email };
-      }
-      
-      // Normal response with user and token
-      const apiUser = data?.user || data;
-      const apiToken = data?.token || data?.accessToken;
-      
-      if (apiUser && apiToken) {
-        persistSession(apiUser, apiToken);
-        return { user: apiUser, token: apiToken };
-      }
-      
-      throw new Error('Invalid response from server');
-    } catch (error) {
-      throw error;
+    const response = await authApi.syncSupabaseSession(session, companyName);
+    const data = response?.data || response;
+
+    if (data?.require2fa) {
+      return { require2fa: true, email: data.email };
     }
+
+    const apiUser = data?.user || data;
+    const apiToken = data?.token || data?.accessToken || COOKIE_SESSION_TOKEN;
+
+    if (!apiUser?.id) {
+      throw new Error('Invalid response from server');
+    }
+
+    persistSession(apiUser, apiToken);
+    return { user: apiUser, token: apiToken };
   }, [persistSession]);
 
   const logout = useCallback(async () => {
@@ -281,7 +170,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await authApi.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     } finally {
       clearSession();
       setLogoutLoading(false);
@@ -292,16 +181,18 @@ export const AuthProvider = ({ children }) => {
   }, [clearSession]);
 
   const updateUser = useCallback((updates) => {
-    const updatedUser = { ...user, ...updates };
-    if (updates.is2FAEnabled !== undefined) {
-      updatedUser.is2FAEnabled = updates.is2FAEnabled;
-    }
-    if (updates.themePreference !== undefined) {
-      updatedUser.themePreference = updates.themePreference;
-    }
-    setUser(updatedUser);
-    safeLocalStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-  }, [user]);
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser;
+      const updatedUser = { ...currentUser, ...updates };
+      if (updates.is2FAEnabled !== undefined) {
+        updatedUser.is2FAEnabled = updates.is2FAEnabled;
+      }
+      if (updates.themePreference !== undefined) {
+        updatedUser.themePreference = updates.themePreference;
+      }
+      return updatedUser;
+    });
+  }, []);
 
   const updateProfile = useCallback(async (updates) => {
     try {
@@ -344,36 +235,36 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const enable2FA = useCallback(async (token) => {
+  const enable2FA = useCallback(async (tokenValue) => {
     try {
-      return await authApi.enable2FA(token);
+      return await authApi.enable2FA(tokenValue);
     } catch (error) {
       logger.error('Failed to enable 2FA:', error);
       throw error;
     }
   }, []);
 
-  const disable2FA = useCallback(async (token) => {
+  const disable2FA = useCallback(async (tokenValue) => {
     try {
-      return await authApi.disable2FA(token);
+      return await authApi.disable2FA(tokenValue);
     } catch (error) {
       logger.error('Failed to disable 2FA:', error);
       throw error;
     }
   }, []);
 
-  const regenerateRecoveryCodes = useCallback(async (token) => {
+  const regenerateRecoveryCodes = useCallback(async (tokenValue) => {
     try {
-      return await authApi.regenerateRecoveryCodes(token);
+      return await authApi.regenerateRecoveryCodes(tokenValue);
     } catch (error) {
       logger.error('Failed to regenerate recovery codes:', error);
       throw error;
     }
   }, []);
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!user;
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     token,
     loading,
@@ -385,6 +276,7 @@ export const AuthProvider = ({ children }) => {
     googleLogin,
     githubLogin,
     syncSupabaseSession,
+    replaceSession,
     updateUser,
     updateProfile,
     changePassword,
@@ -394,11 +286,33 @@ export const AuthProvider = ({ children }) => {
     verify2FA,
     disable2FA,
     regenerateRecoveryCodes,
-  };
+    refreshUser: getCurrentUser,
+    clearSession,
+  }), [
+    user,
+    token,
+    loading,
+    isAuthenticated,
+    logout,
+    logoutLoading,
+    login,
+    register,
+    googleLogin,
+    githubLogin,
+    syncSupabaseSession,
+    replaceSession,
+    updateUser,
+    updateProfile,
+    changePassword,
+    getActiveSessions,
+    setup2FA,
+    enable2FA,
+    verify2FA,
+    disable2FA,
+    regenerateRecoveryCodes,
+    getCurrentUser,
+    clearSession,
+  ]);
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

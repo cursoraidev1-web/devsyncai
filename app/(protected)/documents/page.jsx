@@ -23,7 +23,7 @@ import {
   Edit,
   X
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 ;
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui';
@@ -34,6 +34,7 @@ import '../../../styles/pages/DocumentStore.css';
 const DocumentStore = () => {
   const { documents, loadDocuments, projects } = useApp();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedProjectId, setSelectedProjectId] = useState(projects?.[0]?.id || '');
   const [view, setView] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +57,13 @@ const DocumentStore = () => {
       setSelectedProjectId(projects[0].id);
     }
   }, [projects, selectedProjectId]);
+
+  useEffect(() => {
+    const initialSearch = searchParams.get('search');
+    if (initialSearch) {
+      setSearchTerm(initialSearch);
+    }
+  }, [searchParams]);
 
   // Load documents and PRDs when project changes
   useEffect(() => {

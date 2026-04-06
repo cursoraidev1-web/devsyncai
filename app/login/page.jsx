@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
@@ -17,7 +17,9 @@ import '../../styles/pages/Auth.css';
 
 const Login = () => {
   const router = useRouter();
-  const { login, googleLogin, githubLogin, isAuthenticated, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -31,9 +33,9 @@ const Login = () => {
   // Redirect when already authenticated (replaces middleware behavior)
   React.useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace(returnTo);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, returnTo]);
 
   /**
    * Handles input changes with sanitization and length validation
@@ -86,17 +88,12 @@ const Login = () => {
       
       if (result?.require2fa) {
         toast.info('Please enter your 2FA code');
-        router.push('/verify-2fa?email=' + encodeURIComponent(result.email || email));
+        router.push(`/verify-2fa?email=${encodeURIComponent(result.email || email)}&returnTo=${encodeURIComponent(returnTo)}`);
         return;
       }
       
       toast.success('Welcome back!');
-      
-      // Use window.location for more reliable redirect
-      // Small delay to ensure state and cookie are set
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 200);
+      router.replace(returnTo);
     } catch (err) {
       const errorInfo = handleApiError(err);
       
@@ -125,10 +122,10 @@ const Login = () => {
     setError('');
     try {
       if (provider === 'google') {
-        await signInWithGoogle();
+        await signInWithGoogle({ returnTo });
         // signInWithGoogle redirects automatically, so we don't need to do anything else
       } else if (provider === 'github') {
-        await signInWithGitHub();
+        await signInWithGitHub({ returnTo });
         // signInWithGitHub redirects automatically, so we don't need to do anything else
       }
     } catch (err) {

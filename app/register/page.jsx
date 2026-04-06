@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { signInWithGoogle, signInWithGitHub } from '../../utils/oauth';
@@ -20,7 +20,9 @@ import '../../styles/pages/Auth.css';
 
 const Register = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register, isAuthenticated, loading: authLoading } = useAuth();
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -38,9 +40,9 @@ const Register = () => {
   // Redirect when already authenticated (replaces middleware behavior)
   React.useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace(returnTo);
     }
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router, returnTo]);
 
   const handleChange = (e) => {
     const sanitizedValue = sanitizeInput(e.target.value);
@@ -100,9 +102,7 @@ const Register = () => {
         email: formData.email.trim(),
         password: formData.password,
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
-        companyName: formData.workspaceName.trim() || ""
-        // workspaceName is optional - backend will auto-generate if not provided
-        // ...(formData.workspaceName.trim() && { companyName: formData.workspaceName.trim() }),
+        companyName: formData.workspaceName.trim() || '',
       };
 
       await register(registerPayload);
@@ -140,10 +140,10 @@ const Register = () => {
     setError('');
     try {
       if (provider === 'google') {
-        await signInWithGoogle({ companyName: formData.workspaceName });
+        await signInWithGoogle({ companyName: formData.workspaceName, returnTo });
         // signInWithGoogle redirects automatically, so we don't need to do anything else
       } else if (provider === 'github') {
-        await signInWithGitHub({ companyName: formData.workspaceName });
+        await signInWithGitHub({ companyName: formData.workspaceName, returnTo });
         // signInWithGitHub redirects automatically, so we don't need to do anything else
       }
     } catch (err) {

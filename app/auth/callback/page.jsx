@@ -27,6 +27,7 @@ function OAuthCallbackContent() {
     const handleCallback = async () => {
       try {
         const supabase = getSupabaseAuthClient();
+        const storedReturnTo = sessionStorage.getItem('oauth_return_to') || '/dashboard';
         
         // Check for error in URL
         const error = searchParams.get('error');
@@ -37,8 +38,9 @@ function OAuthCallbackContent() {
           const errorMsg = errorDescription || error || 'Authentication failed';
           setMessage(`Authentication failed: ${errorMsg}`);
           toast.error(`Authentication failed: ${errorMsg}`);
+          sessionStorage.removeItem('oauth_return_to');
           setTimeout(() => {
-            router.push('/login');
+            router.push(`/login?returnTo=${encodeURIComponent(storedReturnTo)}`);
           }, 3000);
           return;
         }
@@ -68,8 +70,9 @@ function OAuthCallbackContent() {
             setStatus('error');
             setMessage('No session found. Please try again.');
             toast.error('No session found. Please try again.');
+            sessionStorage.removeItem('oauth_return_to');
             setTimeout(() => {
-              router.push('/login');
+              router.push(`/login?returnTo=${encodeURIComponent(storedReturnTo)}`);
             }, 3000);
             return;
           }
@@ -91,15 +94,17 @@ function OAuthCallbackContent() {
         // Check if 2FA is required (response format: { require2fa: true, email: string })
         if (result?.require2fa) {
           toast.info('Please enter your 2FA code');
-          router.push(`/verify-2fa?email=${encodeURIComponent(result.email)}`);
+          sessionStorage.removeItem('oauth_return_to');
+          router.push(`/verify-2fa?email=${encodeURIComponent(result.email)}&returnTo=${encodeURIComponent(storedReturnTo)}`);
           return;
         }
         
         setStatus('success');
         setMessage('Login successful! Redirecting...');
         toast.success('Successfully authenticated!');
+        sessionStorage.removeItem('oauth_return_to');
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(storedReturnTo);
         }, 1500);
       } catch (err) {
         setStatus('error');
@@ -107,8 +112,10 @@ function OAuthCallbackContent() {
         setMessage(errorMsg);
         toast.error(errorMsg);
         console.error('OAuth callback error:', err);
+        const storedReturnTo = sessionStorage.getItem('oauth_return_to') || '/dashboard';
+        sessionStorage.removeItem('oauth_return_to');
         setTimeout(() => {
-          router.push('/login');
+          router.push(`/login?returnTo=${encodeURIComponent(storedReturnTo)}`);
         }, 3000);
       }
     };

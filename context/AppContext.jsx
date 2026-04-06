@@ -532,7 +532,12 @@ export const AppProvider = ({ children }) => {
   const removeTeamMember = async (teamId, memberId) => {
     try {
       await apiRemoveTeamMember(teamId, memberId);
-      setTeamMembers((prev) => prev.filter(m => m.id !== memberId));
+      setTeamMembers((prev) =>
+        prev.filter((member) => {
+          const userId = member.user_id || member.user?.id || member.id;
+          return userId !== memberId;
+        })
+      );
     } catch (error) {
       console.error('Failed to remove team member', error);
       throw error;

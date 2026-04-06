@@ -33,26 +33,13 @@ export const getIntegrationConfig = (id) => {
 };
 
 export const updateIntegrationConfig = (id, config) => {
-  return api.patch(`/integrations/${id}/config`, config).then(response => {
+  return api.patch(`/integrations/${id}/config`, { config }).then(response => {
     return response?.data || response;
   });
 };
 
 export const syncIntegration = (id) => {
   return api.post(`/integrations/${id}/sync`).then(response => {
-    return response?.data || response;
-  });
-};
-
-// OAuth-specific endpoints
-export const githubOAuthCallback = (code, state) => {
-  return api.post('/integrations/github/oauth', { code, state }).then(response => {
-    return response?.data || response;
-  });
-};
-
-export const slackOAuthCallback = (code, state) => {
-  return api.post('/integrations/slack/oauth', { code, state }).then(response => {
     return response?.data || response;
   });
 };

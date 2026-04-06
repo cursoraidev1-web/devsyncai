@@ -22,8 +22,9 @@ import '../../styles/pages/AcceptCompanyInvite.css';
 function AcceptCompanyInviteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { register } = useAuth();
+  const { register, replaceSession } = useAuth();
   const invitationToken = searchParams.get('token');
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -102,14 +103,20 @@ function AcceptCompanyInviteContent() {
     setError('');
 
     try {
-      await register({
+      const registrationResult = await register({
         email: formData.email.trim(),
         password: formData.password,
         fullName: `${formData.firstName} ${formData.lastName}`.trim(),
         invitationToken: invitationToken,
       });
 
-      // Show email verification message
+      if (registrationResult?.user && registrationResult?.token) {
+        replaceSession(registrationResult.user, registrationResult.token);
+        toast.success('Invitation accepted. Redirecting to your workspace...');
+        router.replace(returnTo);
+        return;
+      }
+
       setShowVerificationMessage(true);
       toast.success('Account created successfully! Please check your email to verify your account.');
     } catch (err) {

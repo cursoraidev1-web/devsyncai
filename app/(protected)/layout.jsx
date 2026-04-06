@@ -35,7 +35,10 @@ export default function ProtectedLayout({ children }) {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login');
+      const returnTo = typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/dashboard';
+      router.replace(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     }
   }, [isAuthenticated, authLoading, router]);
 

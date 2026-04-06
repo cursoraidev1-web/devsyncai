@@ -24,48 +24,16 @@ const shouldTriggerUpgrade = (message) => {
   return lower.includes('plan limit reached') || lower.includes('upgrade');
 };
 
-// Safe localStorage access (handles SSR and Edge Runtime)
-const safeLocalStorage = {
-  getItem: (key) => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return null;
-    }
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.error('localStorage.getItem error:', error);
-      return null;
-    }
-  },
-  removeItem: (key) => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      return;
-    }
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error('localStorage.removeItem error:', error);
-    }
-  }
-};
-
-const getAuthHeader = () => {
-  if (typeof window === 'undefined') return {};
-  const token = safeLocalStorage.getItem('zyndrx_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const handle401 = () => {
-  // Clear token and user data
-  safeLocalStorage.removeItem('zyndrx_token');
-  safeLocalStorage.removeItem('zyndrx_user');
   // Redirect to login if we're in the browser
   if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-    window.location.href = '/login';
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    const nextUrl = `/login?returnTo=${encodeURIComponent(currentUrl)}`;
+    window.location.href = nextUrl;
   }
 };
 
-const handleResponse = async (res) => {
+const handleResponse = async (res, { redirectOn401 = true } = {}) => {
   const contentType = res.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
   const data = isJson ? await res.json() : await res.text();
@@ -82,7 +50,7 @@ const handleResponse = async (res) => {
   
   if (!res.ok) {
     // Handle 401 Unauthorized - redirect to login
-    if (res.status === 401) {
+    if (res.status === 401 && redirectOn401) {
       handle401();
     }
     
@@ -120,17 +88,17 @@ const handleResponse = async (res) => {
   return data;
 };
 
-export const apiRequest = async (path, { method = 'GET', body, headers = {}, auth = true } = {}) => {
+export const apiRequest = async (path, { method = 'GET', body, headers = {}, auth = true, redirectOn401 = true } = {}) => {
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${BASE_URL}${normalizedPath}`;
   
   const init = {
     method,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...headers,
-      ...(auth ? getAuthHeader() : {})
     }
   };
 
@@ -149,10 +117,15 @@ export const apiRequest = async (path, { method = 'GET', body, headers = {}, aut
 
   try {
     const res = await fetch(url, init);
-    return handleResponse(res);
+    return handleResponse(res, { redirectOn401 });
   } catch (error) {
-    // Handle network errors
-    throw new Error('Network error. Please check your connection and try again.');
+    if (error?.status || error?.data) {
+      throw error;
+    }
+
+    const networkError = new Error('Network error. Please check your connection and try again.');
+    networkError.cause = error;
+    throw networkError;
   }
 };
 

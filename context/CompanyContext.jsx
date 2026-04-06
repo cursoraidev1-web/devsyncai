@@ -42,7 +42,7 @@ const safeLocalStorage = {
 };
 
 export const CompanyProvider = ({ children }) => {
-  const { token, user } = useAuth();
+  const { token, user, replaceSession } = useAuth();
   const [currentCompany, setCurrentCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,18 +128,28 @@ export const CompanyProvider = ({ children }) => {
     try {
       const response = await apiSwitchCompany(companyId);
       const data = response?.data || response;
-      const company = data?.company || data;
+      const company = data?.company || data?.currentCompany || data;
       
       if (company) {
         setCurrentCompany(company);
         safeLocalStorage.setItem(COMPANY_KEY, company.id);
       }
+
+      if (Array.isArray(data?.companies)) {
+        setCompanies(data.companies);
+        safeLocalStorage.setItem(COMPANIES_KEY, JSON.stringify(data.companies));
+      }
+
+      if (data?.token && data?.user) {
+        replaceSession(data.user, data.token);
+      }
+
       return company;
     } catch (error) {
       logger.error('Failed to switch company:', error);
       throw error;
     }
-  }, []);
+  }, [replaceSession]);
 
   const createCompany = useCallback(async (companyData) => {
     if (!token) {

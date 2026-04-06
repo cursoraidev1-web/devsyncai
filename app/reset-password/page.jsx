@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Logo from '../../components/Logo';
 import { resetPassword } from '../../services/api/auth';
+import { validatePassword } from '../../utils/passwordValidation';
 import './reset-password.css';
 
 const ResetPassword = () => {
@@ -38,8 +39,9 @@ const ResetPassword = () => {
       return;
     }
 
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      toast.error(passwordValidation.errors[0] || 'Password does not meet requirements');
       return;
     }
 
@@ -51,7 +53,7 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      await resetPassword({ password: newPassword, token });
+      await resetPassword({ newPassword, token });
       router.push('/reset-password/success');
     } catch (error) {
       toast.error(error.message || 'Failed to reset password. Please try again.');

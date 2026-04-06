@@ -3,18 +3,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, Settings, ExternalLink, Github, Slack, CheckSquare, Palette, List, Zap } from 'lucide-react';
-import { fetchIntegrations, connectIntegration, disconnectIntegration, getIntegrationConfig, updateIntegrationConfig } from '../../../services/api/integrations';
-import { useApp } from '../../../context/AppContext';
+import { fetchIntegrations, connectIntegration, disconnectIntegration, getIntegrationConfig, updateIntegrationConfig, syncIntegration } from '../../../services/api/integrations';
 import { toast } from 'react-toastify';
 import '../../../styles/pages/Integrations.css';
 
 const availableIntegrationsCatalog = [
-  { id: 'github', name: 'GitHub', description: 'Connect your GitHub repositories to sync commits, pull requests, and issues.', icon: Github, category: 'Development', color: '#181717' },
-  { id: 'slack', name: 'Slack', description: 'Get notifications and updates directly in your Slack workspace.', icon: Slack, category: 'Communication', color: '#4A154B' },
-  { id: 'jira', name: 'Jira', description: 'Sync tasks and issues between ZynDrx and Jira.', icon: CheckSquare, category: 'Project Management', color: '#0052CC' },
-  { id: 'figma', name: 'Figma', description: 'Import designs and assets directly from Figma.', icon: Palette, category: 'Design', color: '#F24E1E' },
-  { id: 'linear', name: 'Linear', description: 'Sync issues and tasks with Linear.', icon: List, category: 'Project Management', color: '#5E6AD2' },
-  { id: 'zapier', name: 'Zapier', description: 'Connect ZynDrx with 5000+ apps via Zapier.', icon: Zap, category: 'Automation', color: '#FF4A00' },
+  { id: 'github', name: 'GitHub', description: 'Connect your GitHub repositories to sync commits, pull requests, and issues.', icon: Github, category: 'Development', color: '#181717', supported: true },
+  { id: 'slack', name: 'Slack', description: 'Get notifications and updates directly in your Slack workspace.', icon: Slack, category: 'Communication', color: '#4A154B', supported: false },
+  { id: 'jira', name: 'Jira', description: 'Sync tasks and issues between ZynDrx and Jira.', icon: CheckSquare, category: 'Project Management', color: '#0052CC', supported: false },
+  { id: 'figma', name: 'Figma', description: 'Import designs and assets directly from Figma.', icon: Palette, category: 'Design', color: '#F24E1E', supported: false },
+  { id: 'linear', name: 'Linear', description: 'Sync issues and tasks with Linear.', icon: List, category: 'Project Management', color: '#5E6AD2', supported: false },
+  { id: 'zapier', name: 'Zapier', description: 'Connect ZynDrx with 5000+ apps via Zapier.', icon: Zap, category: 'Automation', color: '#FF4A00', supported: false },
 ];
 
 const mapApiToFrontend = (apiIntegration) => {
@@ -39,16 +38,19 @@ const mapApiToFrontend = (apiIntegration) => {
     last_sync_at: apiIntegration.last_sync_at,
     config: apiIntegration.config || {},
     is_active: apiIntegration.is_active ?? true,
+    supported: apiIntegration.supported ?? catalogItem?.supported ?? false,
+    config_fields: apiIntegration.config_fields || [],
+    metadata: apiIntegration.metadata || {},
   };
 };
 
 const Integrations = () => {
-  const { projects } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(null);
   const [disconnecting, setDisconnecting] = useState(null);
+  const [syncing, setSyncing] = useState(null);
   const [showConfigModal, setShowConfigModal] = useState(null);
 
   const refreshIntegrations = async () => {
@@ -57,6 +59,20 @@ const Integrations = () => {
       setIntegrations(data.map(mapApiToFrontend));
     } else {
       setIntegrations(availableIntegrationsCatalog.map(i => ({ ...i, connected: false })));
+    }
+  };
+
+  const openConfigModal = async (integration) => {
+    try {
+      const configResponse = await getIntegrationConfig(integration.integration_id || integration.id);
+      setShowConfigModal({
+        ...integration,
+        config: configResponse?.config || {},
+        config_fields: configResponse?.config_fields || [],
+        supported: configResponse?.supported ?? integration.supported,
+      });
+    } catch (error) {
+      toast.error(error?.data?.error || error?.message || 'Failed to load integration config');
     }
   };
 
@@ -76,6 +92,11 @@ const Integrations = () => {
   }, []);
 
   const handleConnect = async (integration) => {
+    if (!integration.supported) {
+      toast.info(`${integration.name} is not available yet. GitHub is the supported provider today.`);
+      return;
+    }
+
     setConnecting(integration.id);
     try {
       await connectIntegration(integration.id, {});
@@ -85,6 +106,24 @@ const Integrations = () => {
       toast.error(error?.response?.data?.error || error?.message || 'Failed to connect integration');
     } finally {
       setConnecting(null);
+    }
+  };
+
+  const handleSync = async (integration) => {
+    setSyncing(integration.integration_id || integration.id);
+    try {
+      const response = await syncIntegration(integration.integration_id || integration.id);
+      const summary = response?.sync_result;
+      if (summary?.repository) {
+        toast.success(`Synced ${summary.repository}`);
+      } else {
+        toast.success(`${integration.name} synced successfully`);
+      }
+      await refreshIntegrations();
+    } catch (error) {
+      toast.error(error?.data?.error || error?.message || 'Failed to sync integration');
+    } finally {
+      setSyncing(null);
     }
   };
 
@@ -170,10 +209,17 @@ const Integrations = () => {
                     <div className="integration-actions">
                       <button
                         className="integration-action-btn"
-                        onClick={() => setShowConfigModal(integration)}
+                        onClick={() => openConfigModal(integration)}
                       >
                         <Settings size={16} />
                         Configure
+                      </button>
+                      <button
+                        className="integration-action-btn"
+                        onClick={() => handleSync(integration)}
+                        disabled={syncing === (integration.integration_id || integration.id)}
+                      >
+                        {syncing === (integration.integration_id || integration.id) ? 'Syncing...' : 'Sync Now'}
                       </button>
                       <button
                         className="integration-action-btn danger"
@@ -217,10 +263,12 @@ const Integrations = () => {
                   <button
                     className="integration-connect-btn"
                     onClick={() => handleConnect(integration)}
-                    disabled={connecting === integration.id}
+                    disabled={connecting === integration.id || !integration.supported}
                   >
                     {connecting === integration.id ? (
                       'Connecting...'
+                    ) : !integration.supported ? (
+                      'Unavailable'
                     ) : (
                       <>
                         <ExternalLink size={16} />
@@ -265,6 +313,7 @@ const IntegrationConfigModal = ({ integration, onClose, onSave }) => {
   const Icon = integration.icon;
   const [config, setConfig] = useState(integration.config || {});
   const [saving, setSaving] = useState(false);
+  const configFields = integration.config_fields || [];
 
   const handleSave = async () => {
     setSaving(true);
@@ -295,20 +344,23 @@ const IntegrationConfigModal = ({ integration, onClose, onSave }) => {
           </p>
         )}
 
-        {Object.keys(config).length > 0 ? (
+        {configFields.length > 0 ? (
           <div style={{ marginBottom: '24px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>Configuration</h3>
-            {Object.entries(config).map(([key, value]) => (
-              <div key={key} style={{ marginBottom: '12px' }}>
+            {configFields.map((field) => (
+              <div key={field.key} style={{ marginBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', marginBottom: '4px', textTransform: 'capitalize' }}>
-                  {key.replace(/_/g, ' ')}
+                  {field.label || field.key.replace(/_/g, ' ')}
                 </label>
                 <input
-                  type="text"
-                  value={value || ''}
-                  onChange={(e) => setConfig(prev => ({ ...prev, [key]: e.target.value }))}
+                  type={field.secret ? 'password' : 'text'}
+                  value={config[field.key] || ''}
+                  onChange={(e) => setConfig(prev => ({ ...prev, [field.key]: e.target.value }))}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' }}
                 />
+                {field.required ? (
+                  <p style={{ marginTop: '4px', color: '#6b7280', fontSize: '12px' }}>Required</p>
+                ) : null}
               </div>
             ))}
           </div>
@@ -323,7 +375,7 @@ const IntegrationConfigModal = ({ integration, onClose, onSave }) => {
           <button className="modal-btn-cancel" onClick={onClose} disabled={saving}>
             Close
           </button>
-          {Object.keys(config).length > 0 && (
+          {configFields.length > 0 && (
             <button className="modal-btn-primary" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving...' : 'Save Configuration'}
             </button>

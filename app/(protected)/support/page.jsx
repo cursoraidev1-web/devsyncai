@@ -1,7 +1,7 @@
 ﻿'use client';
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   HelpCircle, 
@@ -22,6 +22,17 @@ import { submitFeedback } from '../../../services/api/feedback';
 import { toast } from 'react-toastify';
 import '../../../styles/pages/SupportHelp.css';
 
+const getHealthUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  if (!baseUrl) {
+    return '/health';
+  }
+
+  return baseUrl.includes('/api/v1')
+    ? baseUrl.replace('/api/v1', '/health')
+    : `${baseUrl.replace(/\/$/, '')}/health`;
+};
+
 const SupportHelp = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +49,33 @@ const SupportHelp = () => {
     description: '',
     steps: ''
   });
+  const [systemStatus, setSystemStatus] = useState({ loading: true, healthy: false, message: 'Checking system status...' });
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        const response = await fetch(getHealthUrl());
+        if (!response.ok) {
+          throw new Error('Health check failed');
+        }
+
+        const data = await response.json();
+        setSystemStatus({
+          loading: false,
+          healthy: Boolean(data?.success),
+          message: data?.message || 'API is reachable',
+        });
+      } catch (error) {
+        setSystemStatus({
+          loading: false,
+          healthy: false,
+          message: 'API health check unavailable',
+        });
+      }
+    };
+
+    loadStatus();
+  }, []);
 
   const handleSubmitTicket = async (e) => {
     e?.preventDefault();
@@ -97,14 +135,20 @@ const SupportHelp = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      toast.info('Search functionality coming soon! For now, please use the documentation or contact support.');
-    }
+    const query = searchQuery.trim();
+    if (!query) return;
+    router.push(`/documents?search=${encodeURIComponent(query)}`);
   };
 
   const handleDocCategoryClick = (category) => {
-    // Navigate to feedback page with documentation category, or show info
-    toast.info(`${category.title} documentation coming soon!`);
+    const categoryRoutes = {
+      'Getting Started': '/landing',
+      'Projects & Tasks': '/projects',
+      'PRD & Documentation': '/documents',
+      'CI/CD & Pipelines': '/ci-cd',
+    };
+
+    router.push(categoryRoutes[category.title] || '/documents');
   };
 
   const actionCards = [
@@ -226,8 +270,13 @@ const SupportHelp = () => {
 
       <div className="support-system-status">
         <h2>System Status</h2>
-        <div className="system-status-link" onClick={() => toast.info('Status page coming soon!')}>
-          View Status Page â†’
+        <div
+          className="system-status-link"
+          style={{ color: systemStatus.healthy ? '#0f766e' : '#b45309', cursor: 'default' }}
+        >
+          {systemStatus.loading
+            ? 'Checking platform health...'
+            : `${systemStatus.healthy ? 'Operational' : 'Attention needed'}: ${systemStatus.message}`}
         </div>
       </div>
 

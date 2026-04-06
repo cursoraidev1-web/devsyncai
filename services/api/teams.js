@@ -66,6 +66,12 @@ export const acceptInvite = (token) => {
   });
 };
 
+export const getInviteStatus = (token) => {
+  return api.get(`/teams/invites/${token}`, { auth: false }).then(response => {
+    return response?.data || response;
+  });
+};
+
 // Legacy - kept for backwards compatibility
 export const getProjectMembers = (projectId) => {
   return api.get(`/teams/${projectId}/members`).then(response => {

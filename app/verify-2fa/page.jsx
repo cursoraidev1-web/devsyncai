@@ -18,6 +18,7 @@ function Verify2FAContent() {
 
   // Get email from query params
   const email = searchParams.get('email') || '';
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
 
   // Auto-focus first input on mount
   useEffect(() => {
@@ -112,7 +113,7 @@ function Verify2FAContent() {
 
     try {
       await verify2FA(email, fullCode);
-      router.push('/dashboard');
+      router.push(returnTo);
     } catch (err) {
       setError(err?.message || 'Invalid verification code. Please try again.');
       setCode(['', '', '', '', '', '']);
@@ -134,8 +135,8 @@ function Verify2FAContent() {
 
         {/* Instructions */}
         <div className="verify-2fa-header">
-          <h1>Enter the 6-digit code from your app</h1>
-          <p>Copy and paste code from authenticator</p>
+          <h1>Verify your login</h1>
+          <p>Enter the 6-digit code from your authenticator app to continue.</p>
         </div>
 
         {/* Error Message */}
@@ -174,11 +175,11 @@ function Verify2FAContent() {
             className="verify-2fa-submit-btn"
             disabled={loading || code.join('').length !== 6}
           >
-            {loading ? 'Verifying...' : 'Verify and Enable'}
+            {loading ? 'Verifying...' : 'Verify and Continue'}
           </button>
 
-          <a href="/login" className="verify-2fa-mail-link">
-            Verify Via Mail
+          <a href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="verify-2fa-mail-link">
+            Back to sign in
           </a>
         </form>
 
