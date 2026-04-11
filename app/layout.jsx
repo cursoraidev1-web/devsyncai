@@ -19,6 +19,14 @@ export default function RootLayout({ children }) {
           name="description"
           content="Zyndrx - Project Management & Development Coordination Platform"
         />
+        <meta property="og:title" content="Zyndrx Platform" />
+        <meta property="og:description" content="Project Management & Development Coordination Platform" />
+        <meta property="og:image" content="/og-image.png" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Zyndrx Platform" />
+        <meta name="twitter:description" content="Project Management & Development Coordination Platform" />
+        <meta name="twitter:image" content="/og-image.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Zyndrx" />
@@ -27,6 +35,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/svg+xml" href="/logo.svg" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         
         {/* PWA Manifest */}
